@@ -1382,7 +1382,7 @@ function hurtPlayer(d,knock){if(player.dead)return;player.hp=Math.max(0,player.h
 
 /* ================= realistic humans (skinned Mixamo body, pooled by distance) ================= */
 const HUM={ready:false,proto:null,H:1.8,clips:{},bodyMap:null,hairMap:null,pool:[],mats:new Map(),staff:[],playerH:null,kinds:{}};
-const HKINDS={base:'Néo (tenues personnalisables)',james:'James',adam:'Adam'};let playerChar='base';
+const HKINDS={adam:'Adam',james:'James',base:'Personnalisé (tenues)'};let playerChar='base';
 const HPOOL=IS_TOUCH?10:22,HDIST=IS_TOUCH?40:62;
 function releaseHum(a){if(a&&a.hum){a.hum.owner=null;a.hum.root.visible=false;a.hum=null;}}
 function humMat(kind,col){
@@ -1440,30 +1440,31 @@ function loadHumans(onProgress){
     for(const [kind,gg] of [['james',gj],['adam',gd]])if(gg)HUM.kinds[kind]=prepFixedHuman(kind,gg.scene,an);
     const kinds=Object.keys(HUM.kinds);
     for(let i=0;i<HPOOL;i++)HUM.pool.push(makeHuman(i%4<2?'base':kinds[(i%4-1)%kinds.length]));
-    playerChar=HUM.kinds[saveData.char]?saveData.char:'base';
+    playerChar=HUM.kinds[saveData.char]?saveData.char:HUM.kinds.adam?'adam':'base';
     HUM.playerH=makeHuman(playerChar);applyLook(HUM.playerH,player.m.look,1.02);charButtons();
     for(const s of staff)HUM.staff.push({m:s,x:s.group.position.x,y:s.group.position.y,z:s.group.position.z,h:s.group.rotation.y,staff:true,mannequin:!!s.mannequin,curSpeed:0,state:'idle',ht:rnd(.95,1.05)});
     HUM.ready=true;prog(1);
   }).catch(e=>{console.warn('Personnages réalistes indisponibles',e);});
 }
 function prepFixedHuman(kind,sc,an){
-  let hipsY=1;const bb=new THREE.Box3(),tmp=new THREE.Box3();
+  let hipsY=1;
   sc.traverse(o=>{if(o.isBone){o.name=o.name.replace(/^mixamorig\d*/,'mixamorig');if(/Hips$/.test(o.name))hipsY=o.position.y;}
-    if(o.isMesh){o.geometry.computeBoundingBox();bb.union(tmp.copy(o.geometry.boundingBox));
+    if(o.isMesh){
       const mats=Array.isArray(o.material)?o.material:[o.material];const conv=mats.map(m=>{const l=toLambert(m,true);if(/hair|lash/i.test(m.name+o.name)){l.alphaTest=.45;l.side=THREE.DoubleSide;}return l;});
       o.material=Array.isArray(o.material)?conv:conv[0];}});
   const clips={};for(const k in an){const c=THREE.AnimationClip.parse(an[k]);
     for(const t of c.tracks)if(/Hips\.position$/.test(t.name)){const v=t.values,kk=hipsY/.93;for(let i=0;i<v.length;i+=3){v[i]=0;v[i+1]*=kk;v[i+2]=0;}}clips[k]=c;}
-  return {kind,proto:sc,clips,H:Math.max(.5,bb.max.y-bb.min.y),fixed:true};
+  sc.updateMatrixWorld(true);const top=sc.getObjectByName('mixamorigHeadTop_End'),v=new THREE.Vector3();if(top)top.getWorldPosition(v);
+  return {kind,proto:sc,clips,H:top&&v.y>1&&v.y<2.5?v.y:1.8,fixed:true};
 }
 function setPlayerChar(k){
   if(!HUM.kinds[k]||!HUM.ready)return;playerChar=k;const old=HUM.playerH;scene.remove(old.root);
   HUM.playerH=makeHuman(k);applyLook(HUM.playerH,player.m.look,1.02);charButtons();save();
 }
 function charButtons(){const box=$('chars');if(!box)return;box.hidden=Object.keys(HUM.kinds).length<2;box.innerHTML='';
-  for(const k in HUM.kinds){const b=document.createElement('button');b.className='cbtn'+(k===playerChar?' on':'');b.textContent=HKINDS[k]||k;b.setAttribute('aria-pressed',k===playerChar);
+  for(const k of Object.keys(HKINDS).filter(k=>HUM.kinds[k])){const b=document.createElement('button');b.className='cbtn'+(k===playerChar?' on':'');b.textContent=HKINDS[k]||k;b.setAttribute('aria-pressed',k===playerChar);
     b.onclick=()=>setPlayerChar(k);box.appendChild(b);}}
-const RIDE={LeftUpLeg:[-1.4,0,.1],RightUpLeg:[-1.4,0,-.1],LeftLeg:[1.5,0,0],RightLeg:[1.5,0,0],LeftArm:[-.3,0,.95],RightArm:[-.3,0,-.95],Spine:[.3,0,0]};
+const RIDE={LeftUpLeg:[1.45,0,.14],RightUpLeg:[1.45,0,-.14],LeftLeg:[-1.5,0,0],RightLeg:[-1.5,0,0],LeftArm:[-.85,0,.8],RightArm:[-.85,0,-.8],Spine:[.3,0,0]};
 // seated pose on a motorbike, layered on the paused 'idle' clip (the mixer does not rewrite paused bones, so restore the base first)
 function ridePose(h){if(!h.rideB){h.rideB=[];for(const n in RIDE){const b=h.root.getObjectByName('mixamorig'+n);if(b)h.rideB.push({b,v:RIDE[n],base:new THREE.Quaternion(),last:new THREE.Quaternion(),done:false});}}
   for(const e of h.rideB){const b=e.b;if(e.done&&b.quaternion.equals(e.last))b.quaternion.copy(e.base);else e.base.copy(b.quaternion);
@@ -2109,11 +2110,16 @@ function updateCombat(dt,inp){
   }
   if(aiming()){camera.getWorldDirection(_v1);p.aim=_v1.clone();p.h+=wrapA(Math.atan2(_v1.x,_v1.z)-p.h)*Math.min(1,dt*18);}else p.aim=null;
 }
-function initBones(h){h.bones={arm:h.root.getObjectByName('mixamorigRightArm'),fore:h.root.getObjectByName('mixamorigRightForeArm'),hand:h.root.getObjectByName('mixamorigRightHand')};}
+function initBones(h){const B=n=>h.root.getObjectByName('mixamorig'+n);h.bones={arm:B('RightArm'),fore:B('RightForeArm'),hand:B('RightHand'),larm:B('LeftArm'),lfore:B('LeftForeArm'),lhand:B('LeftHand')};}
+const _v4=new THREE.Vector3(),_v5=new THREE.Vector3();
+function pointBone(b,dir){b.parent.getWorldQuaternion(_q1);_q2.setFromUnitVectors(_up,dir);b.quaternion.copy(_q1.invert().multiply(_q2));}
 function aimArm(h,dir){
   if(!h.bones)initBones(h);const b=h.bones;if(!b.arm)return;h.root.updateMatrixWorld(true);
-  b.arm.parent.getWorldQuaternion(_q1);_q2.setFromUnitVectors(_up,_v1.copy(dir).normalize());b.arm.quaternion.copy(_q1.invert().multiply(_q2));
+  _v1.copy(dir).normalize();pointBone(b.arm,_v1);
   if(b.fore)b.fore.quaternion.identity();if(b.hand)b.hand.quaternion.identity();h.root.updateMatrixWorld(true);
+  // long guns : the left hand reaches the barrel under the weapon
+  const w=W();if(h===HUM.playerH&&!w.melee&&(w.len||0)>=.4&&b.larm&&b.hand){b.hand.getWorldPosition(_v4).addScaledVector(_v1,Math.min(.45,w.len*.45));_v4.y-=.04;
+    b.larm.getWorldPosition(_v5);pointBone(b.larm,_v5.subVectors(_v4,_v5).normalize());if(b.lfore)b.lfore.quaternion.identity();if(b.lhand)b.lhand.quaternion.identity();h.root.updateMatrixWorld(true);}
 }
 function placeWeapon(){
   for(const k in wMeshes)wMeshes[k].visible=false;
