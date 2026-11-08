@@ -1390,8 +1390,10 @@ function hurtPlayer(d,knock){if(player.dead)return;player.hp=Math.max(0,player.h
 /* ================= realistic humans (skinned Mixamo body, pooled by distance) ================= */
 const HUM={ready:false,proto:null,H:1.8,clips:{},bodyMap:null,hairMap:null,pool:[],mats:new Map(),staff:[],playerH:null,kinds:{}};
 const HKINDS={adam:'Adam',james:'James'};
-const PED_MIX=['adam','james'];
-const PED_TINT={adam:{shirt:/Hoodie/,pants:/Pants/},soldier:{shirt:/vanguard_Mesh/}};let playerChar='base';
+// non-player characters (assets/models/pnj_*.glb) ; the player stays Adam or James
+const NPC_KINDS=['pull','blond','femme','agent','pilote','soldat'];
+const PED_MIX=['adam','james','pull','blond','femme','agent','adam','pull','femme','blond','james','agent','pilote','soldat'];
+const PED_TINT={adam:{shirt:/Hoodie/,pants:/Pants/},pull:{shirt:/Sweater/,pants:/Pants/},femme:{shirt:/Suit/,pants:/Pants/},blond:{shirt:/Tops/,pants:/Bottoms/}};let playerChar='base';
 const HPOOL=IS_TOUCH?10:22,HDIST=IS_TOUCH?40:62;
 function releaseHum(a){if(a&&a.hum){a.hum.owner=null;a.hum.root.visible=false;a.hum=null;}}
 function humMat(kind,col){
@@ -1438,10 +1440,10 @@ function fetchJSON(url,onP){return fetch(url).then(async r=>{if(!r.ok)throw r.st
 function loadHumans(onProgress){
   const prog=onProgress||(()=>{});
   if(!THREE.GLTFLoader||!THREE.SkeletonUtils||location.protocol==='file:')return Promise.resolve();
-  const ld=gltfLoader();let pg=0,pa=0,pj=0,pd=0;const upd=()=>prog(pg*.5+pa*.18+pj*.08+pd*.24);
+  const ld=gltfLoader();let pg=0,pa=0,pj=0,pd=0;const pn={};const upd=()=>prog(pg*.28+pa*.1+pj*.05+pd*.14+NPC_KINDS.reduce((a,k)=>a+(pn[k]||0),0)/NPC_KINDS.length*.43);
   const extra=(f,cb)=>new Promise(r=>ld.load('assets/models/'+f,r,e=>{if(e&&e.total)cb(e.loaded/e.total);},e=>{console.warn('Personnage indisponible',f,e);r(null);}));
   return Promise.all([new Promise((r,j)=>ld.load('assets/human.glb',r,e=>{if(e&&e.total){pg=e.loaded/e.total;upd();}},j)),fetchJSON('assets/anims.json',f=>{pa=f;upd();}),
-    extra('james.glb',f=>{pj=f;upd();}),extra('adam.glb',f=>{pd=f;upd();})]).then(([g,an,gj,gd])=>{
+    extra('james.glb',f=>{pj=f;upd();}),extra('adam.glb',f=>{pd=f;upd();}),...NPC_KINDS.map(k=>extra('pnj_'+k+'.glb',f=>{pn[k]=f;upd();}))]).then(([g,an,gj,gd,...gn])=>{
     const sc=g.scene;let hipsY=1.04;
     sc.traverse(o=>{if(o.isBone){o.name=o.name.replace(/^mixamorig\d*/,'mixamorig');if(/Hips$/.test(o.name))hipsY=o.position.y;}
       if(o.isMesh&&o.material){if(/hair/i.test(o.material.name))HUM.hairMap=o.material.map;else HUM.bodyMap=HUM.bodyMap||o.material.map;}});
@@ -1451,7 +1453,7 @@ function loadHumans(onProgress){
       HUM.clips[k]=c;}
     HUM.proto=sc;const box=new THREE.Box3().setFromObject(sc);HUM.H=Math.max(.5,box.max.y-box.min.y);
     HUM.kinds.base={kind:'base',proto:sc,clips:HUM.clips,H:HUM.H,fixed:false};
-    for(const [kind,gg] of [['james',gj],['adam',gd]])if(gg)HUM.kinds[kind]=prepFixedHuman(kind,gg.scene,an);
+    for(const [kind,gg] of [['james',gj],['adam',gd],...NPC_KINDS.map((k,i)=>[k,gn[i]])])if(gg)HUM.kinds[kind]=prepFixedHuman(kind,gg.scene,an);
     const kinds=Object.keys(HUM.kinds);
     const mix=PED_MIX.filter(k=>HUM.kinds[k]);if(!mix.length)mix.push('base');for(let i=0;i<HPOOL;i++)HUM.pool.push(makeHuman(mix[i%mix.length]));
     if(mix[0]!=='base')for(let i=0;i<2;i++)HUM.pool.push(makeHuman('base'));
@@ -1469,8 +1471,9 @@ function prepFixedHuman(kind,sc,an){
       o.material=Array.isArray(o.material)?conv:conv[0];}});
   const clips={};for(const k in an){const c=THREE.AnimationClip.parse(an[k]);
     for(const t of c.tracks)if(/Hips\.position$/.test(t.name)){const v=t.values,kk=hipsY/.93;for(let i=0;i<v.length;i+=3){v[i]=0;v[i+1]*=kk;v[i+2]=0;}}clips[k]=c;}
-  sc.updateMatrixWorld(true);const top=sc.getObjectByName('mixamorigHeadTop_End'),v=new THREE.Vector3();if(top)top.getWorldPosition(v);
-  return {kind,proto:sc,clips,H:top&&v.y>1&&v.y<2.5?v.y:1.8,fixed:true};
+  sc.updateMatrixWorld(true);const top=sc.getObjectByName('mixamorigHeadTop_End'),v=new THREE.Vector3();let H=0;
+  if(top){top.getWorldPosition(v);H=v.y;}else{sc.traverse(o=>{if(o.isBone){o.getWorldPosition(v);H=Math.max(H,v.y);}});H*=1.07;}
+  return {kind,proto:sc,clips,H:H>.3?H:1.8,fixed:true};
 }
 function setPlayerChar(k){
   if(!HUM.kinds[k]||!HUM.ready)return;playerChar=k;const old=HUM.playerH;if(old.root.parent)old.root.parent.remove(old.root);
