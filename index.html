@@ -3227,7 +3227,7 @@ function flyPhysics(c,inp,dt){
 const vehicleSpots=[];
 function initWorldVehicles(){
   const put=(type,x,z,h,col)=>{const c=new Car(type,col||rpick(PAINTS));c.place(x,z,h);c.ai='parked';parked.push(c);vehicleSpots.push(c);return c;};
-  for(const [px] of PIERS){put(Math.random()<.5?'bateau':'vedette',px+6.5,-520,Math.PI);put('bateau',px-6.5,-535,Math.PI);}
+  for(const [px,pz0] of PIERS){put(Math.random()<.5?'bateau':'vedette',px+6.5,pz0-22,Math.PI);put('bateau',px-6.5,pz0-37,Math.PI);}
   put('bateau',LAND.x0-SAND-8,120,-Math.PI/2);put('vedette',LAND.x0-SAND-8,-160,-Math.PI/2);
   put('avion',-290,357,Math.PI/2,'#f4f6f8');put('avion',-250,357,Math.PI/2,'#e5484d');put('helico',-110,360,0,'#1f3a5f');
   put('helico',BASE.x1-45,BASE.z1-30,0,'#4b5320');put('tank',BASE.x0+70,-40,Math.PI/2,'#4b5320');put('tank',BASE.x0+70,-20,Math.PI/2,'#4b5320');

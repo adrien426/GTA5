@@ -57,6 +57,12 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## La carte complète
+
+![Carte de Néo Cité](carte-neo-cite.jpg)
+
+Version haute définition : [carte-neo-cite.png](carte-neo-cite.png) (5010×3900).
+
 ## Previews
 
 Chaque branche poussée est publiée par GitHub Actions sur la branche `gh-pages` :
