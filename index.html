@@ -138,6 +138,9 @@ body.touch #mic{right:auto;left:calc(150px + env(safe-area-inset-left,0px));bott
 #bigmap{position:fixed;inset:0;z-index:12;background:rgba(0,0,0,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
 #big{width:min(92vw,86vh);height:min(92vw,86vh);border-radius:8px}
 #bigmap div{color:var(--muted);font-size:17px}
+#mapClose{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:calc(12px + env(safe-area-inset-right,0px));min-width:96px;height:48px;padding:0 16px;border-radius:24px;
+  border:2px solid rgba(255,255,255,.5);background:rgba(20,24,30,.85);color:#fff;font:800 18px var(--font);cursor:pointer;touch-action:manipulation;z-index:1}
+#mapClose:focus-visible{outline:2px solid #9fd3ff}
 /* ===== loading screen ===== */
 #loader{position:fixed;inset:0;z-index:100;background:#000;overflow:hidden;transition:opacity 1.2s ease;font-family:var(--font)}
 #loader.out{opacity:0;pointer-events:none}
@@ -389,7 +392,7 @@ window.addEventListener('error',e=>{if(!finished&&/THREE|three/.test(String(e.me
   <button class="tb" id="tR" hidden>RADIO</button>
 </div>
 
-<div id="bigmap" hidden><canvas id="big" width="1000" height="1000"></canvas><div>M ou Échap pour fermer</div></div>
+<div id="bigmap" hidden><button id="mapClose" aria-label="Fermer la carte">✕ FERMER</button><canvas id="big" width="1000" height="1000"></canvas><div id="mapHint">M ou Échap pour fermer</div></div>
 <div id="fade"><h2 id="fadeT"></h2><p id="fadeS"></p></div>
 <div id="phone" hidden><div id="phScreen"><div id="phBar"><span id="phTime">12:00</span><span>NéoPhone</span><span>87 %</span></div><div id="phBody"></div></div><button id="phHome" aria-label="Accueil du téléphone"></button></div>
 
@@ -2276,7 +2279,7 @@ function handleVoice(t){
   else if(has('taxi')){callTaxi();}
   else if(has('avocat')){callLawyer();}
   else if(has('téléphone')){openPhone();}
-  else if(has('carte','plan')){big=true;$('bigmap').hidden=false;}
+  else if(has('carte','plan'))setBigMap(true);
   else if(has('radio','musique')){radioSt=(radioSt+1)%STATIONS.length;toast(STATIONS[radioSt]?STATIONS[radioSt].name:'Radio coupée');}
   else if(has('livraison')){phoneMission('livraison');}
   else if(has('course')){phoneMission('course');}
@@ -2321,7 +2324,7 @@ function phView(v){
 }
 $('phBody').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;const ds=t.dataset;
   if(ds.back)phView('home');
-  else if(ds.v){if(ds.v==='carte'){closePhone();big=true;$('bigmap').hidden=false;}else phView(ds.v);}
+  else if(ds.v){if(ds.v==='carte'){closePhone();setBigMap(true);}else phView(ds.v);}
   else if(ds.c!=null){phone.call=CONTACTS[+ds.c];phone.callT=1.4;phView('call');sfx.ding();}
   else if(ds.m){if(ds.m==='abandon'){endMission(false);phView('missions');}else phoneMission(ds.m);}
   else if(ds.r!=null){radioSt=+ds.r;phView('radio');}
@@ -2460,9 +2463,9 @@ function loop(now){
   if(state!=='play'){if(state==='menu'){gameT+=dt;menuCam(dt);}renderer.render(scene,camera);pressedPause();return;}
   if(wheel.open)dt*=.2;
   gameT+=dt;frame++;
-  if(pressed.map){big=!big;$('bigmap').hidden=!big;if(big&&document.pointerLockElement)document.exitPointerLock();}
+  if(pressed.map)setBigMap(!big);
   if(pressed.phone){phone.open?closePhone():openPhone();}
-  if(pressed.pause){if(wheel.open)closeWheel();else if(shopUI.open)closeShop();else if(phone.open)closePhone();else if(big){big=false;$('bigmap').hidden=true;}else{pause();pressed={};return;}}
+  if(pressed.pause){if(wheel.open)closeWheel();else if(shopUI.open)closeShop();else if(phone.open)closePhone();else if(big)setBigMap(false);else{pause();pressed={};return;}}
   if(pressed.wheel){wheel.open?closeWheel():openWheel();}
   if(pressed.mic)micToggle();
   let inp=readInput();if(phone.open||wheel.open||shopUI.open)inp={x:0,y:0,sprint:false,hb:true};
@@ -2564,6 +2567,10 @@ function loop(now){
   pressed={};
   renderer.render(scene,camera);
 }
+function setBigMap(on){big=on;$('bigmap').hidden=!on;if(on&&document.pointerLockElement)document.exitPointerLock();}
+$('mapClose').addEventListener('click',e=>{e.stopPropagation();setBigMap(false);});
+$('bigmap').addEventListener('pointerdown',e=>{if(e.target.id==='bigmap'){e.preventDefault();setBigMap(false);}});
+if(IS_TOUCH)$('mapHint').textContent='Touchez ✕ ou en dehors de la carte pour fermer';
 function pressedPause(){if(state==='pause'&&pressed.pause&&performance.now()-pauseAt>400){play();}pressed={};}
 let menuA=0;
 function menuCam(dt){menuA+=dt*.05;updateLights();const r=150;camera.position.set(Math.cos(menuA)*r,70,Math.sin(menuA)*r);camera.lookAt(0,10,0);updateSky(dt*.2,{x:0,z:0});updateParts(dt);
