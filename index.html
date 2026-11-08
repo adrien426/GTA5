@@ -959,7 +959,7 @@ function shopBuilding(fr,kind,H,style){
   const rr_=frect(fr,0,0,W,D);
   if(H>HG+1)building(rr_.cx,rr_.cz,rr_.w,rr_.d,H,style,HG);
   else{fbox(fr,MAT.roof,0,HG+.15,0,W,.3,D,{bld:true});}
-  minimapBld.push({cx:rr_.cx,cz:rr_.cz,w:rr_.w,d:rr_.d,h:H,k:kind});
+  minimapBld.push({cx:rr_.cx,cz:rr_.cz,w:rr_.w,d:rr_.d,h:H,k:kind,pyl:fw(fr,W/2-1.2,D/2+1.3),ry:fr.ry});
   // interior furnishing
   const look=k=>({shirt:k,pants:'#2b2f3a',skin:rpick(SKINS),hair:rpick(HAIRS)});
   let spot;
@@ -1830,6 +1830,7 @@ const sfx=(()=>{
     siren(v){if(!ac)return;sirG.gain.setTargetAtTime(v*.07,ac.currentTime,.2);},
     crash(v){noise(.5*v+.1,.5,900);tone(70,.3,'square',.15*v);},
     thud(){noise(.3,.25,500);},
+    bark(v=1){if(!ac)return;tone(420,.08,'sawtooth',.2*v,.55);noise(.22*v,.07,1400);setTimeout(()=>{tone(360,.1,'sawtooth',.18*v,.5);noise(.18*v,.08,1200);},140);},
     shot(k){if(k==='laser'){tone(1400,.18,'sawtooth',.12,.25);tone(700,.2,'square',.06,.3);return;}const v=k==='far'?.25:k==='heavy'?1:.6;noise(.55*v,.18,4000);noise(.45*v,k==='heavy'?.6:.35,k==='heavy'?400:700);tone(k==='heavy'?70:110,.14,'square',.14*v,.5);},
     swish(){noise(.12,.15,2500);},
     rotor(v){if(!ac)return;const now=ac.currentTime;if(v>.02&&now-(this._r||0)>.11){this._r=now;noise(.25*v,.09,300);}},
@@ -1990,7 +1991,7 @@ function mapMarkers(){
   const P=playerPos();const list=[];
   for(const g of givers)if(!mission)list.push({x:g.x,z:g.z,c:'#'+g.col.toString(16).padStart(6,'0'),l:g.letter,edge:true});
   if(mission){const t=mission.type==='livraison'?mission.target:mission.cps[mission.idx];list.push({x:t.x,z:t.z,c:'#f2c230',l:'★',edge:true,big:true});}
-  vehicleMarkers(list,P);
+  vehicleMarkers(list,P);armMarkers(list,P);
   if(WP)list.push({x:WP.x,z:WP.z,c:'#b06cff',l:'⚑',edge:true});
   if(story&&story.step){const st=story.step;if(st.targets){for(const t of st.targets)if(!t.gdead)list.push({x:t.x,z:t.z,c:'#e5484d',dot:true,edge:true});}else{const tp=stepPos(st);if(tp)list.push({x:tp.x,z:tp.z,c:'#ff9f1a',l:'★',edge:true});}}
   for(const c of police)if(c.ai==='police')list.push({x:c.x,z:c.z,c:(gameT*4|0)%2?'#e5484d':'#3b82f6',dot:true,edge:true});
@@ -2191,7 +2192,8 @@ function castShot(range=90,spread=0){
   if(spread){d.x+=rnd(-spread,spread);d.y+=rnd(-spread,spread)*.6;d.z+=rnd(-spread,spread);d.normalize();}
   const L=range;let ht=rayT(o.x,o.y,o.z,o.x+d.x*L,o.y+d.y*L,o.z+d.z*L)*L,hit=null;
   const sph=(cx,cy,cz,r,ref,kind)=>{const ox=cx-o.x,oy=cy-o.y,oz=cz-o.z;const t=ox*d.x+oy*d.y+oz*d.z;if(t<1.5||t>ht)return;const px=ox-d.x*t,py=oy-d.y*t,pz=oz-d.z*t;if(px*px+py*py+pz*pz<r*r){ht=t;hit={ref,kind};}};
-  for(const p of peds)if(p.state!=='down')for(const yy of[.55,1.05,1.5])sph(p.x,p.y+yy,p.z,.38,p,'ped');
+  for(const p of peds)if(p.state!=='down'&&!p.off)for(const yy of[.55,1.05,1.5])sph(p.x,p.y+yy,p.z,.38,p,'ped');
+  for(const g of dogs)if(g.state!=='off'&&!g.dead)sph(g.x,g.y+.55,g.z,.42,g,'dog');
   mpHitTest(o,d,ht,sph);
   for(const c of cars){if(!c.on||!c.group.visible||c===player.car)continue;const cc=carCircles(c,_cc);for(let k=0;k<3;k++)sph(cc[k*2],c.y+.85,cc[k*2+1],1.05,c,'car');}
   const gt=d.y<-1e-3?(groundY(o.x,o.z)+.01-o.y)/d.y:1e9;if(gt<ht){ht=gt;hit=null;}
@@ -2200,7 +2202,7 @@ function castShot(range=90,spread=0){
 function muzzle(){const w=W(),g=weaponMesh(w);g.updateMatrixWorld();return _v3.set(0,0,g.userData.len).applyMatrix4(g.matrixWorld).clone();}
 function applyHit(r,w){
   const P=playerPos();if(!r.hit)return;player.crossHit=.2;
-  if(r.hit.kind==='mp'){mpDamage(r.hit.ref,w.dmg*perkDmg(),false);return;}if(r.hit.ref.ai==='remote')return;
+  if(r.hit.kind==='mp'){mpDamage(r.hit.ref,w.dmg*perkDmg(),false);return;}if(r.hit.kind==='dog'){dogHit(r.hit.ref,w.dmg*perkDmg());return;}if(r.hit.ref.ai==='remote')return;
   if(r.hit.kind==='ped'){const p=r.hit.ref;if(p.state!=='down'){pedLoot(p);gangHit&&gangHit(p,w.dmg*perkDmg());}if(p.state!=='down')knockPed(p,r.d.x*(3+w.dmg*.08),r.d.z*(3+w.dmg*.08));if(shotWantedCD<=0){addWanted(nearPolice(P,90)?2:1);shotWantedCD=3;}}
   else{const c=r.hit.ref;c.health-=w.dmg*perkDmg();carShotFx(c,r.end,r.o);if(w.laser&&!c.burn&&c.health<45)c.burn=1.5;if(c.health<=0&&!c.burn&&!c.dead)c.burn=2.5;
     if(c.ai==='police'){if(shotWantedCD<=0){addWanted(player.stars<2?2:1);shotWantedCD=2;}}else if(c.ai==='traffic'){c.cruise=22;c.yieldT=4;}}
@@ -2225,6 +2227,7 @@ function melee(){
     pedLoot(p);gangHit&&gangHit(p,w.dmg*3);knockPed(p,fx*(3+w.dmg*.4),fz*(3+w.dmg*.4));any=true;if(nearPolice(player,60)&&wantedCD<=0){addWanted(1);wantedCD=3;}}
   for(const c of cars){if(!c.on||c===player.car)continue;const cc=carCircles(c,_cc);for(let k=0;k<3;k++){const dx=cc[k*2]-player.x,dz=cc[k*2+1]-player.z,d=Math.hypot(dx,dz);
     if(d<CR+reach-.6&&(dx*fx+dz*fz)>0){c.health-=w.dmg*.6;c.vx+=fx*1.2;c.vz+=fz*1.2;any=true;shake=.25;break;}}}
+  for(const g of dogs){if(g.state==='off'||g.dead)continue;const dx=g.x-player.x,dz=g.z-player.z,d=Math.hypot(dx,dz);if(d<reach+.3&&(dx*fx+dz*fz)/Math.max(d,.01)>.3){dogHit(g,w.dmg*3);any=true;}}
   if(mpMelee(w,fx,fz))any=true;
   if(any){sfx.thud();scarePeds(15);}else sfx.swish();
 }
@@ -2329,16 +2332,17 @@ function closeWheel(){wheel.open=false;$('wheel').hidden=true;}
 $('wheel').addEventListener('click',e=>{if(e.target.id==='wheel')closeWheel();});
 // gun shop
 const shopUI={open:false};
-function openShop(){shopUI.open=true;renderShop();$('shop').hidden=false;if(document.pointerLockElement)document.exitPointerLock();}
+function wPrice(w){return Math.round(w.price*(shopUI.online?1.15:1));}
+function openShop(online){shopUI.online=!!online;$('shop').querySelector('h3').textContent=online?'ARMURERIE ÉCLAT — EN LIGNE (livraison +15 %)':'ARMURERIE ÉCLAT';shopUI.open=true;renderShop();$('shop').hidden=false;if(document.pointerLockElement)document.exitPointerLock();}
 function closeShop(){shopUI.open=false;$('shop').hidden=true;}
 function renderShop(){
   $('shopList').innerHTML=`<div class="srow"><div><b>Solde : $${player.money.toLocaleString('fr-FR')}</b><small>Les armes de l'armée ne sont pas en vente</small></div></div>`+
   WEAPONS.filter(w=>w.id!=='poings').map(w=>{const own=player.owned.has(w.id),ammoCost=Math.max(20,Math.round(w.price*.12));
-    const act=w.army&&!own?'<button disabled>Armée</button>':!own?`<button data-buy="${w.id}">$${w.price}</button>`:w.melee?'<button disabled>Possédé</button>':`<button data-ammo="${w.id}">+ munitions $${ammoCost}</button>`;
+    const act=w.army&&!own?'<button disabled>Armée</button>':!own?`<button data-buy="${w.id}">$${wPrice(w)}</button>`:w.melee?'<button disabled>Possédé</button>':`<button data-ammo="${w.id}">+ munitions $${ammoCost}</button>`;
     return `<div class="srow">${w.svg}<div><b>${w.name}</b><small>${w.melee?'Corps à corps':'Chargeur '+w.mag+(own?' · réserve '+(player.ammo[w.id]||0):'')}</small></div>${act}</div>`;}).join('');
 }
 $('shopList').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;
-  if(b.dataset.buy){const w=WBY[b.dataset.buy];if(player.money<w.price){toast('Pas assez d\'argent');return;}player.money-=w.price;giveWeapon(w.id,3);player.weap=w.id;sfx.coin();toast(w.name+' acheté');save();}
+  if(b.dataset.buy){const w=WBY[b.dataset.buy];const pr=wPrice(w);if(player.money<pr){toast('Pas assez d\'argent');return;}player.money-=pr;giveWeapon(w.id,3);player.weap=w.id;sfx.coin();toast(w.name+' acheté');save();}
   else if(b.dataset.ammo){const w=WBY[b.dataset.ammo],c=Math.max(20,Math.round(w.price*.12));if(player.money<c){toast('Pas assez d\'argent');return;}player.money-=c;player.ammo[w.id]=(player.ammo[w.id]||0)+w.mag*3;sfx.coin();save();}
   renderShop();});
 $('shopClose').addEventListener('click',closeShop);
@@ -2615,7 +2619,7 @@ function loop(now){
       if(c.speed>3.5){knockPed(p,c.vx*.8+ex/d*2,c.vz*.8+ez/d*2);if(c===player.car){if(wantedCD<=0){addWanted(1);wantedCD=3;}c.vx*=.92;c.vz*=.92;}break;}
       p.x+=ex/d*(CR+.3-d);p.z+=ez/d*(CR+.3-d);}}}}
   // peds update & recycle
-  for(const p of peds){const d=Math.hypot(p.x-P.x,p.z-P.z);if(d>150&&!p.gang&&!p.post){p.mood=null;p.robbed=false;spawnPed(p,P.x,P.z,90,145);continue;}
+  for(const p of peds){if(p.off)continue;const d=Math.hypot(p.x-P.x,p.z-P.z);if(d>150&&!p.gang&&!p.post){p.mood=null;p.robbed=false;if(p.secret){p.cop=false;p.armed=false;p.pname=null;}spawnPed(p,P.x,P.z,90,145);continue;}
     if(d<110||frame%3===0)updatePed(p,d<110?dt:dt*3,P);p.m.group.visible=d<140&&!p.hum;}
   for(const s of staff)if(!s.mannequin){s.phase+=dt;s.armL.rotation.x=Math.sin(s.phase*.7)*.1;s.body.rotation.y=Math.sin(s.phase*.3)*.3;}
   // doors
@@ -2647,7 +2651,7 @@ function loop(now){
   placeWeapon();gangWeapons();
   updateRockets(dt);policeFire(dt,P);updateHeli(dt,P);
   updateWater(dt,P);updateSeaLife(dt,P);updateMilHeli(dt,P);
-  updateBubble(dt);updateRemarks(dt,P);updatePrison(dt,P);updateWake(dt);
+  updateBubble(dt);updateRemarks(dt,P);updateArm(dt,P);updateFBI(dt,P);updateDogs(dt,P);updatePrison(dt,P);updateWake(dt);
   updateAutoAim();updateLockMark();updateWaypoint(dt,P);updateStory(dt,P);
   updateGrenades(dt);updatePickups(dt,P);updateRobbery(dt);updateBusiness();updateChatter(dt,P);if(typeof updateGangs==='function')updateGangs(dt,P);
   if(inBase(P.x,P.z)&&!player.dead){if(player.stars<4){player.stars=4;toast('ZONE MILITAIRE INTERDITE');sfx.fail();}seenT=0;}
@@ -2798,8 +2802,11 @@ function updateChatter(dt,P){chatT-=dt;if(chatT>0)return;chatT=rnd(7,15);if(play
   if(!best)return;const line=rpick(CHATTER);best.voice=best.voice||rnd(.6,1.5);say(line,best.voice);showSub('Passant : « '+line+' »');}
 
 // ---- phone apps
-APPS.push(['clan','Clan','⚑','#c92a2a'],['appels','Joueurs','✆','#2f9e44'],['revente','Revente','◆','#0ca678'],['auto','AutoNéo','🚗','#d6336c'],['jobs','Emplois','⚒','#f08c00'],['immo','Commerces','⌂','#5f3dc4'],['heros','Persos','☺','#1098ad']);
+APPS.push(['armes','Armurerie','🔫','#e5484d'],['clan','Clan','⚑','#c92a2a'],['appels','Joueurs','✆','#2f9e44'],['revente','Revente','◆','#0ca678'],['auto','AutoNéo','🚗','#d6336c'],['jobs','Emplois','⚒','#f08c00'],['immo','Commerces','⌂','#5f3dc4'],['heros','Persos','☺','#1098ad']);
 function phExtra(v){
+  if(v==='armes'){const n=nearestShop('armurerie',playerPos());return phTitle('Armurerie')+`<button class="phRow on" data-armgo="1"><b>Y aller (GPS)</b><small>${n?'La plus proche est à '+Math.round(n.d)+' m · point violet sur la carte':'—'}</small></button>`+
+    `<button class="phRow" data-armweb="1"><b>Acheter en ligne</b><small>Pistolets, fusils, fusil à pompe, sniper, grenades, munitions… livrés tout de suite (+15 %)</small></button>`+
+    '<div class="phRow"><small>4 armureries : 2 à Néo Cité, 1 à Port-Soleil, 1 à Sable-Rouge. Repère l\'enseigne rouge « ARMES » qui tourne sur le toit.</small></div>';}
   if(v==='missions'){const i=storyIdx();
     if(story)return phTitle('Missions')+`<div class="phRow"><b>${story.contract?'Contrat':'Mission '+(story.i+1)+'/50'} : ${story.title}</b><small>${story.step?story.step.text:''} · récompense $${story.reward.toLocaleString('fr-FR')}</small></div><button class="phRow" data-story="abandon"><b>Abandonner</b><small>La mission échoue</small></button>`;
     if(mission)return phTitle('Missions')+`<div class="phRow"><b>${mission.title}</b><small>En cours · récompense $${mission.reward}</small></div><button class="phRow" data-m="abandon"><b>Abandonner</b><small>La mission s'arrête</small></button>`;
@@ -2831,6 +2838,8 @@ function phExtra(v){
   return null;
 }
 function phExtraClick(ds){
+  if(ds.armgo){closePhone();findNearest('armurerie');return true;}
+  if(ds.armweb){if(prison.on){toast('Pas d\'Internet en prison…');return true;}closePhone();openShop(true);return true;}
   if(ds.sell!=null){const it=player.inv[+ds.sell];if(!it)return true;const p=itemPrice(it);player.inv.splice(+ds.sell,1);player.money+=p;sfx.coin();toast(`Vendu : ${ITEMS[it.id].n} +$${p}`);save();phView('revente');return true;}
   if(ds.sellall){const p=player.inv.reduce((a,it)=>a+itemPrice(it),0);player.inv=[];player.money+=p;sfx.coin();toast(`Tout vendu : +$${p.toLocaleString('fr-FR')}`);save();phView('revente');return true;}
   if(ds.car){const t=ds.car,own=saveData.cars||[];if(!own.includes(t)){const pr=SHOPCARS.find(c=>c[0]===t)[1];if(!payOr(pr))return true;own.push(t);saveData.cars=own;save();}
@@ -2924,7 +2933,8 @@ function updateAutoAim(){
   AIM.t=null;if(!aiming())return;camera.getWorldDirection(_v1);const o=camera.position;let best=null,bs=-1;
   const test=(x,y,z,ref,kind,hostile)=>{const dx=x-o.x,dy=y-o.y,dz=z-o.z,l=Math.hypot(dx,dy,dz);if(l>65||l<1.5)return;const c=(dx*_v1.x+dy*_v1.y+dz*_v1.z)/l;
     if(c<(IS_TOUCH?.9:.95))return;const sc=c+(hostile?.05:0)-l*.0004;if(sc>bs&&rayT(o.x,o.y,o.z,x,y,z)*l>l-1.6){bs=sc;best={x,y,z,ref,kind};}};
-  for(const p of peds)if(p.state!=='down'&&!p.gdead)test(p.x,p.y+1.25,p.z,p,'ped',p.gang&&GANGS[p.gang].hostile>0||p.target);
+  for(const p of peds)if(p.state!=='down'&&!p.gdead&&!p.off)test(p.x,p.y+1.25,p.z,p,'ped',p.gang&&GANGS[p.gang].hostile>0||p.target||p.fbi);
+  for(const g of dogs)if(g.state==='chase'&&!g.dead)test(g.x,g.y+.55,g.z,g,'dog',true);
   for(const c of cars)if(c.on&&c.group.visible&&c!==player.car&&(c.ai==='police'||c.target))test(c.x,c.y+.9,c.z,c,'car',true);
   if(MP.on)for(const p of MP.peers.values())if(p.hum&&!sameClan(p))test(p.x,p.y+1.25,p.z,p,'mp',false);
   AIM.t=best;
@@ -3376,7 +3386,7 @@ function updateBubble(dt){if(!bubble.el)return;bubble.t-=dt;const p=bubble.p;if(
   _v4.set(p.x,p.y+2.25,p.z);const d=camera.position.distanceTo(_v4);_v4.project(camera);if(_v4.z>1||d>40){bubble.el.style.display='none';return;}
   bubble.el.style.display='block';bubble.el.style.transform=`translate(${((_v4.x+1)/2*innerWidth).toFixed(0)}px,${((1-_v4.y)/2*innerHeight).toFixed(0)}px) translate(-50%,-100%)`;}
 function npcSay(p,text){persona(p);say(text,p.voice,p.persona==='agressif'||p.gang?1.12:1);showBubble(p,text);
-  const tag=p.cop?'Policier':p.soldier?'Militaire':p.gang?GANGS[p.gang].n:p.staffShop?'Vendeur':p.persona;showSub(`${p.pname} (${tag}) : « ${text} »`);p.talkT=Math.max(p.talkT||0,4);}
+  const tag=p.fbi?'FBI':p.secret&&p.cop?'Agent secret':p.cop?'Policier':p.soldier?'Militaire':p.gang?GANGS[p.gang].n:p.staffShop?'Vendeur':p.persona;showSub(`${p.pname} (${tag}) : « ${text} »`);p.talkT=Math.max(p.talkT||0,4);}
 // who are we talking to : the closest person in front of the player
 function staffPeds(){return HUM.staff.map(a=>{if(!a.staffShop){a.staffShop=true;a.persona='sympa';a.pname=rpick(FIRSTN);a.voice=rnd(.8,1.3);}return a;});}
 function talkTarget(){let best=null,bs=-1;const fx=Math.sin(player.h),fz=Math.cos(player.h);
@@ -3498,6 +3508,7 @@ function initGuards(){
   for(const [x,z] of posts){const p=new Ped();p.soldier=true;p.armed=true;p.kind='soldat';p.post={x,z};p.x=x;p.z=z;p.y=groundY(x,z);p.state='idle';p.h=-Math.PI/2;peds.push(p);persona(p);p.persona='calme';}
 }
 function guardAct(p,dt,P){// returns speed, or null to use the normal ped logic
+  if(p.fbi)return p.off?0:fbiAct(p,dt,P);
   if(p.soldier||p.pguard){const inZone=p.pguard?prison.escaping>0:(inBase(P.x,P.z)||Math.hypot(P.x-ISL.x,P.z-ISL.z)<ISL.r+40),d=Math.hypot(p.x-P.x,p.z-P.z);
     if((inZone||(!p.pguard&&player.stars>=4))&&d<(p.pguard?90:70)&&!player.dead){if(!p.mood||p.mood.k!=='shoot'){p.mood={k:'shoot',t:30};if(Math.random()<.5)npcSay(p,p.pguard?'Évasion ! Arrêtez-le !':'Intrus ! Ouvrez le feu !');}return civAct(p,dt,P)||0;}
     if(p.mood)return civAct(p,dt,P)||0;p.aiming=false;const dx=p.post.x-p.x,dz=p.post.z-p.z,dp=Math.hypot(dx,dz);if(dp>1){p.h=Math.atan2(dx,dz);p.x+=dx/dp*1.6*dt;p.z+=dz/dp*1.6*dt;p.y=groundY(p.x,p.z);return 1.6;}return 0;}
@@ -3581,6 +3592,133 @@ function deliverSpecial(type){const t=CT[type],P=playerPos();let x,z,h=0;
   let c=vehicleSpots.find(v=>v.mine===type&&!v.dead);if(!c){c=new Car(type,rpick(PAINTS));c.mine=type;parked.push(c);vehicleSpots.push(c);}
   c.place(x,z,h);c.y=t.boat?WL:groundY(x,z);c.ai='parked';c.on=true;c.health=100;c.burn=0;c.dead=false;c.vf=0;c.vy=0;c.group.visible=true;c.sync();
   WP=null;setWaypoint(x,z);toast(`${t.name} livré${t.fly==='plane'?' à l\'aéroport':''} (point violet)`);}
+
+/* ================= gun shops easy to find : rotating rooftop sign, red beam, minimap, phone app ================= */
+const ARM={signs:[],hint:false};
+function armSignTex(){const c=document.createElement('canvas');c.width=512;c.height=256;const g=c.getContext('2d');
+  g.fillStyle='#111';g.fillRect(0,0,512,256);g.strokeStyle='#e5484d';g.lineWidth=14;g.strokeRect(7,7,498,242);
+  // gun silhouette (original drawing)
+  g.fillStyle='#e5484d';g.save();g.translate(70,52);g.fillRect(0,0,150,34);g.fillRect(150,6,40,22);g.fillRect(16,34,60,10);
+  g.beginPath();g.moveTo(20,34);g.lineTo(62,34);g.lineTo(52,110);g.lineTo(10,110);g.closePath();g.fill();
+  g.strokeStyle='#e5484d';g.lineWidth=7;g.beginPath();g.arc(80,46,16,0,Math.PI);g.stroke();g.restore();
+  g.fillStyle='#fff';g.font='bold 80px Arial';g.textAlign='center';g.textBaseline='middle';g.fillText('ARMES',372,98,228);
+  g.fillStyle='#e5484d';g.font='bold 40px Arial';g.textAlign='center';g.fillText('ARMURERIE ÉCLAT',256,200);
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;t.anisotropy=4;return t;}
+function genArmSigns(){
+  const tex=armSignTex(),mat=new THREE.MeshBasicMaterial({map:tex,side:THREE.DoubleSide,fog:false}),pole=MAT.frame;
+  for(const b of minimapBld){if(b.k!=='armurerie')continue;const top=(b.h||6)+.2;
+    const grp=new THREE.Group();grp.position.set(b.cx,groundY(b.cx,b.cz)+top,b.cz);
+    const p=new THREE.Mesh(new THREE.CylinderGeometry(.18,.22,5,8),pole);p.position.y=2.5;grp.add(p);
+    const board=new THREE.Group();board.position.y=7.2;grp.add(board);
+    const bd=new THREE.Mesh(new THREE.PlaneGeometry(9,4.5),mat);board.add(bd);
+    const fr=new THREE.Mesh(boxGeo(9.3,4.8,.15),lam('#1a1a1a'));fr.position.z=-.1;fr.scale.z=.5;board.add(fr);
+    const bd2=bd.clone();bd2.position.z=-.2;bd2.rotation.y=Math.PI;board.add(bd2);
+    const lamp=new THREE.Mesh(new THREE.SphereGeometry(.35,10,8),new THREE.MeshBasicMaterial({color:0xff2a2a}));lamp.position.y=9.8;grp.add(lamp);
+    scene.add(grp);const beam=makeBeam(0xe5484d,1.1,70);beam.position.set(b.cx,groundY(b.cx,b.cz)+top,b.cz);beam.ring.visible=false;
+    ARM.signs.push({board,lamp,beam,x:b.cx,z:b.cz});
+    if(b.pyl){const [px,pz]=b.pyl,y0=groundY(px,pz),pg=new THREE.Group();pg.position.set(px,y0,pz);pg.rotation.y=b.ry||0;
+      for(const sx of[-1.1,1.1]){const c=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,6.2,8),pole);c.position.set(sx,3.1,0);pg.add(c);}
+      const t=new THREE.Mesh(new THREE.PlaneGeometry(3.6,1.8),mat);t.position.set(0,5.4,.08);pg.add(t);const t2=t.clone();t2.rotation.y=Math.PI;t2.position.z=-.08;pg.add(t2);
+      const bk=new THREE.Mesh(boxGeo(3.8,2,.12),lam('#1a1a1a'));bk.position.y=5.4;pg.add(bk);scene.add(pg);}}
+}
+function nearestShop(kind,P){let best=null,bd=1e9;for(const s of spots){if(s.kind!==kind)continue;const d=Math.hypot(s.x-P.x,s.z-P.z);if(d<bd){bd=d;best=s;}}return best?{s:best,d:bd}:null;}
+function updateArm(dt,P){
+  for(const s of ARM.signs){s.board.rotation.y+=dt*.8;s.lamp.visible=(gameT*2|0)%2===0;const d=Math.hypot(s.x-P.x,s.z-P.z);s.beam.visible=d>35;}
+  if(!ARM.hint&&gameT>3){ARM.hint=true;const n=nearestShop('armurerie',P);if(n)toast(`🔫 Armurerie la plus proche : ${Math.round(n.d)} m\nSuis l'enseigne rouge « ARMES » et le A rouge sur la mini-carte (appli Armurerie sur le téléphone)`);}
+}
+function armMarkers(list,P){const n=nearestShop('armurerie',P);if(n&&!prison.on)list.push({x:n.s.x,z:n.s.z,c:'#e5484d',l:'A',edge:true});
+  for(const c of FBI.cars)if(c.ai==='police')list.push({x:c.x,z:c.z,c:(gameT*4|0)%2?'#111':'#e5484d',dot:true,edge:true});}
+
+/* ================= FBI (3 stars and more) and undercover agents ================= */
+const FBI={cars:[],agents:[],cd:0,told:false};
+const FBIN=['Moreau','Lefèvre','Kessler','Blanc','Navarro','Hartmann','Vidal','Rousseau'];
+function fbiLook(){return {shirt:'#15171b',pants:'#15171b',skin:rpick(SKINS),hair:rpick(['#111','#2b1a10','#3a2a1a']),shoes:'#0c0c0c'};}
+function initFBI(){
+  for(let i=0;i<3;i++){const c=new Car('sedan','#0b0d10');c.fbi=true;c.ai='off';c.on=false;c.group.visible=false;c.x=c.z=9999;
+    const top=(c.T.roofY||1.4);const mk=m=>{const me=new THREE.Mesh(boxGeo(.28,.09,.12),m);c.body.add(me);return me;};
+    c.fl1=mk(CARM.red);c.fl1.position.set(-.25,top*.72,(c.T.len||4.5)*.13);c.fl2=mk(CARM.blue);c.fl2.position.set(.25,top*.72,(c.T.len||4.5)*.13);
+    FBI.cars.push(c);}
+  for(let i=0;i<6;i++){const p=new Ped();p.cop=true;p.fbi=true;p.armed=true;p.kind=rpick(['adam','femme','pull']);setLook(p.m,fbiLook());
+    p.post={x:99999,z:99999};p.off=true;p.x=p.z=99999;p.state='idle';peds.push(p);persona(p);p.persona='calme';p.pname='Agent spécial '+rpick(FBIN);FBI.agents.push(p);}
+  // undercover agents among the passers-by
+  let k=0;for(const p of peds){if(p.gang||p.cop||p.soldier||p.pguard||p.post)continue;if(k++%9===4)p.secret=true;}
+}
+function fbiCarOff(c){c.ai='off';c.on=false;c.group.visible=false;c.x=c.z=9999;c.agentsOut=false;}
+function fbiAgentOff(p){p.off=true;p.mood=null;p.aiming=false;releaseHum(p);p.m.group.visible=false;p.x=p.z=99999;}
+function updateFBI(dt,P){
+  FBI.cd-=dt;const st=player.stars,on=st>=3&&policeETA<=0&&!prison.on&&!player.dead;
+  const active=FBI.cars.filter(c=>c.ai==='police');
+  if(on&&FBI.cd<=0&&active.length<(st>=5?3:st>=4?2:1)){const c=FBI.cars.find(c=>c.ai==='off'||(c.ai==='traffic'&&Math.hypot(c.x-P.x,c.z-P.z)>80));
+    const s=c&&(Math.abs(P.x)>HALF+12||Math.abs(P.z)>HALF+12?offroadSpot(P):randomRoadSpot(P,80,160));
+    if(s){c.place(s.x,s.z,s.h);c.ai='police';c.graph=false;c.dead=false;c.health=130;c.burn=0;c.agentsOut=false;c.setDriver(true,fbiLook());c.on=true;c.group.visible=true;c.vx=Math.sin(s.h)*15;c.vz=Math.cos(s.h)*15;FBI.cd=7;
+      if(!FBI.told){FBI.told=true;toast('🕶 LE FBI S\'EN MÊLE !\nBerlines noires, agents en costume : ils tirent à vue');sfx.fail();}}}
+  for(const c of FBI.cars){if(c.ai==='off')continue;const d=Math.hypot(c.x-P.x,c.z-P.z);const f=(gameT*7|0)%2;
+    c.fl1.material=c.ai==='police'&&f?CARM.red:CARM.off;c.fl2.material=c.ai==='police'&&!f?CARM.blue:CARM.off;
+    if(c.dead||c.ai==='wreck'){if(d>150)fbiCarOff(c);continue;}
+    if(c.ai==='police'&&!on&&st<3){c.ai='traffic';c.cruise=12;snapToGraph(c);}
+    if(c.ai==='traffic'&&d>220)fbiCarOff(c);
+    // the agents jump out when the car is close to the player
+    if(c.ai==='police'&&!c.agentsOut&&d<28&&Math.hypot(c.vx,c.vz)<6){c.agentsOut=true;let n=0;
+      for(const p of FBI.agents){if(!p.off||n>=2)continue;n++;const s=n===1?1:-1;p.off=false;p.x=c.x+Math.cos(c.h)*1.6*s;p.z=c.z-Math.sin(c.h)*1.6*s;p.y=groundY(p.x,p.z);p.state='walk';p.h=Math.atan2(P.x-p.x,P.z-p.z);p.m.group.visible=true;
+        p.mood={k:'shoot',t:60};if(n===1)npcSay(p,rpick(['FBI ! À terre, tout de suite !','FBI ! Mains en l\'air !','Agents fédéraux ! Ne bougez plus !']));}}}
+  for(const p of FBI.agents){if(p.off)continue;const d=Math.hypot(p.x-P.x,p.z-P.z);if(p.state==='down'&&p.t>8){fbiAgentOff(p);continue;}if((st<3&&d>40)||d>160)fbiAgentOff(p);}
+  // undercover agents reveal themselves
+  if(st>=2&&policeETA<=0)for(const p of peds){if(!p.secret||p.cop||p.state==='down'||p.state==='flee')continue;const d=Math.hypot(p.x-P.x,p.z-P.z);if(d>22||Math.random()>dt*.8)continue;
+    p.cop=true;p.armed=true;p.mood={k:st>=3?'shoot':'arrest',t:40};persona(p);p.pname='Agent secret '+rpick(FBIN);npcSay(p,rpick(['Agent secret ! Vous êtes cerné !','Surprise… police secrète. Les mains !','Couverture terminée : vous êtes en état d\'arrestation !']));}
+}
+function fbiAct(p,dt,P){// FBI agents : run towards the player and shoot
+  const d=Math.hypot(p.x-P.x,p.z-P.z);if(player.stars<1||player.dead){p.aiming=false;p.mood=null;return 0;}
+  p.h+=wrapA(Math.atan2(P.x-p.x,P.z-p.z)-p.h)*Math.min(1,dt*8);p.aiming=true;let sp=0;if(d>14)sp=5.2;else if(d>8)sp=2;
+  if(sp){p.x+=Math.sin(p.h)*sp*dt;p.z+=Math.cos(p.h)*sp*dt;resolveCircle(p,.3,false);p.y=groundY(p.x,p.z);}
+  p.fireT=(p.fireT||rnd(.4,1))-dt;if(p.fireT<=0&&d<50){p.fireT=rnd(.7,1.3);gangShoot(p,d*.85);}
+  if(d<2.2&&player.stars<=3&&!player.car&&Math.hypot(P.vx,P.vz)<1.5){p.cuffT=(p.cuffT||0)+dt;if(p.cuffT>1.5){p.cuffT=0;npcSay(p,'Menottez-le !');busted();}}
+  return sp;}
+
+/* ================= police dogs (K9) ================= */
+const dogs=[];
+function makeDog(){const g=new THREE.Group(),tan=lam('#a0703a'),blk=lam('#1c1712'),vest=lam('#1e3a8a');
+  const box=(w,h,d,x,y,z,m,par=g)=>{const me=new THREE.Mesh(boxGeo(w,h,d),m);me.position.set(x,y,z);me.castShadow=true;par.add(me);return me;};
+  const body=new THREE.Group();body.position.y=.55;g.add(body);
+  box(.34,.32,.9,0,0,0,tan,body);box(.36,.12,.62,0,.15,-.02,blk,body);box(.37,.2,.36,0,.02,.12,vest,body);
+  const head=new THREE.Group();head.position.set(0,.2,.5);body.add(head);
+  box(.26,.25,.3,0,0,0,tan,head);box(.15,.13,.22,0,-.04,.22,blk,head);
+  for(const s of[-1,1]){const e=new THREE.Mesh(new THREE.ConeGeometry(.06,.17,4),blk);e.position.set(s*.08,.18,-.04);head.add(e);}
+  const tail=new THREE.Group();tail.position.set(0,.08,-.45);body.add(tail);box(.07,.07,.38,0,0,-.19,tan,tail);tail.rotation.x=.6;
+  const legs=[];for(const [x,z] of[[-.11,.33],[.11,.33],[-.11,-.33],[.11,-.33]]){const L=new THREE.Group();L.position.set(x,-.12,z);body.add(L);box(.09,.45,.1,0,-.22,0,z>0?tan:blk,L);legs.push(L);}
+  scene.add(g);return {g,body,head,tail,legs};}
+function initDogs(){
+  const handlers=peds.filter(p=>p.cop&&!p.fbi&&!p.pguard).slice(0,IS_TOUCH?2:4);
+  for(let i=0;i<(IS_TOUCH?4:7);i++){const m=makeDog();const d={m,x:9999,z:9999,y:0,h:0,hp:40,dead:false,state:'off',ph:Math.random()*6,biteT:0,barkT:rnd(1,4),handler:handlers[i]||null,t:0};
+    if(d.handler)d.state='heel';else m.g.visible=false;dogs.push(d);}
+}
+function dogHit(d,dmg){if(d.dead)return;d.hp-=dmg;d.state='chase';if(d.hp<=0){d.dead=true;d.t=0;sfx.thud();if(wantedCD<=0){addWanted(1);wantedCD=3;}}}
+function releaseDog(x,z){const d=dogs.find(d=>d.state==='off');if(!d)return;d.state='chase';d.dead=false;d.hp=40;d.x=x;d.z=z;d.y=groundY(x,z);d.t=0;d.m.g.visible=true;d.m.body.rotation.z=0;sfx.bark&&sfx.bark(1);}
+function updateDogs(dt,P){
+  const want=player.stars>=1&&policeETA<=0&&!player.dead&&!prison.on;
+  // a dog jumps out of police cars that reach the player (2 stars and more)
+  if(player.stars>=2&&want)for(const c of police){if(c.ai!=='police'||c.dogOut)continue;if(Math.hypot(c.x-P.x,c.z-P.z)<24&&c.speed<5&&Math.random()<.5){c.dogOut=true;releaseDog(c.x+Math.cos(c.h)*1.6,c.z-Math.sin(c.h)*1.6);}else if(Math.hypot(c.x-P.x,c.z-P.z)<24)c.dogOut=true;}
+  if(!player.stars)for(const c of police)c.dogOut=false;
+  for(const d of dogs){if(d.state==='off')continue;const m=d.m;d.t+=dt;
+    if(d.dead){m.body.rotation.z=Math.min(Math.PI/2,m.body.rotation.z+dt*6);m.body.position.y=Math.max(.2,m.body.position.y-dt*2);
+      if(d.t>20&&Math.hypot(d.x-P.x,d.z-P.z)>60){m.body.rotation.z=0;m.body.position.y=.55;d.dead=false;d.hp=40;if(d.handler&&!d.handler.off){d.state='heel';d.x=d.handler.x;d.z=d.handler.z;}else{d.state='off';m.g.visible=false;}}continue;}
+    const dp=Math.hypot(d.x-P.x,d.z-P.z);let tx=d.x,tz=d.z,sp=0;
+    if(d.handler&&(d.handler.state==='down'||d.handler.off)&&d.state==='heel'){d.state='off';m.g.visible=false;continue;}
+    if(d.state==='heel'){const h=d.handler;if(Math.hypot(h.x-d.x,h.z-d.z)>60){d.x=h.x+1;d.z=h.z;}
+      tx=h.x+Math.cos(h.h)*.9;tz=h.z-Math.sin(h.h)*.9;const dh=Math.hypot(tx-d.x,tz-d.z);sp=dh>.4?Math.min(7,dh*2.2):0;
+      if(want&&dp<45){d.state='chase';if(Math.random()<.6)npcSay(h,rpick(['Attaque !','Vas-y, chope-le !','Le chien est lâché !']));}}
+    else if(d.state==='chase'){
+      if(!want||dp>90){if(d.handler&&!d.handler.off){d.state='heel';}else if(dp>50){d.state='off';m.g.visible=false;continue;}else{tx=d.x;tz=d.z;}}
+      else{tx=P.x;tz=P.z;sp=dp>1.1?(player.car?7:8.6):0;
+        if(dp<1.5){d.biteT-=dt;if(d.biteT<=0){d.biteT=.85;if(!player.car){hurtPlayer(6,Math.random()<.22);sfx.bark&&sfx.bark(1.2);m.head.rotation.x=-.5;if(Math.random()<.25)toast('Le chien policier te mord !');}}}}}
+    if(sp>0){const a=Math.atan2(tx-d.x,tz-d.z);d.h+=wrapA(a-d.h)*Math.min(1,dt*9);d.x+=Math.sin(d.h)*sp*dt;d.z+=Math.cos(d.h)*sp*dt;
+      if(typeof resolveCircle==='function'){const o={x:d.x,z:d.z,y:d.y};resolveCircle(o,.3,false);d.x=o.x;d.z=o.z;}}
+    else if(d.state==='chase')d.h+=wrapA(Math.atan2(P.x-d.x,P.z-d.z)-d.h)*Math.min(1,dt*6);
+    d.y=groundY(d.x,d.z);d.ph+=dt*(sp>0?sp*1.9:2);const amp=sp>0?Math.min(.9,.25+sp*.08):0;
+    m.legs[0].rotation.x=m.legs[3].rotation.x=Math.sin(d.ph)*amp;m.legs[1].rotation.x=m.legs[2].rotation.x=-Math.sin(d.ph)*amp;
+    m.body.position.y=.55+Math.abs(Math.sin(d.ph))*amp*.06;m.tail.rotation.y=Math.sin(gameT*(d.state==='heel'?9:4))*.5;m.head.rotation.x*=.85;
+    m.g.position.set(d.x,d.y,d.z);m.g.rotation.y=d.h;m.g.visible=dp<160;
+    d.barkT-=dt;if(d.barkT<=0){d.barkT=d.state==='chase'?rnd(.8,1.8):rnd(6,14);if(dp<45&&sfx.bark)sfx.bark(Math.max(.15,1-dp/45));}}
+}
 
 /* ================= multiplayer (WebRTC peer-to-peer, Trystero + Nostr relays, no server) ================= */
 const MP={on:false,joining:false,room:null,self:null,peers:new Map(),sendT:0,code:'public',name:'',hitCD:0};
@@ -3728,6 +3866,9 @@ flushStatic();
 initVehicles();
 initGangs();
 initGuards();
+initFBI();
+initDogs();
+genArmSigns();
 initWorldVehicles();
 initMilHeli();
 initSeaLife();

@@ -57,6 +57,13 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Armurerie, FBI et chiens policiers
+
+- **Armurerie** : 4 boutiques d'armes (2 à Néo Cité, Port-Soleil, Sable-Rouge). Enseigne rouge « ARMES » qui tourne sur le toit, panneau au bord du trottoir, faisceau rouge visible de loin et **A rouge** toujours affiché sur la mini-carte. Appli **Armurerie** sur le téléphone : GPS vers la plus proche ou achat en ligne (livraison +15 %).
+- **FBI** (3 étoiles et plus) : berlines noires banalisées avec gyrophares, les agents en costume descendent et tirent ; ils peuvent te menotter de près.
+- **Agents secrets** : certains passants sont des policiers infiltrés qui se révèlent quand tu es recherché (2 étoiles et plus).
+- **Chiens policiers** : des maîtres-chiens patrouillent, et à partir de 2 étoiles les voitures de police lâchent un chien ; il court plus vite que toi et mord. On peut le repousser (coup de pied) ou lui tirer dessus (+1 étoile).
+
 ## La carte complète
 
 ![Carte de Néo Cité](carte-neo-cite.jpg)
