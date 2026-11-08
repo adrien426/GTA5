@@ -50,6 +50,13 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Policiers à pied (arrestation, « je me rends », pot-de-vin), militaires (base, île interdite), membres de gang (vente d'armes, initiation pour rejoindre le gang), vendeurs (« je voudrais acheter », braquage à la voix avec une arme).
 - Les gens t'adressent aussi la parole quand tu passes à côté.
 
+## Police, arrestations et prison
+
+- La police met du temps à arriver : 30 s à 1 étoile, 22 s à 2, 15 s à 3, 10 s à 4, 6 s à 5 (compte à rebours sous l'horloge).
+- Un commissariat dans chaque ville. Arrestation : 1 étoile = amende de 150 $ ; 2-3 étoiles = on t'enlève tout (armes, objets, 30 % de l'argent) ; 4-5 étoiles = pénitencier (3 ou 5 minutes).
+- Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
+- Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
+
 ## Previews
 
 Chaque branche poussée est publiée par GitHub Actions sur la branche `gh-pages` :
