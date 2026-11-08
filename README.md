@@ -35,7 +35,10 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Histoire de 50 missions (braquages de bijouterie et de banque, grand braquage avec choix du plan), contrats illimités, petits boulots.
 - Arme à feu en main : viseur affiché et visée automatique sur la cible la plus proche devant soi (cercle rouge).
 - Carte : cliquer / toucher pour placer un point de passage (violet).
-- Île : mer, plages, port, aéroport, base militaire (4 étoiles), île militaire interdite (5 étoiles), hélicoptère militaire qui attaque à 5 étoiles.
+- Grande île de 3,65 km × 3,3 km (12 km²) : centre-ville de Néo Cité, villes de Port-Soleil et Sable-Rouge (armureries, banques, commerces), montagnes enneigées, désert, collines, forêts, routes ; mer à perte de vue, poissons qui suivent le joueur.
+- Carte : zoom ×1 / ×3 / ×8, boutons « Armurerie / Banque / Supérette la plus proche ».
+- Dégâts réalistes : impacts de balles, vitres qui éclatent, carrosserie qui se salit, fumée puis feu ; réparation à la carrosserie.
+- Côtes : mer, plages, port, aéroport, base militaire (4 étoiles), île militaire interdite (5 étoiles), hélicoptère militaire qui attaque à 5 étoiles.
 - Véhicules : bateaux, vedettes, avions, hélicoptères, tanks (en plus des voitures et motos). Hélico : Z/S avancer, Q/D tourner, Espace monter, Maj descendre. Avion : Z/S gaz, Q/D virer, Espace cabrer, Maj piquer.
 - Mer : on nage (pas d'arme), les voitures coulent, poissons, requins (dangereux), baleines.
 - Coiffeur, plus de passants.
