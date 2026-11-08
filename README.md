@@ -30,6 +30,16 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Gangs : territoires des Rouges et des Verts, membres armés, guet-apens.
 - Multijoueur : clans (pas de tir ami), chat vocal au micro selon la distance, appels.
 
+## Missions et monde
+
+- Histoire de 50 missions (braquages de bijouterie et de banque, grand braquage avec choix du plan), contrats illimités, petits boulots.
+- Arme à feu en main : viseur affiché et visée automatique sur la cible la plus proche devant soi (cercle rouge).
+- Carte : cliquer / toucher pour placer un point de passage (violet).
+- Île : mer, plages, port, aéroport, base militaire (4 étoiles), île militaire interdite (5 étoiles), hélicoptère militaire qui attaque à 5 étoiles.
+- Véhicules : bateaux, vedettes, avions, hélicoptères, tanks (en plus des voitures et motos). Hélico : Z/S avancer, Q/D tourner, Espace monter, Maj descendre. Avion : Z/S gaz, Q/D virer, Espace cabrer, Maj piquer.
+- Mer : on nage (pas d'arme), les voitures coulent, poissons, requins (dangereux), baleines.
+- Coiffeur, plus de passants.
+
 ## Previews
 
 Chaque branche poussée est publiée par GitHub Actions sur la branche `gh-pages` :
