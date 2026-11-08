@@ -1090,10 +1090,13 @@ const CT={
   jeep:{len:4.4,w:2.0,bh:.7,ch:.6,cl:2,cz:0,maxV:38,acc:15,name:'Jeep militaire'},
   police:{len:4.5,w:2.0,bh:.62,ch:.58,cl:2.1,cz:-.2,maxV:42,acc:18,name:'Patrouille'},
   citadine:{len:3.7,w:1.85,bh:.6,ch:.55,cl:1.8,cz:-.1,maxV:33,acc:12,name:'Citadine'},
+  supercar:{len:4.5,w:2.0,bh:.5,ch:.46,cl:1.8,cz:-.35,maxV:55,acc:25,name:'Supercar'},
+  concept:{len:4.4,w:2.0,bh:.5,ch:.46,cl:1.8,cz:-.35,maxV:52,acc:23,name:'Concept'},
   moto:{len:2,w:.8,bh:.5,ch:.5,cl:1.2,cz:0,maxV:40,acc:17,name:'Moto',moto:true},
   superbike:{len:2.1,w:.8,bh:.5,ch:.5,cl:1.2,cz:0,maxV:57,acc:27,name:'Superbike',moto:true},
 };
-const PAINTS=['#c0392b','#2c3e50','#ecf0f1','#2980b9','#16a085','#7f8c8d','#111418','#8e44ad','#d35400','#f1c40f','#27ae60','#bdc3c7','#6d1a1a'];
+const PAINTS=['#c0392b','#2c3e50','#ecf0f1','#2980b9','#16a085','#7f8c8d','#111418','#8e44ad','#d35400','#f1c40f','#27ae60','#bdc3c7','#6d1a1a',
+  '#1f3a5f','#5a5e63','#e8e8e6','#7a1f1f','#0f4c3a','#c9b27c','#232527','#a4a9ad','#3d5a80','#b5651d','#f4f1ea','#4a0e0e','#2e4a2e'];
 const paintCache={};function paint(c){return paintCache[c]||(paintCache[c]=new THREE.MeshPhongMaterial({color:c,shininess:110,specular:0x777777}));}
 const CARM={glass:new THREE.MeshPhongMaterial({color:0x6f8fa6,transparent:true,opacity:.42,shininess:150,specular:0xffffff,depthWrite:false}),
   head:new THREE.MeshLambertMaterial({color:0xfffbea,emissive:0xfff2c0,emissiveIntensity:.15}),
@@ -1113,7 +1116,7 @@ const PROF={
     glass:[[.3,1.09],[.3,1.9],[1.0,1.93],[1.65,1.1]],roof:[[-2.52,1.93],[1.02,1.93],[1.0,2.0],[-2.5,2.0]],
     cargo:[[-2.52,1.05],[-2.52,1.96],[.3,1.96],[.3,1.05]]},
 };
-PROF.taxi=PROF.sedan;PROF.police=PROF.sedan;PROF.citadine=PROF.sedan;PROF.moto=PROF.sport;PROF.superbike=PROF.sport;
+PROF.taxi=PROF.sedan;PROF.police=PROF.sedan;PROF.citadine=PROF.sedan;PROF.moto=PROF.sport;PROF.superbike=PROF.sport;PROF.supercar=PROF.sport;PROF.concept=PROF.sport;
 PROF.jeep={L:4.4,w:2.0,wb:1.35,seat:.78,headY:.95,tailY:.95,body:[[-2.2,.45],[-2.22,1.18],[.95,1.18],[1.35,1.12],[2.2,1.05],[2.22,.45]],
   glass:[[-1.05,1.17],[-1.05,1.8],[.6,1.82],[.98,1.19]],roof:[[-1.1,1.79],[.62,1.81],[.6,1.88],[-1.08,1.86]]};
 for(const k in CT){const p=PROF[k];Object.assign(CT[k],{len:p.L,w:p.w,wb:p.wb,seat:p.seat,roofY:Math.max(...p.roof.map(q=>q[1])),rz:(p.roof[0][0]+p.roof[1][0])/2,dz:p.glass[2][0]-.45});}
@@ -1142,9 +1145,9 @@ function carGeos(type){
 
 /* ================= 3D models (assets/models) ================= */
 const VM={};      // loaded models : key -> {scene,meta,wheels}
-const VTYPE={sedan:['volvo',4.55],police:['volvo',4.65],sport:['nsx',4.45],taxi:['kia',3.95],citadine:['kia',3.7],moto:['sonic',2.0],superbike:['h2r',2.15]};
+const VTYPE={sedan:['volvo',4.55],police:['volvo',4.65],sport:['nsx',4.45],taxi:['kia',3.95],citadine:['kia',3.7],supercar:['ferrari',4.55],concept:['concept',4.45],moto:['sonic',2.0],superbike:['h2r',2.15]};
 const WMOD={pistolet:'deagle',assaut:'ak',smg:'aug',carabine:'m16',minigun:'minigun',laser:'rail'};
-const MODEL_FILES=[['volvo',360],['kia',460],['nsx',665],['sonic',220],['h2r',290],['heli',90],['w_deagle',70],['w_ak',290],['w_aug',70],['w_m16',240],['w_minigun',120],['w_rail',70]];
+const MODEL_FILES=[['volvo',465],['volvo_lo',125],['kia',570],['kia_lo',125],['nsx',885],['nsx_lo',380],['ferrari',425],['ferrari_lo',90],['concept',975],['concept_lo',250],['sonic',220],['h2r',290],['heli',90],['w_deagle',70],['w_ak',290],['w_aug',70],['w_m16',240],['w_minigun',120],['w_rail',70]];
 const _vp=new THREE.Vector3();
 function multiMat(a){return {set material(m){for(const x of a)x.material=m;},get material(){return a.length?a[0].material:null;}};}
 function gltfLoader(){const l=new THREE.GLTFLoader();if(window.MeshoptDecoder)l.setMeshoptDecoder(MeshoptDecoder);return l;}
@@ -1175,6 +1178,7 @@ function loadModels(onP){
     .catch(e=>console.warn('Modèle indisponible',k,e))));
 }
 function applyVehicleModels(){
+  for(const k in VM)if(VM[k+'_lo'])VM[k].lo=VM[k+'_lo'];
   for(const type in VTYPE){const [key,L]=VTYPE[type],v=VM[key];if(!v||!v.wheels)continue;const m=v.meta,t=CT[type],s=L/m.len;
     t.model=key;t.ms=s;t.len=m.len*s;
     const fw=v.wheels[0].p;t.wb=Math.abs(fw[2])*s;
@@ -1205,7 +1209,8 @@ class Car{
     this.initRest();
   }
   buildModel(vm){
-    const t=this.T,s=t.ms,b=new THREE.Group();b.add(vm.scene.getObjectByName('body').clone());b.scale.setScalar(s);this.body.add(b);
+    const t=this.T,s=t.ms,mk=v=>{const g=new THREE.Group();g.add(v.scene.getObjectByName('body').clone());g.scale.setScalar(s);return g;};
+    let b=mk(vm);if(vm.lo){const l=new THREE.LOD();l.addLevel(b,0);l.addLevel(mk(vm.lo),t.moto?22:30);b=l;}this.body.add(b);
     const P=[],Hd=[],Tl=[];
     b.traverse(o=>{if(!o.isMesh)return;const r=o.userData.role;o.castShadow=r!=='glass';
       if(r==='paint')P.push(o);else if(r==='glass'){o.material=CARM.glass;o.renderOrder=1;}else if(r==='head')Hd.push(o);else if(r==='tail')Tl.push(o);});
@@ -1217,7 +1222,9 @@ class Car{
     if(this.type==='taxi'){const sg=new THREE.Mesh(boxGeo(.62,.2,.3),CARM.taxiSign);sg.position.set(0,t.roofY+.1,t.rz);this.body.add(sg);}
     this.wheels=[];
     for(const wd of vm.wheels){const w=new THREE.Group();w.rotation.order='YXZ';
-      if(wd){w.position.set(wd.p[0]*s,wd.p[1]*s,wd.p[2]*s);const m=new THREE.Group(),mc=wd.o.clone();if(wd.piv)mc.position.sub(_vp.fromArray(wd.piv));m.add(mc);m.scale.setScalar(s);
+      if(wd){w.position.set(wd.p[0]*s,wd.p[1]*s,wd.p[2]*s);const wm=o=>{const g=new THREE.Group(),mc=o.clone();if(wd.piv)mc.position.sub(_vp.fromArray(wd.piv));g.add(mc);g.scale.setScalar(s);return g;};
+        let m=wm(wd.o);const lw=vm.lo&&vm.lo.wheels&&vm.lo.wheels.find(x=>x&&x.p===wd.p||x&&x.p[0]===wd.p[0]&&x.p[2]===wd.p[2]);
+        if(lw){const l=new THREE.LOD();l.addLevel(m,0);l.addLevel(wm(lw.o),25);m=l;}
         if(wd.flip){const f=new THREE.Group();f.rotation.y=Math.PI;f.add(m);w.add(f);}else w.add(m);
         m.traverse(o=>{if(o.isMesh)o.castShadow=true;});}
       (t.moto?this.body:this.group).add(w);this.wheels.push(w);}
@@ -1382,7 +1389,9 @@ function hurtPlayer(d,knock){if(player.dead)return;player.hp=Math.max(0,player.h
 
 /* ================= realistic humans (skinned Mixamo body, pooled by distance) ================= */
 const HUM={ready:false,proto:null,H:1.8,clips:{},bodyMap:null,hairMap:null,pool:[],mats:new Map(),staff:[],playerH:null,kinds:{}};
-const HKINDS={adam:'Adam',james:'James',base:'Personnalisé (tenues)'};let playerChar='base';
+const HKINDS={adam:'Adam',james:'James',michelle:'Michelle',soldier:'Soldat',base:'Personnalisé (tenues)'};
+const PED_MIX=['adam','base','michelle','james','adam','base','soldier','michelle'];
+const PED_TINT={adam:{shirt:/Hoodie/,pants:/Pants/},soldier:{shirt:/vanguard_Mesh/}};let playerChar='base';
 const HPOOL=IS_TOUCH?10:22,HDIST=IS_TOUCH?40:62;
 function releaseHum(a){if(a&&a.hum){a.hum.owner=null;a.hum.root.visible=false;a.hum=null;}}
 function humMat(kind,col){
@@ -1402,7 +1411,12 @@ function makeHuman(kind){
   return {root,meshes,mixer,acts,cur:null,owner:null,kind,fixed:K.fixed,H:K.H};
 }
 function applyLook(h,lk,ht=1){
-  if(h.fixed){h.root.scale.setScalar(1.78*ht/h.H);return;}
+  if(h.fixed){h.root.scale.setScalar(1.78*ht/h.H);const T=PED_TINT[h.kind];
+    if(T)for(const o of h.meshes){const base=o.userData.baseMat||(o.userData.baseMat=o.material);let col=null;
+      if(h!==HUM.playerH)for(const k in T)if(T[k].test(o.name))col=lk[k];
+      if(!col){o.material=base;continue;}const key=h.kind+o.name+col;let m=HUM.mats.get(key);
+      if(!m){m=base.clone();m.color.set(col).lerp(new THREE.Color('#ffffff'),.25);HUM.mats.set(key,m);}o.material=m;}
+    return;}
   for(const o of h.meshes){const n=o.name;
     if(/Hair|Eyelash/.test(n)){o.material=humMat('hair',lk.hair||'#1a1410');if(/Hair/.test(n))o.visible=!lk.bald;}
     else if(/Shirt/.test(n))o.material=humMat('cloth',lk.shirt);
@@ -1424,10 +1438,10 @@ function fetchJSON(url,onP){return fetch(url).then(async r=>{if(!r.ok)throw r.st
 function loadHumans(onProgress){
   const prog=onProgress||(()=>{});
   if(!THREE.GLTFLoader||!THREE.SkeletonUtils||location.protocol==='file:')return Promise.resolve();
-  const ld=gltfLoader();let pg=0,pa=0,pj=0,pd=0;const upd=()=>prog(pg*.52+pa*.18+pj*.08+pd*.22);
+  const ld=gltfLoader();let pg=0,pa=0,pj=0,pd=0,pm=0,ps=0;const upd=()=>prog(pg*.36+pa*.13+pj*.06+pd*.17+pm*.16+ps*.12);
   const extra=(f,cb)=>new Promise(r=>ld.load('assets/models/'+f,r,e=>{if(e&&e.total)cb(e.loaded/e.total);},e=>{console.warn('Personnage indisponible',f,e);r(null);}));
   return Promise.all([new Promise((r,j)=>ld.load('assets/human.glb',r,e=>{if(e&&e.total){pg=e.loaded/e.total;upd();}},j)),fetchJSON('assets/anims.json',f=>{pa=f;upd();}),
-    extra('james.glb',f=>{pj=f;upd();}),extra('adam.glb',f=>{pd=f;upd();})]).then(([g,an,gj,gd])=>{
+    extra('james.glb',f=>{pj=f;upd();}),extra('adam.glb',f=>{pd=f;upd();}),extra('michelle.glb',f=>{pm=f;upd();}),extra('soldier.glb',f=>{ps=f;upd();})]).then(([g,an,gj,gd,gm,gs])=>{
     const sc=g.scene;let hipsY=1.04;
     sc.traverse(o=>{if(o.isBone){o.name=o.name.replace(/^mixamorig\d*/,'mixamorig');if(/Hips$/.test(o.name))hipsY=o.position.y;}
       if(o.isMesh&&o.material){if(/hair/i.test(o.material.name))HUM.hairMap=o.material.map;else HUM.bodyMap=HUM.bodyMap||o.material.map;}});
@@ -1437,9 +1451,9 @@ function loadHumans(onProgress){
       HUM.clips[k]=c;}
     HUM.proto=sc;const box=new THREE.Box3().setFromObject(sc);HUM.H=Math.max(.5,box.max.y-box.min.y);
     HUM.kinds.base={kind:'base',proto:sc,clips:HUM.clips,H:HUM.H,fixed:false};
-    for(const [kind,gg] of [['james',gj],['adam',gd]])if(gg)HUM.kinds[kind]=prepFixedHuman(kind,gg.scene,an);
+    for(const [kind,gg] of [['james',gj],['adam',gd],['michelle',gm],['soldier',gs]])if(gg)HUM.kinds[kind]=prepFixedHuman(kind,gg.scene,an);
     const kinds=Object.keys(HUM.kinds);
-    for(let i=0;i<HPOOL;i++)HUM.pool.push(makeHuman(i%4<2?'base':kinds[(i%4-1)%kinds.length]));
+    const mix=PED_MIX.filter(k=>HUM.kinds[k]);for(let i=0;i<HPOOL;i++)HUM.pool.push(makeHuman(mix[i%mix.length]));
     playerChar=HUM.kinds[saveData.char]?saveData.char:HUM.kinds.adam?'adam':'base';
     HUM.playerH=makeHuman(playerChar);applyLook(HUM.playerH,player.m.look,1.02);charButtons();
     for(const s of staff)HUM.staff.push({m:s,x:s.group.position.x,y:s.group.position.y,z:s.group.position.z,h:s.group.rotation.y,staff:true,mannequin:!!s.mannequin,curSpeed:0,state:'idle',ht:rnd(.95,1.05)});
@@ -1458,7 +1472,7 @@ function prepFixedHuman(kind,sc,an){
   return {kind,proto:sc,clips,H:top&&v.y>1&&v.y<2.5?v.y:1.8,fixed:true};
 }
 function setPlayerChar(k){
-  if(!HUM.kinds[k]||!HUM.ready)return;playerChar=k;const old=HUM.playerH;scene.remove(old.root);
+  if(!HUM.kinds[k]||!HUM.ready)return;playerChar=k;const old=HUM.playerH;if(old.root.parent)old.root.parent.remove(old.root);
   HUM.playerH=makeHuman(k);applyLook(HUM.playerH,player.m.look,1.02);charButtons();save();
 }
 function charButtons(){const box=$('chars');if(!box)return;box.hidden=Object.keys(HUM.kinds).length<2;box.innerHTML='';
@@ -1472,8 +1486,9 @@ function ridePose(h){if(!h.rideB){h.rideB=[];for(const n in RIDE){const b=h.root
 function updateHumans(dt,P){
   if(!HUM.ready)return;
   const ph=HUM.playerH,moto=player.car&&player.car.T.moto?player.car:null;player.m.group.visible=false;ph.root.visible=!player.car||!!moto;
-  if(moto){moto.body.updateMatrixWorld(true);_v2.set(0,moto.T.seatY,moto.T.seatZ);moto.body.localToWorld(_v2);ph.root.position.copy(_v2);
-    moto.body.getWorldQuaternion(ph.root.quaternion);setAnim(ph,'idle',0);ph.mixer.update(dt);ridePose(ph);}
+  if(moto){if(ph.root.parent!==moto.body){moto.body.add(ph.root);ph.root.position.set(0,moto.T.seatY,moto.T.seatZ);ph.root.quaternion.identity();}
+    setAnim(ph,'idle',0);ph.mixer.update(dt);ridePose(ph);}
+  else if(ph.root.parent!==scene)scene.add(ph.root);
   if(!player.car){ph.root.position.set(player.x,player.y,player.z);ph.root.rotation.set(0,player.h,0);
     if(player.knock>0)setAnim(ph,player.knock>1.4?'trip':'getUp',player.knock>1.4?1:2.2);
     else if(player.atkT>0&&player.weap==='poings')setAnim(ph,'kick',1.4);
@@ -1487,7 +1502,7 @@ function updateHumans(dt,P){
     cand.sort((x,y)=>x[0]-y[0]);const want=new Set(cand.slice(0,HPOOL).map(c=>c[1]));
     for(const h of HUM.pool)if(h.owner&&!want.has(h.owner)){const o=h.owner;releaseHum(o);if(o.staff)o.m.group.visible=true;}
     for(const a of want){if(a.hum)continue;
-      if(!a.kind)a.kind=a.staff||a.mannequin?'base':rpick(['base','base',...Object.keys(HUM.kinds)]);
+      if(!a.kind)a.kind=a.staff||a.mannequin?'base':rpick(PED_MIX.filter(k=>HUM.kinds[k]));
       const h=HUM.pool.find(h=>!h.owner&&h.kind===a.kind)||HUM.pool.find(h=>!h.owner&&!h.fixed)||HUM.pool.find(h=>!h.owner);if(!h)break;
       h.owner=a;a.hum=h;h.mixer.stopAllAction();h.cur=null;a.ht=a.ht||rnd(.93,1.07);
       applyLook(h,a.mannequin?{shirt:a.m.look.shirt,pants:a.m.look.pants,skin:'#e4e4e4',hair:'#ddd',shoes:'#ddd',bald:true}:a.m.look,a.ht);
@@ -1576,11 +1591,11 @@ function spawnTraffic(c,P,minD,maxD){
 }
 const traffic=[],police=[],parked=[];
 function initVehicles(){
-  const TT=['sedan','citadine','sedan','sport','van','taxi','citadine','van'];
+  const TT=['sedan','citadine','sedan','sport','van','taxi','citadine','supercar','sedan','concept','van','citadine','taxi'];
   const P={x:player.x,z:player.z};
   for(let i=0;i<(IS_TOUCH?18:26);i++){const c=new Car(TT[i%TT.length]);traffic.push(c);if(!spawnTraffic(c,P,20,240))spawnTraffic(c,P,0,600);}
   for(const col of lots)for(const lot of col)if(lot.spots){const sp=lot.spots.slice().sort(()=>Math.random()-.5).slice(0,4);
-    for(const s of sp){const c=new Car(rpick(CT.moto.model&&Math.random()<.2?['moto','superbike']:['sedan','sport','van','citadine','taxi']));c.place(s.x,s.z,s.h);c.ai='parked';parked.push(c);}}
+    for(const s of sp){const c=new Car(rpick(CT.moto.model&&Math.random()<.2?['moto','superbike']:['sedan','sport','van','citadine','taxi','supercar','concept','sedan','citadine']));c.place(s.x,s.z,s.h);c.ai='parked';parked.push(c);}}
   // a few roadside parked cars with key in it near spawn
   for(let i=0;i<12;i++){const s=randomRoadSpot(P,0,500);if(!s)continue;const [rx,rz]=rightOf(s.di,s.dj);const c=new Car(rpick(['sedan','sport','van']));c.place(s.x+rx*2.8,s.z+rz*2.8,s.h);c.ai='parked';parked.push(c);}
   if(CT.moto.model){// motorbikes : one next to the spawn point, a few along the roads
