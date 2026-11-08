@@ -20,6 +20,16 @@ Cocher « Jouer en ligne » sur l'écran titre : tous les joueurs du salon publi
 Connexion pair à pair WebRTC via [Trystero](https://github.com/dmotz/trystero) (signalisation par trackers WebTorrent et relais Nostr publics, aucun serveur à héberger).
 Synchronisés : position, personnage, animations, arme et visée, véhicule (voiture ou moto), tirs, dégâts entre joueurs, K.O. La circulation et les passants restent propres à chaque joueur.
 
+## Vie criminelle
+
+- 3 personnages jouables (Adam le pilote, James le fou de la gâchette, Victoria la femme d'affaires), chacun avec son argent et sa position ; changement depuis la carte (bouton en haut à gauche) ou l'appli Persos.
+- Arme à feu en main = visée directe. Pointer l'arme sur un vendeur = braquage de la caisse.
+- Grenades (armurerie) ; coffres-forts dans la banque et la bijouterie à faire sauter.
+- Objets à ramasser (rues, passants, braquages, coffres) avec un état en % ; appli Revente.
+- Applis : AutoNéo (acheter des véhicules), Emplois (taxi, bus, livreur, vendeur), Commerces (revenus par heure), Clan, Joueurs (appels).
+- Gangs : territoires des Rouges et des Verts, membres armés, guet-apens.
+- Multijoueur : clans (pas de tir ami), chat vocal au micro selon la distance, appels.
+
 ## Previews
 
 Chaque branche poussée est publiée par GitHub Actions sur la branche `gh-pages` :
