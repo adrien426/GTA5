@@ -4,6 +4,11 @@ Jeu de ville ouverte en 3D dans le navigateur (Three.js, aucun build) : conduite
 
 - `index.html` : le jeu
 - `assets/` : modèle humain animé et animations
+- `assets/models/` : modèles 3D issus du dossier Google Drive « 3D », convertis en GLB compressés (meshopt + textures WebP)
+  - véhicules : Volvo V50 (berline, police), Kia Picanto (taxi, citadine), Honda NSX (sportive), Honda Sonic 150R (moto), Kawasaki Ninja H2R (superbike), hélicoptère de police
+  - personnages : James, Adam (squelette Mixamo, animations partagées)
+  - armes : Deagle, AK-47, AUG, carabine, minigun, railgun
+  - chaque `.glb` a un `.json` (dimensions, roues, volant) utilisé par le jeu
 
 ## Previews
 
