@@ -1389,8 +1389,8 @@ function hurtPlayer(d,knock){if(player.dead)return;player.hp=Math.max(0,player.h
 
 /* ================= realistic humans (skinned Mixamo body, pooled by distance) ================= */
 const HUM={ready:false,proto:null,H:1.8,clips:{},bodyMap:null,hairMap:null,pool:[],mats:new Map(),staff:[],playerH:null,kinds:{}};
-const HKINDS={adam:'Adam',james:'James',michelle:'Michelle',soldier:'Soldat',base:'Personnalisé (tenues)'};
-const PED_MIX=['adam','base','michelle','james','adam','base','soldier','michelle'];
+const HKINDS={adam:'Adam',james:'James'};
+const PED_MIX=['adam','james'];
 const PED_TINT={adam:{shirt:/Hoodie/,pants:/Pants/},soldier:{shirt:/vanguard_Mesh/}};let playerChar='base';
 const HPOOL=IS_TOUCH?10:22,HDIST=IS_TOUCH?40:62;
 function releaseHum(a){if(a&&a.hum){a.hum.owner=null;a.hum.root.visible=false;a.hum=null;}}
@@ -1413,7 +1413,7 @@ function makeHuman(kind){
 function applyLook(h,lk,ht=1){
   if(h.fixed){h.root.scale.setScalar(1.78*ht/h.H);const T=PED_TINT[h.kind];
     if(T)for(const o of h.meshes){const base=o.userData.baseMat||(o.userData.baseMat=o.material);let col=null;
-      if(h!==HUM.playerH)for(const k in T)if(T[k].test(o.name))col=lk[k];
+      if(h!==HUM.playerH||lk.custom)for(const k in T)if(T[k].test(o.name))col=lk[k];
       if(!col){o.material=base;continue;}const key=h.kind+o.name+col;let m=HUM.mats.get(key);
       if(!m){m=base.clone();m.color.set(col).lerp(new THREE.Color('#ffffff'),.25);HUM.mats.set(key,m);}o.material=m;}
     return;}
@@ -1438,10 +1438,10 @@ function fetchJSON(url,onP){return fetch(url).then(async r=>{if(!r.ok)throw r.st
 function loadHumans(onProgress){
   const prog=onProgress||(()=>{});
   if(!THREE.GLTFLoader||!THREE.SkeletonUtils||location.protocol==='file:')return Promise.resolve();
-  const ld=gltfLoader();let pg=0,pa=0,pj=0,pd=0,pm=0,ps=0;const upd=()=>prog(pg*.36+pa*.13+pj*.06+pd*.17+pm*.16+ps*.12);
+  const ld=gltfLoader();let pg=0,pa=0,pj=0,pd=0;const upd=()=>prog(pg*.5+pa*.18+pj*.08+pd*.24);
   const extra=(f,cb)=>new Promise(r=>ld.load('assets/models/'+f,r,e=>{if(e&&e.total)cb(e.loaded/e.total);},e=>{console.warn('Personnage indisponible',f,e);r(null);}));
   return Promise.all([new Promise((r,j)=>ld.load('assets/human.glb',r,e=>{if(e&&e.total){pg=e.loaded/e.total;upd();}},j)),fetchJSON('assets/anims.json',f=>{pa=f;upd();}),
-    extra('james.glb',f=>{pj=f;upd();}),extra('adam.glb',f=>{pd=f;upd();}),extra('michelle.glb',f=>{pm=f;upd();}),extra('soldier.glb',f=>{ps=f;upd();})]).then(([g,an,gj,gd,gm,gs])=>{
+    extra('james.glb',f=>{pj=f;upd();}),extra('adam.glb',f=>{pd=f;upd();})]).then(([g,an,gj,gd])=>{
     const sc=g.scene;let hipsY=1.04;
     sc.traverse(o=>{if(o.isBone){o.name=o.name.replace(/^mixamorig\d*/,'mixamorig');if(/Hips$/.test(o.name))hipsY=o.position.y;}
       if(o.isMesh&&o.material){if(/hair/i.test(o.material.name))HUM.hairMap=o.material.map;else HUM.bodyMap=HUM.bodyMap||o.material.map;}});
@@ -1451,10 +1451,11 @@ function loadHumans(onProgress){
       HUM.clips[k]=c;}
     HUM.proto=sc;const box=new THREE.Box3().setFromObject(sc);HUM.H=Math.max(.5,box.max.y-box.min.y);
     HUM.kinds.base={kind:'base',proto:sc,clips:HUM.clips,H:HUM.H,fixed:false};
-    for(const [kind,gg] of [['james',gj],['adam',gd],['michelle',gm],['soldier',gs]])if(gg)HUM.kinds[kind]=prepFixedHuman(kind,gg.scene,an);
+    for(const [kind,gg] of [['james',gj],['adam',gd]])if(gg)HUM.kinds[kind]=prepFixedHuman(kind,gg.scene,an);
     const kinds=Object.keys(HUM.kinds);
-    const mix=PED_MIX.filter(k=>HUM.kinds[k]);for(let i=0;i<HPOOL;i++)HUM.pool.push(makeHuman(mix[i%mix.length]));
-    playerChar=HUM.kinds[saveData.char]?saveData.char:HUM.kinds.adam?'adam':'base';
+    const mix=PED_MIX.filter(k=>HUM.kinds[k]);if(!mix.length)mix.push('base');for(let i=0;i<HPOOL;i++)HUM.pool.push(makeHuman(mix[i%mix.length]));
+    if(mix[0]!=='base')for(let i=0;i<2;i++)HUM.pool.push(makeHuman('base'));
+    playerChar=HKINDS[saveData.char]&&HUM.kinds[saveData.char]?saveData.char:HUM.kinds.adam?'adam':HUM.kinds.james?'james':'base';
     HUM.playerH=makeHuman(playerChar);applyLook(HUM.playerH,player.m.look,1.02);charButtons();
     for(const s of staff)HUM.staff.push({m:s,x:s.group.position.x,y:s.group.position.y,z:s.group.position.z,h:s.group.rotation.y,staff:true,mannequin:!!s.mannequin,curSpeed:0,state:'idle',ht:rnd(.95,1.05)});
     HUM.ready=true;prog(1);
@@ -1502,8 +1503,8 @@ function updateHumans(dt,P){
     cand.sort((x,y)=>x[0]-y[0]);const want=new Set(cand.slice(0,HPOOL).map(c=>c[1]));
     for(const h of HUM.pool)if(h.owner&&!want.has(h.owner)){const o=h.owner;releaseHum(o);if(o.staff)o.m.group.visible=true;}
     for(const a of want){if(a.hum)continue;
-      if(!a.kind)a.kind=a.staff||a.mannequin?'base':rpick(PED_MIX.filter(k=>HUM.kinds[k]));
-      const h=HUM.pool.find(h=>!h.owner&&h.kind===a.kind)||HUM.pool.find(h=>!h.owner&&!h.fixed)||HUM.pool.find(h=>!h.owner);if(!h)break;
+      if(!a.kind){const mx=PED_MIX.filter(k=>HUM.kinds[k]);a.kind=a.mannequin||!mx.length?'base':rpick(mx);}
+      const h=HUM.pool.find(h=>!h.owner&&h.kind===a.kind)||HUM.pool.find(h=>!h.owner&&(a.kind==='base'||h.fixed));if(!h)break;
       h.owner=a;a.hum=h;h.mixer.stopAllAction();h.cur=null;a.ht=a.ht||rnd(.93,1.07);
       applyLook(h,a.mannequin?{shirt:a.m.look.shirt,pants:a.m.look.pants,skin:'#e4e4e4',hair:'#ddd',shoes:'#ddd',bald:true}:a.m.look,a.ht);
       h.root.visible=true;a.m.group.visible=false;}
@@ -1954,7 +1955,7 @@ function shopAction(kind){
   const buy=(cost,fn,msg)=>{if(P.money<cost){toast('Pas assez d\'argent');return;}P.money-=cost;fn();toast(msg);sfx.coin();save();};
   if(kind==='superette')buy(40,()=>P.hp=100,'Santé restaurée');
   else if(kind==='cafe')buy(10,()=>{P.stamina=1;P.hp=Math.min(100,P.hp+25);},'Café avalé · partie sauvegardée');
-  else if(kind==='boutique')buy(80,()=>{const lk=randLook();lk.skin=P.m.look.skin;setLook(P.m,lk);if(HUM.playerH){if(HUM.playerH.fixed)setPlayerChar('base');applyLook(HUM.playerH,lk);}if(P.stars>0)P.stars--;seenT=0;},'Nouvelle tenue'+(P.stars>0?' · -1 étoile':''));
+  else if(kind==='boutique')buy(80,()=>{const lk=randLook();lk.skin=P.m.look.skin;lk.custom=true;setLook(P.m,lk);if(HUM.playerH)applyLook(HUM.playerH,lk);if(P.stars>0)P.stars--;seenT=0;},'Nouvelle tenue'+(P.stars>0?' · -1 étoile':''));
   else if(kind==='hopital'){P.hp=100;toast('Soigné gratuitement');sfx.ding();}
   else if(kind==='police'){if(P.stars===0){toast('Rien à te reprocher');return;}buy(100*P.stars,()=>{P.stars=0;for(const c of police)if(c.ai==='police'){c.ai='traffic';snapToGraph(c);}},'Amende payée · étoiles effacées');}
   else if(kind==='armurerie'){openShop();}
