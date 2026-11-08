@@ -57,6 +57,14 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Sang et blessures
+
+- Chaque balle projette du sang dans la direction du tir, avec des éclaboussures au sol derrière la victime.
+- **Zone touchée** : **jambe** → la personne boite, crie et laisse une traînée de gouttes (2e balle dans la jambe = elle tombe) ; **torse** → elle tombe et saigne, plusieurs balles la tuent ; **tête** → mort immédiate.
+- Une **flaque de sang** se répand sous les corps.
+- En visant, la visée assistée garde la hauteur de ton viseur : vise bas pour les jambes, haut pour la tête.
+- **Toi aussi** : touché à la jambe tu boites (pas de sprint pendant 12 s), et tu laisses des gouttes quand tu es gravement blessé.
+
 ## Commissariats et garde à vue
 
 - Les 3 commissariats ont un vrai intérieur : accueil avec policier, bureaux avec ordinateurs, casiers, avis de recherche et **2 cellules à barreaux**.
