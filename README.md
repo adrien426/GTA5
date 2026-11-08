@@ -57,6 +57,12 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Commissariats et garde à vue
+
+- Les 3 commissariats ont un vrai intérieur : accueil avec policier, bureaux avec ordinateurs, casiers, avis de recherche et **2 cellules à barreaux**.
+- Arrêté avec **2 étoiles** : 45 s de garde à vue ; **3 étoiles** : 75 s (armes, objets et 30 % du liquide confisqués).
+- **S'évader** : appuie plusieurs fois sur **E** près de la porte pour crocheter la serrure. Si le policier t'entend, le crochetage repart à zéro (+15 s). Une fois dehors : 3 étoiles, toute la police te cherche.
+
 ## Armurerie, FBI et chiens policiers
 
 - **Armurerie** : 4 boutiques d'armes (2 à Néo Cité, Port-Soleil, Sable-Rouge). Enseigne rouge « ARMES » qui tourne sur le toit, panneau au bord du trottoir, faisceau rouge visible de loin et **A rouge** toujours affiché sur la mini-carte. Appli **Armurerie** sur le téléphone : GPS vers la plus proche ou achat en ligne (livraison +15 %).

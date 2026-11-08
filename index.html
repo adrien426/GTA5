@@ -888,6 +888,7 @@ function bench(fr,lx,lz){fbox(fr,MAT.wood,lx,.65,lz,1.8,.08,.5,{collide:false});
   const [wx,wz]=fw(fr,lx,lz);const W=fr.odd?.6:1.9,D=fr.odd?1.9:.6;addCollider(wx-W/2,wx+W/2,wz-D/2,wz+D/2,0,1.1,{cam:false});}
 function makePersonStatic(fr,lx,lz,face,look){const p=makePerson(look);const [wx,wz]=fw(fr,lx,lz);p.group.position.set(wx,.22,wz);p.group.rotation.y=fr.ry+face;scene.add(p.group);staff.push(p);return p;}
 
+const POLST=[];// police stations (holding cells)
 const SHOPDEF={
   superette:{name:'SUPÉRETTE',bg:'#1f8a4c',fg:'#fff',wall:'#e9efe9',ext:'#3f6b52',W:20},
   cafe:{name:'CAFÉ LUMIÈRE',bg:'#5b3a24',fg:'#ffd99a',wall:'#caa077',ext:'#6e4a30',W:20},
@@ -999,8 +1000,7 @@ function shopBuilding(fr,kind,H,style){
     for(const x of[-6,-2,2]){fbox(fr,MAT.dark,x,.55,-5,1,.9,1);fbox(fr,GLASS,x,1.8,-6.8,1.6,1.6,.05,{collide:false});}
     makePersonStatic(fr,5,-5,0,look('#0f4c5c'));spot=[5,-2.8];
   }else if(kind==='police'){
-    fbox(fr,MAT.wood,0,.75,-4,6,1.1,1);makePersonStatic(fr,0,-5.3,0,look('#1e3a8a'));spot=[0,-2.6];
-    for(const z of[1,3.5])bench(fr,-7,z);
+    spot=policeInterior(fr,W,D,look);
   }
   if(spot){const [sx,sz]=fw(fr,spot[0],spot[1]);spots.push({x:sx,z:sz,kind,r:1.5});}
   const [ix,iz]=fw(fr,0,0);shopsList.push({kind,x:ix,z:iz,fr,W,D});
@@ -2080,6 +2080,7 @@ function shopAction(kind){
   else if(kind==='hopital'){P.hp=100;toast('Soigné gratuitement');sfx.ding();}
   else if(kind==='police'){if(P.stars===0){toast('Rien à te reprocher');return;}buy(100*P.stars,()=>{P.stars=0;for(const c of police)if(c.ai==='police'){c.ai='traffic';snapToGraph(c);}},'Amende payée · étoiles effacées');}
   else if(kind==='armurerie'){openShop();}
+  else if(kind==='serrure'){gavPick();}
   else if(kind==='cellule'){if(prison.on){prison.t=Math.max(3,prison.t-60);showFade('ZZZ…','Une nuit en cellule · −1 min de peine',()=>$('fade').classList.remove('on'));fadeT=1.3;}else toast('Tu n\'es pas en prison');}
   else if(kind==='banque'){openPhone();phView('banque');}
   else if(kind==='coiffeur')buy(50,()=>{const lk={...P.m.look,hair:rpick(['#1a1410','#6b4423','#d4b06a','#b8471f','#e8e8e8','#2b4fd6','#d6336c','#111']),custom:true};setLook(P.m,lk);if(HUM.playerH)applyLook(HUM.playerH,lk);},'Nouvelle coupe !');
@@ -2087,7 +2088,7 @@ function shopAction(kind){
   else if(kind==='base'){for(const id of['sniper','minigun','roquette','laser','assaut','pompe'])giveWeapon(id,4);for(const id in P.ammo)P.ammo[id]=Math.max(P.ammo[id],WBY[id].mag*4);toast('Arsenal militaire récupéré !\nLaser, minigun, lance-roquettes…');sfx.win();save();}
   else if(kind==='garage'){const c=P.car;buy(120,()=>{c.repaint(rpick(PAINTS.filter(p=>p!==c.color)));c.health=100;carRepairFx(c);c.burn=0;P.stars=0;for(const o of police)if(o.ai==='police'){o.ai='traffic';snapToGraph(o);}},'Repeinte & réparée · étoiles effacées');}
 }
-const SPOTTXT={cellule:'Dormir dans ta cellule (−1 min de peine)',coiffeur:'Coiffeur — nouvelle couleur $50',banque:'Banque — consulter ton compte',bijouterie:'Bijouterie — acheter une bague $1 200',armurerie:'Armurerie — acheter des armes',base:'Caisse d\'armes de l\'armée',superette:'Soins — $40',cafe:'Café & sauvegarde — $10',boutique:'Nouvelle tenue — $80',hopital:'Se faire soigner — gratuit',police:'Payer l\'amende',garage:'Réparer & repeindre — $120'};
+const SPOTTXT={serrure:'Crocheter la serrure de la cellule',cellule:'Dormir dans ta cellule (−1 min de peine)',coiffeur:'Coiffeur — nouvelle couleur $50',banque:'Banque — consulter ton compte',bijouterie:'Bijouterie — acheter une bague $1 200',armurerie:'Armurerie — acheter des armes',base:'Caisse d\'armes de l\'armée',superette:'Soins — $40',cafe:'Café & sauvegarde — $10',boutique:'Nouvelle tenue — $80',hopital:'Se faire soigner — gratuit',police:'Payer l\'amende',garage:'Réparer & repeindre — $120'};
 
 
 /* ================= combat ================= */
@@ -2402,7 +2403,7 @@ const CONTACTS=[
   {n:'Club Asphalte',d:'Course de rue (il faut une voiture)',f:()=>phoneMission('course')},
 ];
 function phTitle(t){return `<div class="phTitle"><button data-back="1" aria-label="Retour">‹</button>${t}</div>`;}
-function openPhone(){if(player.dead)return;if(prison.on){toast('Pas de téléphone en prison');return;}phone.open=true;$('phone').hidden=false;phView('home');if(document.pointerLockElement)document.exitPointerLock();sfx.ding();}
+function openPhone(){if(player.dead)return;if(prison.on||GAV.on){toast('Pas de téléphone en prison');return;}phone.open=true;$('phone').hidden=false;phView('home');if(document.pointerLockElement)document.exitPointerLock();sfx.ding();}
 function closePhone(){phone.open=false;$('phone').hidden=true;}
 function phView(v){
   phone.view=v;let h='';
@@ -2651,7 +2652,7 @@ function loop(now){
   placeWeapon();gangWeapons();
   updateRockets(dt);policeFire(dt,P);updateHeli(dt,P);
   updateWater(dt,P);updateSeaLife(dt,P);updateMilHeli(dt,P);
-  updateBubble(dt);updateRemarks(dt,P);updateArm(dt,P);updateFBI(dt,P);updateDogs(dt,P);updatePrison(dt,P);updateWake(dt);
+  updateBubble(dt);updateRemarks(dt,P);updateArm(dt,P);updateGav(dt,P);updateFBI(dt,P);updateDogs(dt,P);updatePrison(dt,P);updateWake(dt);
   updateAutoAim();updateLockMark();updateWaypoint(dt,P);updateStory(dt,P);
   updateGrenades(dt);updatePickups(dt,P);updateRobbery(dt);updateBusiness();updateChatter(dt,P);if(typeof updateGangs==='function')updateGangs(dt,P);
   if(inBase(P.x,P.z)&&!player.dead){if(player.stars<4){player.stars=4;toast('ZONE MILITAIRE INTERDITE');sfx.fail();}seenT=0;}
@@ -2763,7 +2764,7 @@ function perkDmg(){return playerChar==='james'?1.4:1;}
 function perkSpread(){return playerChar==='femme'?.45:1;}
 function heroState(){saveData.heroes=saveData.heroes||{};return saveData.heroes;}
 function switchHero(k){
-  if(prison.on){toast('Impossible : tu es en prison');return;}
+  if(prison.on||GAV.on){toast('Impossible : tu es enfermé');return;}
   if(!HEROES[k]||k===playerChar||player.dead)return;if(player.stars>0){toast('Impossible avec la police aux trousses');return;}
   const H=heroState();H[playerChar]={money:player.money,x:player.x,z:player.z,h:player.h};
   if(player.car)exitCar(true);setBigMap(false);closePhone();
@@ -3565,7 +3566,7 @@ function confiscate(withMoney){player.owned=new Set(['poings']);player.weap='poi
 function busted(){if(player.dead)return;const st=player.stars;player.dead=true;if(player.car){player.car.vx=player.car.vz=0;}sfx.fail();
   if(story)storyEnd(false,'Arrêté');if(mission)endMission(false);
   if(st>=4){const sec=st>=5?300:180;showFade('ARRÊTÉ',`${st} étoiles : direction le pénitencier · ${sec/60} min de prison`,()=>jail(sec));}
-  else if(st>=2){showFade('ARRÊTÉ','On t\'enlève tout : armes, objets et argent liquide',()=>{const c=confiscate(true);respawnAt(shopPos('police')||landmarks.police,0);toast(`Confisqué : armes, objets, $${c}`);save();});}
+  else if(st>=2){showFade('ARRÊTÉ',`On t'enlève tout : armes, objets et argent liquide · garde à vue ${st>=3?75:45} s au commissariat`,()=>{const c=confiscate(true);custody(st>=3?75:45);setTimeout(()=>toast(`Confisqué : armes, objets, $${c}`),3500);});}
   else{const fine=Math.min(player.money,150);showFade('ARRÊTÉ','Amende de $'+fine+' · relâché au commissariat',()=>respawnAt(shopPos('police')||landmarks.police,fine));}}
 function jail(sec){respawnAt({x:(PRISON.x0+PRISON.x1)/2+rnd(-20,20),z:(PRISON.z0+PRISON.z1)/2,h:Math.PI},0);confiscate(false);prison.on=true;prison.t=sec;prison.escaping=0;save();
   setTimeout(()=>toast('PÉNITENCIER\nAttends ta libération… ou trouve un moyen de t\'évader'),600);}
@@ -3718,6 +3719,69 @@ function updateDogs(dt,P){
     m.body.position.y=.55+Math.abs(Math.sin(d.ph))*amp*.06;m.tail.rotation.y=Math.sin(gameT*(d.state==='heel'?9:4))*.5;m.head.rotation.x*=.85;
     m.g.position.set(d.x,d.y,d.z);m.g.rotation.y=d.h;m.g.visible=dp<160;
     d.barkT-=dt;if(d.barkT<=0){d.barkT=d.state==='chase'?rnd(.8,1.8):rnd(6,14);if(dp<45&&sfx.bark)sfx.bark(Math.max(.15,1-dp/45));}}
+}
+
+/* ================= police station : reception, offices, holding cells (custody 2-3 stars) and escape ================= */
+function posterTex(){const c=document.createElement('canvas');c.width=256;c.height=320;const g=c.getContext('2d');g.fillStyle='#efe6cf';g.fillRect(0,0,256,320);
+  g.fillStyle='#8a1c1c';g.font='bold 40px Arial';g.textAlign='center';g.fillText('RECHERCHÉ',128,50);g.fillStyle='#bfb59c';g.fillRect(58,70,140,160);
+  g.fillStyle='#5b5346';g.beginPath();g.arc(128,135,38,0,7);g.fill();g.fillRect(78,180,100,50);g.fillStyle='#222';g.font='bold 30px Arial';g.fillText('$ '+(1+Math.floor(Math.random()*9))+' 000',128,272);
+  g.font='16px Arial';g.fillText('Avis aux citoyens — appelez la police',128,302);const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;return t;}
+function policeInterior(fr,W,D,look){
+  const wm=wallMat('#cfd6df'),bars=MAT.metal,BZ=-3.8,Y=3.1;
+  const fcol=(lx,lz,w,d,h)=>{const r=frect(fr,lx,lz,w,d);return addCollider(r.cx-r.w/2,r.cx+r.w/2,r.cz-r.d/2,r.cz+r.d/2,0,h,{});};
+  const st={fr,cells:[]};
+  // cell walls
+  for(const x of[-5.8,-.7])fbox(fr,wm,x,Y/2,(BZ-7.75)/2,.2,Y,7.75+BZ,{});
+  fbox(fr,MAT.panel||wm,-5.75,Y+.05,(BZ-7.75)/2,10.1,.1,7.75+BZ,{collide:false});
+  for(const [x0,x1] of[[-10.75,-5.9],[-5.7,-.8]]){const cx=(x0+x1)/2,dw=1.2;
+    // fixed bars + rails
+    for(let x=x0+.1;x<x1;x+=.2){if(Math.abs(x-cx)<dw/2+.02)continue;fbox(fr,bars,x,Y/2,BZ,.05,Y,.05,{collide:false});}
+    for(const y of[.12,1.6,Y-.05])fbox(fr,bars,(x0+x1)/2,y,BZ,x1-x0,.08,.08,{collide:false});
+    fcol((x0+cx-dw/2)/2,BZ,cx-dw/2-x0,.25,Y);fcol((cx+dw/2+x1)/2,BZ,x1-cx-dw/2,.25,Y);
+    // sliding barred door
+    const grp=new THREE.Group();const [gx,gz]=fw(fr,cx,BZ+.1);grp.position.set(gx,0,gz);grp.rotation.y=fr.ry;const dr=new THREE.Group();grp.add(dr);
+    for(let x=-dw/2+.1;x<dw/2;x+=.2){const b=new THREE.Mesh(boxGeo(.05,Y-.1,.05),bars);b.position.set(x,Y/2,0);dr.add(b);}
+    for(const y of[.15,1.6,Y-.1]){const b=new THREE.Mesh(boxGeo(dw,.08,.08),bars);b.position.set(0,y,0);dr.add(b);}
+    const lk=new THREE.Mesh(boxGeo(.14,.22,.14),MAT.dark);lk.position.set(dw/2-.08,1.15,0);dr.add(lk);scene.add(grp);
+    const col=fcol(cx,BZ+.1,dw,.25,Y);
+    // bunk + toilet
+    fbox(fr,MAT.dark,cx-.3,.45,-7.25,2.3,.12,.85,{});fbox(fr,MAT.white,cx-.3,.56,-7.25,2.1,.1,.75,{collide:false});
+    fcyl(fr,MAT.white,x1-.45,.3,-7.3,.22,.55,10,{});
+    const [ix,iz]=fw(fr,cx,-5.8),[px,pz]=fw(fr,cx,BZ-.55),[ox,oz]=fw(fr,cx,BZ+1.4);
+    spots.push({x:px,z:pz,kind:'serrure',r:1.1});
+    st.cells.push({dr,col,open:1,cur:1,ix,iz,px,pz,ox,oz,x0,x1,cx,fr});}
+  // reception desk, offices, lockers, posters
+  fbox(fr,MAT.wood,6,.75,-2.5,6,1.1,1,{});fbox(fr,wallMat('#1e3a8a'),6,1.33,-2.0,6,.16,.04,{collide:false});
+  makePersonStatic(fr,6,-4,0,look('#1e3a8a'));
+  for(const x of[4.2,8.4]){fbox(fr,MAT.wood,x,.74,3.4,2.2,.08,1,{collide:false});for(const sx of[-1,1])fbox(fr,MAT.dark,x+sx*1,.37,3.4,.08,.74,.9,{});
+    fbox(fr,MAT.dark,x,1.05,3.1,.75,.48,.06,{collide:false});fbox(fr,wallMat('#5fa8d3'),x,1.05,3.13,.66,.38,.02,{collide:false});fbox(fr,MAT.dark,x,.82,3.1,.1,.12,.1,{collide:false});}
+  for(let z=-7.3;z<=-4.4;z+=.62)fbox(fr,wallMat('#7c8794'),W/2-.6,1.1,z,.6,2.2,.58,{});
+  {const pm=new THREE.MeshLambertMaterial({map:posterTex()});for(const x of[2.2,3.6]){const pl=new THREE.Mesh(new THREE.PlaneGeometry(1,1.25),pm);const [wx,wz]=fw(fr,x,-7.62);pl.position.set(wx,2,wz);pl.rotation.y=fr.ry;scene.add(pl);}}
+  fbox(fr,wallMat('#1e3a8a'),-5.75,Y+.35,BZ+.02,10.1,.5,.06,{collide:false});
+  for(const z of[1,3.5])bench(fr,-8,z);
+  POLST.push(st);for(const c of st.cells)gavDoor(c,1,true);
+  return [6,-1.2];
+}
+function gavDoor(c,open,snap){c.open=open;if(snap)c.cur=open;const on=open<.5;c.col.miny=on?0:-60;c.col.maxy=on?3.1:-59;}
+const GAV={on:false,t:0,cell:null,pick:0,alarm:0};
+function nearestStation(P){let best=null,bd=1e9;for(const s of POLST){const [x,z]=fw(s.fr,0,0),d=Math.hypot(x-P.x,z-P.z);if(d<bd){bd=d;best=s;}}return best;}
+function custody(sec){const s=nearestStation(playerPos())||POLST[0];if(!s){respawnAt(shopPos('police')||landmarks.police,0);return;}
+  const c=rpick(s.cells);respawnAt({x:c.ix,z:c.iz,h:s.fr.ry},0);player.y=groundY(c.ix,c.iz)+.2;gavDoor(c,0,true);GAV.on=true;GAV.t=sec;GAV.cell=c;GAV.pick=0;save();
+  setTimeout(()=>toast('GARDE À VUE\nAttends ta libération… ou crochète la serrure (E près de la porte)'),600);}
+function gavPick(){const c=GAV.cell;if(!GAV.on||!c){toast('La porte de la cellule est ouverte');return;}
+  if(c.open>.5){toast('La porte est déjà ouverte : file !');return;}
+  GAV.pick+=rnd(.09,.16);sfx.click();
+  if(Math.random()<.09){GAV.pick=0;GAV.t+=15;toast('Le policier t\'a entendu !\n« Toi, là ! Arrête ça ! » (+15 s)');sfx.fail();return;}
+  if(GAV.pick>=1){gavDoor(c,1);toast('Clic ! La serrure cède…\nSors discrètement, ou cours !');sfx.ding();}
+  else toast(`Crochetage… ${Math.round(GAV.pick*100)} %`);}
+function updateGav(dt,P){
+  for(const s of POLST)for(const c of s.cells){if(Math.abs(c.cur-c.open)>.001){c.cur+=Math.sign(c.open-c.cur)*Math.min(Math.abs(c.open-c.cur),dt*1.6);}c.dr.position.x=-1.15*c.cur;}
+  if(!GAV.on)return;const c=GAV.cell,el=$('mission');
+  const f=c.fr,dx=P.x-f.x,dz=P.z-f.z,lx=dx*f.c-dz*f.s,lz=dx*f.s+dz*f.c,out=lz>-3.3||lx<c.x0-.5||lx>c.x1+.5||Math.hypot(P.x-c.ix,P.z-c.iz)>7;
+  if(out&&!player.dead){GAV.on=false;if(GAV.t>1){player.stars=Math.max(player.stars,3);policeETA=0;seenT=0;toast('ÉVASION DU COMMISSARIAT !\nTous les policiers te cherchent');sfx.fail();}
+    setTimeout(()=>gavDoor(c,1),100);el.hidden=true;return;}
+  GAV.t-=dt;if(GAV.t<=0&&c.open<.5){gavDoor(c,1);player.stars=0;toast('LIBÉRÉ !\nLa porte de ta cellule s\'ouvre');sfx.win();save();}
+  if(!story&&!mission){el.hidden=false;const s=Math.max(0,Math.ceil(GAV.t));el.innerHTML=`GARDE À VUE — libération dans <span style="color:#f2c230">${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</span><small>${c.open>.5?'La porte est ouverte : sors !':'Appuie plusieurs fois sur E près de la porte pour crocheter la serrure (attention au policier)'}</small>`;}
 }
 
 /* ================= multiplayer (WebRTC peer-to-peer, Trystero + Nostr relays, no server) ================= */
