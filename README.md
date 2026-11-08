@@ -62,6 +62,10 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Chaque balle projette du sang dans la direction du tir, avec des éclaboussures au sol derrière la victime.
 - **Zone touchée** : **jambe** → la personne boite, crie et laisse une traînée de gouttes (2e balle dans la jambe = elle tombe) ; **torse** → elle tombe et saigne, plusieurs balles la tuent ; **tête** → mort immédiate.
 - Une **flaque de sang** se répand sous les corps.
+- **Taches de sang sur les personnages**, à l'endroit exact de l'impact (tête, torse, jambe), avec coulure ; elles restent sur la personne.
+- Les gouttes **retombent au sol** (gravité), le sang **gicle sur les murs** derrière la victime, et une personne blessée continue de saigner par petits jets.
+- Se faire renverser par une voiture ou frapper au couteau / katana fait aussi saigner.
+- **Écran** : les bords rougissent quand tu es touché, et restent rouges quand ta santé est basse.
 - En visant, la visée assistée garde la hauteur de ton viseur : vise bas pour les jambes, haut pour la tête.
 - **Toi aussi** : touché à la jambe tu boites (pas de sprint pendant 12 s), et tu laisses des gouttes quand tu es gravement blessé.
 
