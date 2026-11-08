@@ -43,6 +43,13 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Mer : on nage (pas d'arme), les voitures coulent, poissons, requins (dangereux), baleines.
 - Coiffeur, plus de passants.
 
+## Parler aux gens
+
+- Bouton MICRO (ou V) : le jeu écoute en continu ; parle à la personne en face de toi. Sans micro : bouton 💬 ou touche Entrée pour écrire.
+- Chacun a un caractère (calme, sympa, peureux, agressif, parfois armé) et répond à voix haute avec une bulle : nom, métier, blagues, indique un lieu sur ta carte, te suit, se bat, sort une arme, fuit, donne son argent si tu le braques, appelle la police.
+- Policiers à pied (arrestation, « je me rends », pot-de-vin), militaires (base, île interdite), membres de gang (vente d'armes, initiation pour rejoindre le gang), vendeurs (« je voudrais acheter », braquage à la voix avec une arme).
+- Les gens t'adressent aussi la parole quand tu passes à côté.
+
 ## Previews
 
 Chaque branche poussée est publiée par GitHub Actions sur la branche `gh-pages` :

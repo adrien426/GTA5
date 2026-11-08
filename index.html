@@ -93,6 +93,12 @@ body.touch #mini{width:130px;height:130px}
   color:#fff;text-shadow:0 2px 0 #000,0 0 10px #000;opacity:0;transition:opacity .25s}#sub.on{opacity:1}
 #mic{right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(150px + env(safe-area-inset-bottom,0px));pointer-events:auto;width:46px;height:46px;border-radius:50%;
   border:2px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);color:#fff;font:700 12px var(--font);cursor:pointer}
+#sayBtn{right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(204px + env(safe-area-inset-bottom,0px));pointer-events:auto;width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,.35);background:rgba(0,0,0,.45);color:#fff;font-size:20px;cursor:pointer}
+body.touch #sayBtn{right:auto;left:calc(204px + env(safe-area-inset-left,0px));bottom:auto;top:calc(16px + env(safe-area-inset-top,0px))}
+#sayBox{left:50%;bottom:calc(210px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:17;display:flex;gap:8px;width:min(560px,92vw);background:rgba(10,14,20,.92);border:1px solid #2c333b;border-radius:12px;padding:8px}
+#sayBox input{flex:1;min-width:0;font:600 16px system-ui;padding:10px;border-radius:8px;border:0;user-select:text;-webkit-user-select:text}#sayBox button{border:0;border-radius:8px;padding:0 16px;font:800 16px var(--font);background:#f2c230;color:#111;cursor:pointer}
+.npcBubble{position:fixed;left:0;top:0;z-index:5;pointer-events:none;display:none;max-width:260px;background:#fff;color:#111;font:600 15px system-ui;padding:6px 10px;border-radius:12px;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+.npcBubble:after{content:'';position:absolute;left:50%;bottom:-7px;margin-left:-7px;border:7px solid transparent;border-bottom:0;border-top-color:#fff}
 #mic.on{background:#e5484d;border-color:#fff;animation:blink .8s steps(2) infinite}
 body.touch #mic{right:auto;left:calc(150px + env(safe-area-inset-left,0px));bottom:auto;top:calc(16px + env(safe-area-inset-top,0px))}
 #phone{position:fixed;z-index:14;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));width:min(290px,78vw);height:min(560px,78vh);
@@ -392,6 +398,8 @@ window.addEventListener('error',e=>{if(!finished&&/THREE|three/.test(String(e.me
 <div id="scope" hidden></div>
 <div class="hud" id="sub"></div>
 <button class="hud" id="mic" aria-label="Parler au micro">MICRO</button>
+<button class="hud" id="sayBtn" aria-label="Écrire à quelqu'un">💬</button>
+<form id="sayBox" class="ui" hidden><input id="sayIn" maxlength="140" placeholder="Dis quelque chose à la personne en face… (ex. « où est la banque ? »)" autocomplete="off"><button type="submit">Dire</button></form>
 <div class="ui" id="wheel" hidden><div id="wheelRing"><div id="wheelInfo"></div></div></div>
 <div class="ui" id="shop" hidden role="dialog" aria-label="Armurerie"><h3>ARMURERIE ÉCLAT</h3><div id="shopList"></div><button id="shopClose">Fermer</button></div>
 <div class="hud" id="mission" hidden></div>
@@ -1422,6 +1430,7 @@ function knockPed(p,vx,vz){p.state='down';p.t=0;p.vx=vx;p.vz=vz;p.vy=Math.min(7,
 function updatePed(p,dt,P){
   const m=p.m;let speed=0;
   if(p.gang&&p.state==='flee')p.state='idle';
+  if(!p.gang&&p.state!=='down'&&p.state!=='flee'&&(p.cop||p.soldier||p.mood)){const sp=guardAct(p,dt,P);if(sp!==null){speed=sp;p.curSpeed=speed;m.group.position.set(p.x,p.y,p.z);m.group.rotation.y=p.h;animPerson(m,speed,dt,false);return;}}
   if(p.gang&&p.state!=='down'){speed=gangPed(p,dt,P);p.curSpeed=speed;m.group.position.set(p.x,p.y,p.z);m.group.rotation.y=p.h;animPerson(m,speed,dt,false);return;}
   if(p.state==='down'){
     p.t+=dt;p.x+=p.vx*dt;p.z+=p.vz*dt;p.vy-=20*dt;p.y+=p.vy*dt;const g=groundY(p.x,p.z);if(p.y<g){p.y=g;p.vy=0;p.vx*=.8;p.vz*=.8;}
@@ -1590,6 +1599,7 @@ function updateHumans(dt,P){
     if(a.mannequin){setAnim(h,'idle',0);}
     else if(a.staff)setAnim(h,'idleN');
     else if(a.gdead)setAnim(h,'fallen');
+    else if(a.atkAnim>0)setAnim(h,'kick',1.6);
     else if(a.state==='down')setAnim(h,a.t<2.4?'trip':'getUp',a.t<2.4?1:1.05);
     else locoAnim(h,a.curSpeed||0);
     h.mixer.update(dt);}
@@ -1865,6 +1875,7 @@ const radio=(()=>{let ac,out,nb;
 const keys={};let pressed={};
 const ACT={e:'enter',m:'map',h:'horn',p:'pause',escape:'pause',r:'radio',f:'attack',x:'weapon',t:'phone',tab:'wheel',v:'mic'};
 addEventListener('keydown',e=>{
+  if((e.code==='Enter'||e.code==='NumpadEnter')&&state==='play'&&$('sayBox').hidden){e.preventDefault();openSayBox();return;}
   keys[e.code]=true;const k=(e.key||'').toLowerCase();
   if(!e.repeat){if(ACT[k])pressed[ACT[k]]=true;if(/^[1-9]$/.test(e.key))pressed.slot=+e.key;if(e.code==='Space')pressed.jump=true;}
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab'].includes(e.code))e.preventDefault();
@@ -1876,7 +1887,7 @@ const cam={yaw:0,pitch:.32,dist:6.5,lastMouse:-10,x:0,y:5,z:0};
 let locked=false;
 function lockPtr(){if(IS_TOUCH||!canvas.requestPointerLock)return;try{const r=canvas.requestPointerLock();if(r&&r.catch)r.catch(()=>{});}catch(e){}}
 canvas.addEventListener('click',()=>{if(state==='play'&&!locked&&!big)lockPtr();});
-document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;if(!locked&&state==='play'&&!IS_TOUCH&&!big&&!phone.open&&!wheel.open&&!shopUI.open)pause();});
+document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;if(!locked&&state==='play'&&!IS_TOUCH&&!big&&!phone.open&&!wheel.open&&!shopUI.open&&$('sayBox').hidden&&$('choiceBox').hidden)pause();});
 let dragging=false,lastMX=0,lastMY=0;
 let mouseAtk=false;
 canvas.addEventListener('mousedown',e=>{if(locked){if(e.button===0){mouseAtk=true;pressed.attack=true;}return;}dragging=true;lastMX=e.clientX;lastMY=e.clientY;});
@@ -2330,16 +2341,8 @@ function showSub(t){const el=$('sub');el.textContent=t;el.classList.add('on');su
 function say(text,pitch=1,rate=1.02){try{if(!window.speechSynthesis)return;const u=new SpeechSynthesisUtterance(text);u.lang='fr-FR';u.pitch=pitch;u.rate=rate;
   const v=speechSynthesis.getVoices().filter(v=>/^fr/i.test(v.lang));if(v.length)u.voice=v[Math.floor(pitch*7)%v.length];speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
 function micToggle(){
-  if(MP.on)return voiceToggle();
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){toast('Micro non pris en charge ici\n(utilise Chrome ou Edge)');return;}
-  if(voice.on){try{voice.rec.stop();}catch(e){}return;}
-  const r=new SR();r.lang='fr-FR';r.interimResults=false;r.maxAlternatives=1;voice.rec=r;
-  r.onstart=()=>{voice.on=true;$('mic').classList.add('on');showSub('🎤 Parle…');};
-  r.onend=()=>{voice.on=false;$('mic').classList.remove('on');};
-  r.onerror=e=>{voice.on=false;$('mic').classList.remove('on');toast(e.error==='not-allowed'||e.error==='service-not-allowed'?'Micro refusé ou bloqué sur cette page':'Micro : '+e.error);};
-  r.onresult=e=>handleVoice(e.results[0][0].transcript);
-  try{r.start();}catch(e){toast('Micro indisponible');}
+  if(talk.on){stopListening();if(MP.on&&VC.on)voiceToggle();return;}
+  startListening();if(MP.on&&!VC.on)voiceToggle(true);
 }
 const PED_LINES={
   hello:['Salut ! Belle journée, non ?','Bonjour ! On se connaît ?','Hé, salut toi.','Bonjour, je peux vous aider ?'],
@@ -2349,6 +2352,7 @@ const PED_LINES={
   other:['Pardon ? Je n\'ai pas compris.','Hmm, intéressant.','Je suis pressé, désolé.','Tu as vu le prix de l\'essence ?','Il paraît qu\'il y a des jetons dorés cachés en ville.','Fais attention, la police patrouille dans le coin.']};
 function handleVoice(t){
   const s=t.toLowerCase();showSub('Toi : « '+t+' »');const has=(...w)=>w.some(x=>s.includes(x));
+  {const near=talkTarget();const cmd=/\b(ouvre|montre|appelle|téléphone|radio|musique|quelle heure|l'heure|mécano|avocat|équipe|sors ton|prends ton|prends le|prends la)\b/.test(s);if(near&&!cmd){talkToNPC(t,near);return;}}
   const wpn=WEAPONS.find(w=>s.includes(w.name.toLowerCase().split(' ')[0])||s.includes(w.id));
   if(has('mécano','mécanicien','bagnole','voiture')){callMechanic();say('Rémi arrive avec une voiture.');}
   else if(has('taxi')){callTaxi();}
@@ -2371,6 +2375,9 @@ function handleVoice(t){
   }
 }
 $('mic').addEventListener('click',e=>{e.stopPropagation();micToggle();});
+$('sayBtn').addEventListener('click',e=>{e.stopPropagation();openSayBox();});
+$('sayIn').addEventListener('keydown',e=>{e.stopPropagation();if(e.code==='Escape'){$('sayBox').hidden=true;}});
+$('sayBox').addEventListener('submit',e=>{e.preventDefault();const v=$('sayIn').value.trim();$('sayBox').hidden=true;if(v)handleVoice(v);lockPtr();});
 
 /* ================= phone ================= */
 const phone={open:false,view:'home',callT:0,call:null};
@@ -2600,7 +2607,7 @@ function loop(now){
       if(c.speed>3.5){knockPed(p,c.vx*.8+ex/d*2,c.vz*.8+ez/d*2);if(c===player.car){if(wantedCD<=0){addWanted(1);wantedCD=3;}c.vx*=.92;c.vz*=.92;}break;}
       p.x+=ex/d*(CR+.3-d);p.z+=ez/d*(CR+.3-d);}}}}
   // peds update & recycle
-  for(const p of peds){const d=Math.hypot(p.x-P.x,p.z-P.z);if(d>150&&!p.gang){spawnPed(p,P.x,P.z,90,145);continue;}
+  for(const p of peds){const d=Math.hypot(p.x-P.x,p.z-P.z);if(d>150&&!p.gang&&!p.post){p.mood=null;p.robbed=false;spawnPed(p,P.x,P.z,90,145);continue;}
     if(d<110||frame%3===0)updatePed(p,d<110?dt:dt*3,P);p.m.group.visible=d<140&&!p.hum;}
   for(const s of staff)if(!s.mannequin){s.phase+=dt;s.armL.rotation.x=Math.sin(s.phase*.7)*.1;s.body.rotation.y=Math.sin(s.phase*.3)*.3;}
   // doors
@@ -2632,6 +2639,7 @@ function loop(now){
   placeWeapon();gangWeapons();
   updateRockets(dt);policeFire(dt,P);updateHeli(dt,P);
   updateWater(dt,P);updateSeaLife(dt,P);updateMilHeli(dt,P);
+  updateBubble(dt);updateRemarks(dt,P);
   updateAutoAim();updateLockMark();updateWaypoint(dt,P);updateStory(dt,P);
   updateGrenades(dt);updatePickups(dt,P);updateRobbery(dt);updateBusiness();updateChatter(dt,P);if(typeof updateGangs==='function')updateGangs(dt,P);
   if(inBase(P.x,P.z)&&!player.dead){if(player.stars<4){player.stars=4;toast('ZONE MILITAIRE INTERDITE');sfx.fail();}seenT=0;}
@@ -2840,7 +2848,7 @@ function initGangs(){
       p.post={x:lotCenter(a)+sx*PR+rnd(-1.5,1.5),z:lotCenter(b)+sz*PR+rnd(-1.5,1.5)};p.x=p.post.x;p.z=p.post.z;p.y=groundY(p.x,p.z);p.h=rnd(0,6.28);
       p.state='idle';p.ghp=100;p.fireT=rnd(.5,2);p.a=a;p.b=b;p.ci=ci;peds.push(p);}}
 }
-function gangHit(p,dmg){if(!p.gang)return;p.ghp-=dmg;GANGS[p.gang].hostile=40;if(p.ghp<=0&&!p.gdead){p.gdead=true;p.deadT=0;
+function gangHit(p,dmg){if(!p.gang)return;p.ghp-=dmg;GANGS[p.gang].hostile=40;GANGS[p.gang].friend=false;if(p.ghp<=0&&!p.gdead){p.gdead=true;p.deadT=0;
   dropPickup(p.x,p.y,p.z,{cash:Math.round(rnd(60,220))});if(Math.random()<.35)dropPickup(p.x+.6,p.y,p.z,{item:rpick(['montre','telephone','bague']),c:rnd(.4,.9)});}}
 // called from updatePed : gang members guard their post, face and shoot the player when the gang is hostile
 function gangPed(p,dt,P){
@@ -2868,10 +2876,10 @@ function updateGangs(dt,P){
   for(const g of Object.keys(GANGS)){const G=GANGS[g];if(G.hostile>0)G.hostile-=dt;}
   if(k){const G=GANGS[k];gang.stay+=dt;
     // provoking : weapon out near members, or lingering too long
-    if(aiming()&&peds.some(p=>p.gang===k&&!p.gdead&&Math.hypot(p.x-P.x,p.z-P.z)<22))G.hostile=Math.max(G.hostile,25);
-    if(gang.stay>45&&!player.car)G.hostile=Math.max(G.hostile,20);
+    if(!G.friend&&aiming()&&peds.some(p=>p.gang===k&&!p.gdead&&Math.hypot(p.x-P.x,p.z-P.z)<22))G.hostile=Math.max(G.hostile,25);
+    if(gang.stay>45&&!player.car&&!G.friend)G.hostile=Math.max(G.hostile,20);
     // ambush : members block the way ahead
-    if(gang.ambushCD<=0&&Math.random()<dt*.06){gang.ambushCD=110;const fx=player.car?Math.sin(player.car.h):Math.sin(player.h),fz=player.car?Math.cos(player.car.h):Math.cos(player.h);
+    if(!G.friend&&gang.ambushCD<=0&&Math.random()<dt*.06){gang.ambushCD=110;const fx=player.car?Math.sin(player.car.h):Math.sin(player.h),fz=player.car?Math.cos(player.car.h):Math.cos(player.h);
       const crew=peds.filter(p=>p.gang===k&&!p.gdead).sort(()=>Math.random()-.5).slice(0,4);
       crew.forEach((p,i)=>{releaseHum(p);p.x=P.x+fx*22+(i-1.5)*2.2*fz;p.z=P.z+fz*22-(i-1.5)*2.2*fx;p.y=groundY(p.x,p.z);p.state='idle';});
       if(crew.length){G.hostile=35;toast('GUET-APENS !');sfx.fail();}}}
@@ -2879,7 +2887,7 @@ function updateGangs(dt,P){
   for(const p of peds){if(!p.gang||!p.gdead)continue;p.deadT+=dt;if(p.deadT>70&&Math.hypot(p.post.x-P.x,p.post.z-P.z)>60){p.gdead=false;p.ghp=100;releaseHum(p);p.x=p.post.x;p.z=p.post.z;p.y=groundY(p.x,p.z);p.state='idle';p.m.body.rotation.x=0;}}
 }
 function gangWeapons(){// pistols in the hands of hostile members
-  for(const p of peds){if(!p.gang)continue;const show=p.aiming&&!p.gdead&&p.hum&&p.state!=='down';
+  for(const p of peds){if(!p.gang&&!p.armed)continue;const show=p.aiming&&!p.gdead&&p.hum&&p.state!=='down';
     if(show&&!p.wg){const w=WBY.pistolet,g=new THREE.Group();if(!weaponModel(w,g,w.len||.25)){const b=new THREE.Mesh(boxGeo(.06,.1,.24),MAT.dark);b.position.z=.07;g.add(b);}scene.add(g);p.wg=g;}
     if(p.wg){p.wg.visible=show;if(show){const h=p.hum;if(!h.bones)initBones(h);aimArm(h,_v4.set(player.x-p.x,(player.y+1.1)-(p.y+1.4),player.z-p.z).normalize());if(h.bones.hand){h.bones.hand.getWorldPosition(p.wg.position);p.wg.lookAt(player.x,player.y+1.1,player.z);}}}}}
 
@@ -3023,6 +3031,7 @@ function storyNext(){
 function storyEnd(ok,why){
   if(!story)return;const s=story;story=null;storyBeam.visible=false;closeChoice();
   for(const p of peds)if(p.target)p.target=false;for(const c of cars)if(c.target){c.target=false;}
+  if(ok&&s.joinGang){GANGS[s.joinGang].friend=true;GANGS[s.joinGang].hostile=0;setTimeout(()=>toast(`Tu fais maintenant partie des ${GANGS[s.joinGang].n} !`),2500);}
   if(ok){if(!s.contract)saveData.story=s.i+1;player.money+=s.reward;sfx.win();showFade('MISSION RÉUSSIE',`${s.title} · +$${s.reward.toLocaleString('fr-FR')}`,()=>$('fade').classList.remove('on'));fadeT=2.2;save();}
   else{sfx.fail();toast('MISSION ÉCHOUÉE'+(why?'\n'+why:''));}
 }
@@ -3320,6 +3329,178 @@ function carShotFx(c,pt,from){
 function carRepairFx(c){if(!c)return;if(c.glassM)for(const g of c.glassM){g.material=CARM.glass;g.broken=false;}
   for(const m of c.body.children.slice())if(m.geometry===HOLEG||m.geometry===HOLERG)c.body.remove(m);c.holes=0;c.dirtLvl=-1;carDirt(c);}
 
+/* ================= talking to people : personalities, voice / text conversation, reactions ================= */
+const FIRSTN=['Karim','Léa','Mehdi','Sofia','Hugo','Inès','Yanis','Clara','Moussa','Julie','Théo','Nadia','Lucas','Amina','Kevin','Sarah','Bilal','Emma','Samir','Chloé','Diego','Fatou','Enzo','Lina'];
+const PERSONAS={calme:'calme',sympa:'sympa',peureux:'peureux',agressif:'agressif'};
+function persona(p){if(!p.persona){const r=Math.random();p.persona=r<.3?'calme':r<.58?'sympa':r<.78?'peureux':'agressif';p.armed=p.armed||(p.persona==='agressif'&&Math.random()<.35);
+  p.pname=p.cop?'Agent '+rpick(['Martin','Durand','Moreau','Garcia','Fontaine','Leroy']):p.soldier?'Soldat '+rpick(['Lambert','Roux','Bonnet','Girard','Mercier']):rpick(FIRSTN);p.voice=p.voice||rnd(.7,1.45);}return p;}
+function roleOf(p){return p.cop?'police':p.soldier?'armee':p.gang?'gang':p.staffShop?'vendeur':'civil';}
+const L={
+ greet:{calme:['Bonjour.','Salut, ça va ?','Bonne journée à toi.'],sympa:['Salut ! Ça fait plaisir de voir quelqu\'un de souriant !','Hé, bonjour ! Belle journée, hein ?','Coucou ! Tu es nouveau dans le quartier ?'],
+   peureux:['Euh… bonjour…','B-bonjour, je ne veux pas d\'ennuis.','Salut… tu me veux quoi ?'],agressif:['Quoi, qu\'est-ce que tu veux ?','Tu me parles à moi ?','Ouais, ouais, salut. Dégage maintenant.'],
+   police:['Bonjour. Tout se passe bien ?','Bonjour, citoyen. Restez prudent.','Salut. Circulez, rien à voir.'],armee:['Zone militaire. Circulez.','Halte. Identifiez-vous.','Rien à faire ici, civil.'],
+   gang:['T\'es pas du quartier, toi.','Qu\'est-ce que tu viens faire chez nous ?','Wesh. Tu cherches quelque chose ?'],vendeur:['Bonjour, bienvenue ! Je peux vous aider ?','Bonjour ! On a de tout ici.']},
+ how:{calme:['Ça va bien, merci. Et toi ?','Tranquille. La routine.'],sympa:['Super bien ! Je viens d\'avoir une promotion !','Au top ! Merci de demander, c\'est gentil.'],peureux:['Ça irait mieux sans tous ces gangs…','Bof… j\'ai peur de sortir le soir.'],agressif:['Ça te regarde pas.','Ça allait jusqu\'à ce que tu arrives.'],
+   police:['Journée chargée. Beaucoup de vols en ce moment.','Ça va. Tant que personne ne fait de bêtises.'],armee:['Nous sommes en alerte. Pas de bavardage.'],gang:['Ça roule, tant que tu nous manques pas de respect.','Les affaires marchent bien.'],vendeur:['Très bien, les affaires tournent !']},
+ name:{_:['Moi c\'est {n}.','Je m\'appelle {n}. Et toi ?','{n}. Enchanté.'],agressif:['Pourquoi tu veux savoir ? C\'est {n}, et alors ?'],police:['{n}, police de Néo Cité.'],armee:['{n}. C\'est tout ce que vous saurez.'],gang:['On m\'appelle {n}. Retiens-le.']},
+ job:{_:['Je travaille dans un bureau en centre-ville.','Je suis livreur, je cours toute la journée.','Je suis étudiante, je vais à la fac.','Je suis au chômage, je cherche.','Je tiens un petit restaurant.'],police:['Je patrouille. J\'arrête les voyous.'],armee:['Je garde la base. Interdit d\'approcher.'],gang:['Je fais du business. Pose pas trop de questions.'],vendeur:['Je tiens la boutique. Vous voulez acheter quelque chose ?']},
+ insultBack:{calme:['Pas la peine d\'être grossier.','Je vais faire comme si je n\'avais rien entendu.'],sympa:['Oh… pourquoi tu dis ça ? C\'est méchant.','Ça ne se fait pas, ça !'],peureux:['Pardon, pardon, je m\'en vais !','Laisse-moi tranquille, s\'il te plaît !'],agressif:['Répète un peu pour voir !','Tu veux te battre ? Viens !','Toi, tu vas regretter ce que tu viens de dire.'],
+   police:['Outrage à agent ! Vous allez me suivre.'],armee:['Encore un mot et j\'ouvre le feu.'],gang:['Tu manques de respect au quartier ? Les gars !'],vendeur:['Sortez de mon magasin !']},
+ rob:{give:['D\'accord, d\'accord, prends tout !','Tiens, tiens, ne me fais pas de mal !','Voilà mon portefeuille, pitié !'],refuse:['Jamais de la vie !','Tu crois que tu me fais peur ?'],empty:['Je n\'ai plus rien, je te jure !']},
+ follow:{yes:['D\'accord, je te suis.','Ok, on y va !','Pourquoi pas, je n\'ai rien de mieux à faire.'],no:['Non merci, je suis pressé.','Je ne te connais pas.','Hors de question.'],stop:['D\'accord, je te laisse.','Ok, à plus tard !']},
+ compliment:{_:['Merci, c\'est gentil !','Oh, ça me touche.','Toi aussi, tu as l\'air sympa.'],agressif:['Ouais, je sais.','Garde tes compliments.'],police:['Merci. Restez dans le droit chemin.'],gang:['Tu me flattes ? Tu veux quoi ?']},
+ joke:['Pourquoi les plongeurs plongent-ils en arrière ? Parce que sinon ils tombent dans le bateau !','Que dit un escargot sur le dos d\'une tortue ? Youpi !','Qu\'est-ce qui est jaune et qui attend ? Jonathan !','C\'est l\'histoire d\'un pingouin qui respire par les fesses… il s\'assoit et il meurt.'],
+ other:{_:['Hmm, intéressant.','Je ne suis pas sûr de comprendre.','Ah bon ?','Désolé, je suis pressé.','Tu as vu le prix de l\'essence ?'],agressif:['Tu racontes n\'importe quoi.','Bon, t\'as fini ?'],police:['Avez-vous besoin d\'aide ?','Restez prudent.'],armee:['Circulez.'],gang:['T\'es bizarre, toi.']},
+ peace:{ok:['Ok, ça va pour cette fois.','Bon, on se calme.','D\'accord, sans rancune.'],no:['Trop tard, fallait réfléchir avant !','Tes excuses, garde-les !']},
+};
+function line(intent,p,map={}){const r=roleOf(p),pe=p.persona,b=L[intent];let arr=Array.isArray(b)?b:(b[r]||b[pe]||b._||b.calme);return rpick(arr).replace('{n}',p.pname);}
+const PLACES=[['banque','banque','Banque'],['armurerie','armurerie','Armurerie'],['arme','armurerie','Armurerie'],['supérette','superette','Supérette'],['épicerie','superette','Supérette'],['café','cafe','Café'],['bijouterie','bijouterie','Bijouterie'],
+  ['coiffeur','coiffeur','Coiffeur'],['vêtement','boutique','Boutique de mode'],['boutique','boutique','Boutique de mode'],['garage','garage','Carrosserie'],['carrosserie','garage','Carrosserie'],['hôpital','hopital','Hôpital'],['hopital','hopital','Hôpital'],['commissariat','police','Commissariat']];
+const POI=[['aéroport',{x:-60,z:398}],['port',{x:72,z:-1660}],['plage',{x:LAND.x0-10,z:0}],['montagne',MOUNT],['base',{x:BASE.x0,z:0}],['port-soleil',TOWNS[0]],['soleil',TOWNS[0]],['sable',TOWNS[1]],['désert',TOWNS[1]]];
+// talking bubble over a person
+const bubble={el:null,p:null,t:0};
+function showBubble(p,text){if(!bubble.el){bubble.el=document.createElement('div');bubble.el.className='npcBubble';document.body.appendChild(bubble.el);}bubble.el.textContent=text;bubble.p=p;bubble.t=4.5;}
+function updateBubble(dt){if(!bubble.el)return;bubble.t-=dt;const p=bubble.p;if(bubble.t<=0||!p){bubble.el.style.display='none';return;}
+  _v4.set(p.x,p.y+2.25,p.z);const d=camera.position.distanceTo(_v4);_v4.project(camera);if(_v4.z>1||d>40){bubble.el.style.display='none';return;}
+  bubble.el.style.display='block';bubble.el.style.transform=`translate(${((_v4.x+1)/2*innerWidth).toFixed(0)}px,${((1-_v4.y)/2*innerHeight).toFixed(0)}px) translate(-50%,-100%)`;}
+function npcSay(p,text){persona(p);say(text,p.voice,p.persona==='agressif'||p.gang?1.12:1);showBubble(p,text);
+  const tag=p.cop?'Policier':p.soldier?'Militaire':p.gang?GANGS[p.gang].n:p.staffShop?'Vendeur':p.persona;showSub(`${p.pname} (${tag}) : « ${text} »`);p.talkT=Math.max(p.talkT||0,4);}
+// who are we talking to : the closest person in front of the player
+function staffPeds(){return HUM.staff.map(a=>{if(!a.staffShop){a.staffShop=true;a.persona='sympa';a.pname=rpick(FIRSTN);a.voice=rnd(.8,1.3);}return a;});}
+function talkTarget(){let best=null,bs=-1;const fx=Math.sin(player.h),fz=Math.cos(player.h);
+  for(const p of [...peds,...staffPeds()]){if(p.state==='down'||p.gdead||p.mannequin)continue;const dx=p.x-player.x,dz=p.z-player.z,d=Math.hypot(dx,dz);if(d>9)continue;
+    const c=d>.1?(dx*fx+dz*fz)/d:1;const sc=c*1.5-d*.15;if(sc>bs){bs=sc;best=p;}}return best;}
+function intentOf(s){const h=(...w)=>w.some(x=>s.includes(x));
+  if(h('je me rends','ne tirez pas','j\'abandonne','je me livre'))return 'surrender';
+  if(h('pot-de-vin','pot de vin','combien pour','je vous donne','je te donne','arrangement','billets pour'))return 'bribe';
+  if(h('ton argent','ton portefeuille','c\'est un braquage','haut les mains','file-moi','donne-moi tout','vide tes poches','ta thune'))return 'rob';
+  if(h('je vais te tuer','je vais te frapper','tu vas mourir','bagarre','viens te battre','je vais te défoncer','t\'es mort'))return 'threat';
+  if(h('connard','idiot','imbécile','ta gueule','abruti','bouffon','ferme-la','crétin','débile','nul','con '))return 'insult';
+  if(h('rejoindre','faire partie','je suis avec vous','intégrer','je veux être des vôtres','recrute'))return 'join';
+  if(h('des armes','une arme','un flingue','vends-moi','tu vends'))return 'weapons';
+  if(h('suis-moi','suis moi','viens avec moi','accompagne','suivez-moi','suivez moi'))return 'follow';
+  if(h('arrête de me suivre','laisse-moi','va-t\'en','stop','reste ici','arrête'))return 'stop';
+  if(h('pardon','désolé','paix','on se calme','calme-toi','pas de problème','on est cool','excuse'))return 'peace';
+  if(h('blague','raconte','fais-moi rire'))return 'joke';
+  if(h('aide','au secours','à l\'aide'))return 'help';
+  if(h('où','chemin','aller à','trouver','direction','cherche'))return 'where';
+  if(h('ça va','comment tu vas','comment allez','la forme'))return 'how';
+  if(h('ton nom','tu t\'appelles','vous appelez','qui es-tu','qui êtes-vous'))return 'name';
+  if(h('tu fais quoi','travail','métier','boulot'))return 'job';
+  if(h('merci','beau','belle','sympa','gentil','cool','bravo','classe'))return 'compliment';
+  if(h('acheter','je voudrais','je veux'))return 'buy';
+  if(h('bonjour','salut','coucou','hello','bonsoir','yo','wesh','hey'))return 'greet';
+  return 'other';}
+function setMood(p,k,t=30){p.mood={k,t};if(k==='flee'){p.mood=null;p.state='flee';p.t=0;p.fx=p.x-player.x;p.fz=p.z-player.z;}}
+function talkToNPC(text,p){
+  persona(p);const s=' '+text.toLowerCase()+' ',it=intentOf(s),role=roleOf(p),pe=p.persona,gunOut=aiming();
+  p.h=Math.atan2(player.x-p.x,player.z-p.z);
+  // ---- police officers
+  if(role==='police'){
+    if(it==='surrender'){if(player.stars>0){npcSay(p,'Les mains derrière la tête ! Vous êtes en état d\'arrestation.');setTimeout(()=>busted(),1500);}else npcSay(p,'Vous rendre ? Vous n\'avez rien fait… circulez.');return;}
+    if(it==='bribe'){if(player.stars===0){npcSay(p,'Je n\'ai pas besoin de votre argent. Circulez.');return;}const cost=400*player.stars;
+      if(player.money>=cost&&Math.random()<.55){player.money-=cost;player.stars=0;seenT=0;for(const c of police)if(c.ai==='police'){c.ai='traffic';snapToGraph(c);}npcSay(p,`…Bon. ${cost} dollars et je n\'ai rien vu.`);sfx.coin();}
+      else{addWanted(1);npcSay(p,'Tentative de corruption d\'un agent ! Vous êtes en état d\'arrestation !');setMood(p,'shoot');}return;}
+    if(it==='insult'||it==='threat'){addWanted(it==='threat'?2:1);npcSay(p,line('insultBack',p));setMood(p,player.stars>1?'shoot':'arrest');return;}
+    if(it==='rob'){addWanted(2);npcSay(p,'Braquer un policier ? Vous êtes fou ! Mains en l\'air !');setMood(p,'shoot');return;}
+    if(it==='help'){npcSay(p,'Que se passe-t-il ? Restez près de moi, je surveille.');return;}
+  }
+  // ---- soldiers
+  if(role==='armee'){
+    if(it==='insult'||it==='threat'||it==='rob'){npcSay(p,'Menace contre un militaire ! Feu !');addWanted(3);setMood(p,'shoot');return;}
+    if(it==='where'&&s.includes('base')){npcSay(p,'La base est interdite aux civils. Faites demi-tour.');return;}
+    if(it==='surrender'){npcSay(p,'Couchez-vous au sol ! … Bon, filez avant que je change d\'avis.');player.stars=Math.max(0,player.stars-1);return;}
+  }
+  // ---- gang members
+  if(role==='gang'){const G=GANGS[p.gang];
+    if(it==='insult'||it==='threat'){npcSay(p,line('insultBack',p));G.hostile=40;G.friend=false;return;}
+    if(it==='peace'){if(G.hostile>0&&Math.random()<.5){G.hostile=0;npcSay(p,'Ok, ok. Mais fais gaffe à toi.');}else if(G.hostile>0)npcSay(p,rpick(L.peace.no));else npcSay(p,'Tranquille, y\'a pas de souci.');return;}
+    if(it==='join'){if(G.friend){npcSay(p,`T\'es déjà des nôtres, frère. Les ${G.n} te couvrent.`);return;}
+      const rival=p.gang==='rouges'?'verts':'rouges';npcSay(p,`Tu veux rejoindre ${G.n} ? Prouve-le : va éliminer trois membres des ${GANGS[rival].n.replace('Les ','')}.`);
+      if(!story&&!mission){story={i:-1,title:`Initiation — ${G.n}`,who:p.pname,reward:2000,defs:[ST.kill(`Élimine 3 membres des ${GANGS[rival].n.replace('Les ','')}`,rival,3)],si:-1,step:null,prev:null,contract:true,joinGang:p.gang};storyNext();}return;}
+    if(it==='weapons'){if(G.hostile>0){npcSay(p,'Je vends rien à un ennemi !');return;}const w=rpick(['pistolet','smg','pompe']),pr=Math.round(WBY[w].price*.6);
+      if(player.money>=pr){player.money-=pr;giveWeapon(w,3);npcSay(p,`Tiens, un ${WBY[w].name.toLowerCase()} pour ${pr} dollars. Tu ne l\'as pas eu de moi.`);sfx.coin();save();}else npcSay(p,`Reviens avec ${pr} dollars.`);return;}
+    if(it==='rob'){if(gunOut&&Math.random()<.35){const c=Math.round(rnd(80,300));player.money+=c;npcSay(p,`Ok, ok… prends ça et dégage. Tu vas le payer.`);G.hostile=30;return;}npcSay(p,'Me braquer, moi ? T\'es mort !');G.hostile=40;return;}
+    if(it==='greet'&&G.friend){npcSay(p,'Hé, le frère ! Bienvenue chez toi.');return;}
+  }
+  // ---- shopkeepers
+  if(role==='vendeur'){
+    if(it==='rob'&&gunOut){npcSay(p,rpick(ROBLINES));robStaffNow(p);return;}
+    if(it==='buy'||it==='greet'){const sh=shopOf(p.x,p.z);npcSay(p,it==='buy'?'Bien sûr, je vous montre ça.':line('greet',p));if(it==='buy'&&sh)setTimeout(()=>shopAction(sh.kind),900);return;}
+    if(it==='insult'||it==='threat'){npcSay(p,line('insultBack',p));addWanted(1);return;}
+  }
+  // ---- everyone (civilians and fallbacks)
+  if(it==='where'){let pl=PLACES.find(x=>s.includes(x[0]));let pos=null,name='';
+    if(pl){const sh=shopPos(pl[1]);if(sh){pos=sh;name=pl[2];}}if(!pos){const q=POI.find(x=>s.includes(x[0]));if(q){pos=q[1];name=q[0];}}
+    if(!pos){npcSay(p,pe==='agressif'?'J\'suis pas un GPS.':'Où ça ? La banque, l\'armurerie, l\'aéroport, le port… ?');return;}
+    if(pe==='agressif'&&Math.random()<.5){npcSay(p,'Débrouille-toi tout seul.');return;}
+    WP=null;setWaypoint(pos.x,pos.z);const d=Math.round(Math.hypot(pos.x-player.x,pos.z-player.z));npcSay(p,`${name.charAt(0).toUpperCase()+name.slice(1)} ? C\'est à ${d} mètres. Je te le mets sur ta carte.`);return;}
+  if(it==='rob'){
+    if(gunOut||pe==='peureux'&&Math.random()<.7||pe==='calme'&&Math.random()<.25){if(p.robbed){npcSay(p,rpick(L.rob.empty));setMood(p,'flee');return;}
+      p.robbed=true;const c=Math.round(rnd(30,260));player.money+=c;npcSay(p,rpick(L.rob.give));toast(`+$${c}`);sfx.coin();if(Math.random()<.4)addItem(rpick(['telephone','montre','portefeuille']),rnd(.5,1));setTimeout(()=>setMood(p,'flee'),900);
+      if(nearPolice(player,80)||Math.random()<.3)setTimeout(()=>addWanted(1),3000);return;}
+    npcSay(p,rpick(L.rob.refuse));if(pe==='agressif')setMood(p,p.armed?'shoot':'fight');else setMood(p,'flee');return;}
+  if(it==='insult'||it==='threat'){npcSay(p,line('insultBack',p));
+    if(pe==='agressif')setMood(p,p.armed&&it==='threat'?'shoot':'fight');else if(pe==='peureux'||it==='threat'){setMood(p,'flee');if(it==='threat'&&Math.random()<.5)setTimeout(()=>{if(!player.dead){addWanted(1);toast('Un passant a appelé la police');}},4000);}
+    return;}
+  if(it==='peace'){if(p.mood&&(p.mood.k==='fight'||p.mood.k==='shoot')){if(Math.random()<.55){p.mood=null;npcSay(p,rpick(L.peace.ok));}else npcSay(p,rpick(L.peace.no));}else npcSay(p,'Pas de souci.');return;}
+  if(it==='follow'){if((pe==='sympa'||pe==='calme'&&Math.random()<.5)&&!p.cop&&!p.soldier&&!p.gang){npcSay(p,rpick(L.follow.yes));setMood(p,'follow',90);}else npcSay(p,rpick(L.follow.no));return;}
+  if(it==='stop'){if(p.mood&&p.mood.k==='follow'){p.mood=null;npcSay(p,rpick(L.follow.stop));}else npcSay(p,pe==='agressif'?'C\'est toi qui viens me parler !':'D\'accord.');return;}
+  if(it==='joke'){npcSay(p,pe==='agressif'?'J\'ai pas le temps pour tes blagues.':rpick(L.joke));return;}
+  if(it==='help'){npcSay(p,pe==='peureux'?'Je… je ne peux rien faire, désolé !':'Appelle le 17 ! Ou va voir un policier.');return;}
+  if(it==='surrender'||it==='bribe'){npcSay(p,'Hein ? Je ne suis pas policier, moi.');return;}
+  if(it==='join'||it==='weapons'){npcSay(p,pe==='agressif'?'Va voir les gangs au sud-ouest ou au nord-est.':'Je ne trempe pas là-dedans, moi.');return;}
+  npcSay(p,line(L[it]?it:'other',p));
+}
+// robbing a shopkeeper by voice (gun out)
+function robStaffNow(a){const st=staff.find(s=>Math.hypot(s.group.position.x-a.x,s.group.position.z-a.z)<1);if(!st||st.robUntil&&gameT<st.robUntil){npcSay(a,'La caisse est vide, je vous jure !');return;}
+  const shop=shopOf(a.x,a.z),k=shop?shop.kind:'superette';st.robUntil=gameT+240;ROBLAST.kind=k;ROBLAST.t=gameT;
+  const cash=k==='banque'?Math.round(rnd(1800,3600)):k==='bijouterie'?Math.round(rnd(400,900)):Math.round(rnd(220,700));player.money+=cash;sfx.coin();toast(`BRAQUAGE RÉUSSI\n+$${cash}`);
+  if(k==='bijouterie')for(let i=0;i<2;i++)addItem(rpick(LOOT_JEWEL),rnd(.75,1));addWanted(k==='banque'?3:2);save();}
+// what people do once angry / friendly : fight, shoot, follow, arrest
+function civAct(p,dt,P){const m=p.mood;if(!m)return null;m.t-=dt;const d=Math.hypot(p.x-P.x,p.z-P.z);
+  if(m.t<=0||player.dead||(d>45&&m.k!=='follow')){p.mood=null;p.aiming=false;p.state='walk';p.a=clamp(Math.floor((p.x+HALF)/CELL),0,N-1);p.b=clamp(Math.floor((p.z+HALF)/CELL),0,N-1);p.ci=0;if(!p.post)pedTarget(p);return null;}
+  p.h+=wrapA(Math.atan2(P.x-p.x,P.z-p.z)-p.h)*Math.min(1,dt*7);let sp=0;
+  if(m.k==='follow'){p.aiming=false;if(d>3){sp=d>9?5:2.2;}}
+  else if(m.k==='fight'||m.k==='arrest'){p.aiming=false;if(d>1.3)sp=4.6;else{p.hitT=(p.hitT||0)-dt;if(p.hitT<=0){p.hitT=1.1;p.atkAnim=.6;
+      if(m.k==='arrest'&&player.stars<=2&&!player.car){npcSay(p,'Vous êtes en état d\'arrestation !');p.mood=null;setTimeout(()=>busted(),800);return 0;}
+      if(!player.car){hurtPlayer(7,Math.random()<.25);sfx.thud();}}}}
+  else if(m.k==='shoot'){p.aiming=true;if(d>13)sp=3.4;p.fireT=(p.fireT||rnd(.3,1))-dt;if(p.fireT<=0&&d<40){p.fireT=rnd(.9,1.6);gangShoot(p,d);}}
+  if(p.atkAnim>0)p.atkAnim-=dt;
+  if(sp){p.x+=Math.sin(p.h)*sp*dt;p.z+=Math.cos(p.h)*sp*dt;resolveCircle(p,.3,false);p.y=groundY(p.x,p.z);}
+  return sp;}
+// police officers on foot, soldiers at the base and on the forbidden island
+function initGuards(){
+  for(let i=0;i<(IS_TOUCH?6:12);i++){const p=new Ped();p.cop=true;p.armed=true;p.kind='agent';peds.push(p);if(!spawnPed(p,0,0,0,300))spawnPed(p,0,0,0,900);persona(p);p.persona='calme';}
+  const posts=[[BASE.x0+4,-14],[BASE.x0+4,14],[BASE.x0+30,-40],[BASE.x0+30,40],[BASE.x1-45,BASE.z1-45],[BASE.x0+70,-60],[ISL.x+8,ISL.z-10],[ISL.x-8,ISL.z+10],[ISL.x+12,ISL.z+12]];
+  for(const [x,z] of posts){const p=new Ped();p.soldier=true;p.armed=true;p.kind='soldat';p.post={x,z};p.x=x;p.z=z;p.y=groundY(x,z);p.state='idle';p.h=-Math.PI/2;peds.push(p);persona(p);p.persona='calme';}
+}
+function guardAct(p,dt,P){// returns speed, or null to use the normal ped logic
+  if(p.soldier){const inZone=inBase(P.x,P.z)||Math.hypot(P.x-ISL.x,P.z-ISL.z)<ISL.r+40,d=Math.hypot(p.x-P.x,p.z-P.z);
+    if((inZone||player.stars>=4)&&d<70&&!player.dead){if(!p.mood||p.mood.k!=='shoot'){p.mood={k:'shoot',t:30};if(Math.random()<.5)npcSay(p,'Intrus ! Ouvrez le feu !');}return civAct(p,dt,P)||0;}
+    if(p.mood)return civAct(p,dt,P)||0;p.aiming=false;const dx=p.post.x-p.x,dz=p.post.z-p.z,dp=Math.hypot(dx,dz);if(dp>1){p.h=Math.atan2(dx,dz);p.x+=dx/dp*1.6*dt;p.z+=dz/dp*1.6*dt;p.y=groundY(p.x,p.z);return 1.6;}return 0;}
+  if(p.cop){const d=Math.hypot(p.x-P.x,p.z-P.z);
+    if(player.stars>0&&d<38&&!player.dead&&(!p.mood||p.mood.k==='follow')){p.mood={k:player.stars>=2?'shoot':'arrest',t:40};npcSay(p,player.stars>=2?'Police ! Lâchez votre arme !':'Police ! Plus un geste !');}
+    if(p.mood&&player.stars===0&&p.mood.k!=='follow')p.mood=null;}
+  if(p.mood)return civAct(p,dt,P);return null;}
+// spontaneous remarks when the player stands close
+let remarkT=4;
+function updateRemarks(dt,P){remarkT-=dt;if(remarkT>0||player.car)return;remarkT=rnd(5,10);
+  let best=null,bd=4.2;for(const p of peds){if(p.state==='down'||p.gdead)continue;const d=Math.hypot(p.x-P.x,p.z-P.z);if(d<bd){bd=d;best=p;}}if(!best||best.talkT>0)return;persona(best);
+  const r=roleOf(best),pe=best.persona;const t=r==='police'?(player.stars?'Vous, là ! Ne bougez pas !':rpick(['Bonjour. Tout va bien ?','Circulez, s\'il vous plaît.'])):r==='armee'?rpick(['Reculez, civil.','Zone surveillée.']):
+    r==='gang'?rpick(['Qu\'est-ce que tu regardes ?','T\'es perdu ?','Fais gaffe où tu marches.']):pe==='agressif'?rpick(['T\'as un problème ?','Recule, tu me colles.','Quoi ?']):pe==='peureux'?rpick(['Oh ! Tu m\'as fait peur…','Pardon, je passe…']):rpick(['Salut !','Bonne journée !','Il fait beau, hein ?']);
+  npcSay(best,t);if(pe==='agressif'&&!best.gang&&!best.cop&&Math.random()<.12){setTimeout(()=>{if(Math.hypot(best.x-player.x,best.z-player.z)<5){npcSay(best,'Tu me cherches ? Allez, viens !');setMood(best,best.armed?'shoot':'fight');}},2500);}}
+// listening : continuous speech recognition + the "Parler" text box
+const talk={on:false,rec:null};
+function startListening(){const SR=window.SpeechRecognition||window.webkitSpeechRecognition;if(!SR){toast('Reconnaissance vocale non disponible ici\nÉcris ta phrase (touche Entrée)');openSayBox();return false;}
+  const r=new SR();r.lang='fr-FR';r.continuous=true;r.interimResults=false;talk.rec=r;talk.on=true;$('mic').classList.add('on');
+  r.onresult=e=>{const res=e.results[e.results.length-1];if(res.isFinal)handleVoice(res[0].transcript);};
+  r.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed'){talk.on=false;$('mic').classList.remove('on');toast('Micro refusé ou bloqué sur cette page');}};
+  r.onend=()=>{if(talk.on){try{r.start();}catch(e){}}else $('mic').classList.remove('on');};
+  try{r.start();}catch(e){}showSub('🎤 Micro activé : parle aux gens autour de toi');return true;}
+function stopListening(){talk.on=false;try{talk.rec&&talk.rec.stop();}catch(e){}$('mic').classList.remove('on');toast('Micro coupé');}
+function openSayBox(){const b=$('sayBox');b.hidden=false;const i=$('sayIn');i.value='';setTimeout(()=>i.focus(),30);if(document.pointerLockElement)document.exitPointerLock();}
+
 /* ================= multiplayer (WebRTC peer-to-peer, Trystero + Nostr relays, no server) ================= */
 const MP={on:false,joining:false,room:null,self:null,peers:new Map(),sendT:0,code:'public',name:'',hitCD:0};
 const MP_APP='neo-cite-gta-2026',MP_LIB='https://cdn.jsdelivr.net/npm/trystero@0.21.8/+esm';
@@ -3464,6 +3645,7 @@ genTerrain();
 flushStatic();
 initVehicles();
 initGangs();
+initGuards();
 initWorldVehicles();
 initMilHeli();
 initSeaLife();
