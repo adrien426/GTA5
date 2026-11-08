@@ -1339,8 +1339,8 @@ class Car{
   }
   setDriver(on,lk){this.hasDriver=on;this.driver.visible=on&&!this.T.moto;if(on){lk=lk||(this.type==='police'?{shirt:'#1e3a8a',skin:rpick(SKINS),hair:'#111'}:randLook());this.dTorso.material=lam(lk.shirt);this.dHead.material=lam(lk.skin);this.dHair.material=lam(lk.hair);this.dLook=lk;}}
   repaint(c){this.color=c;this.paintMesh.material=paint(c);}
-  place(x,z,h){this.x=x;this.z=z;this.h=h;this.vx=this.vz=0;this.vf=0;this.y=groundY(x,z);this.sync();}
-  sync(){this.group.position.set(this.x,this.y,this.z);this.group.rotation.y=this.h;this.body.rotation.z=this.roll;this.body.rotation.x=this.pitch;}
+  place(x,z,h){if(this.flat)fixTyres(this);this.x=x;this.z=z;this.h=h;this.vx=this.vz=0;this.vf=0;this.y=groundY(x,z);this.sync();}
+  sync(){this.group.position.set(this.x,this.y,this.z);this.group.rotation.y=this.h;this.body.rotation.z=this.roll+(this.flatR||0);this.body.rotation.x=this.pitch+(this.flatP||0);}
   get speed(){return Math.hypot(this.vx,this.vz);}
 }
 function carCircles(c,out){const fx=Math.sin(c.h),fz=Math.cos(c.h),o=c.T.len/2-1.0;out[0]=c.x+fx*o;out[1]=c.z+fz*o;out[2]=c.x;out[3]=c.z;out[4]=c.x-fx*o;out[5]=c.z-fz*o;return out;}
@@ -1377,6 +1377,7 @@ function carPhysics(c,thr,steer,hb,dt){
   }
   const gy=groundY(c.x,c.z);c.y=lerp(c.y,gy,1-Math.exp(-14*dt));
   c.wspin+=vf*dt/.36;for(let i=0;i<4;i++){const w=c.wheels[i];w.rotation.x=c.wspin;if(i<2)w.rotation.y=c.steer*.45;}
+  tyrePhysics(c,dt);
   if(impact>5)carImpact(c,impact);
   c.sync();
 }
@@ -1831,6 +1832,8 @@ const sfx=(()=>{
     siren(v){if(!ac)return;sirG.gain.setTargetAtTime(v*.07,ac.currentTime,.2);},
     crash(v){noise(.5*v+.1,.5,900);tone(70,.3,'square',.15*v);},
     thud(){noise(.3,.25,500);},
+    pop(){noise(.8,.25,2500);tone(90,.15,'square',.25,.5);setTimeout(()=>noise(.18,1.2,5000),120);},
+    ping(){tone(rnd(2200,3200),.12,'triangle',.08,.6);noise(.12,.05,6000);},
     bark(v=1){if(!ac)return;tone(420,.08,'sawtooth',.2*v,.55);noise(.22*v,.07,1400);setTimeout(()=>{tone(360,.1,'sawtooth',.18*v,.5);noise(.18*v,.08,1200);},140);},
     shot(k){if(k==='laser'){tone(1400,.18,'sawtooth',.12,.25);tone(700,.2,'square',.06,.3);return;}const v=k==='far'?.25:k==='heavy'?1:.6;noise(.55*v,.18,4000);noise(.45*v,k==='heavy'?.6:.35,k==='heavy'?400:700);tone(k==='heavy'?70:110,.14,'square',.14*v,.5);},
     swish(){noise(.12,.15,2500);},
@@ -2207,7 +2210,7 @@ function applyHit(r,w){
   const P=playerPos();if(!r.hit)return;player.crossHit=.2;
   if(r.hit.kind==='mp'){mpDamage(r.hit.ref,w.dmg*perkDmg(),false);return;}if(r.hit.kind==='dog'){dogHit(r.hit.ref,w.dmg*perkDmg());return;}if(r.hit.ref.ai==='remote')return;
   if(r.hit.kind==='ped'){const p=r.hit.ref;if(!p.gdead){if(p.state!=='down')pedLoot(p);woundPed(p,r.hit.part||'torse',w,r.d);}if(shotWantedCD<=0){addWanted(nearPolice(P,90)?2:1);shotWantedCD=3;}}
-  else{const c=r.hit.ref;c.health-=w.dmg*perkDmg();carShotFx(c,r.end,r.o);if(w.laser&&!c.burn&&c.health<45)c.burn=1.5;if(c.health<=0&&!c.burn&&!c.dead)c.burn=2.5;
+  else{const c=r.hit.ref;c.health-=w.dmg*perkDmg();{const ti=tyreHit(c,r.o,r.d);if(ti>=0)popTyre(c,ti);else metalSpark(r.end,r.d);}carShotFx(c,r.end,r.o);if(w.laser&&!c.burn&&c.health<45)c.burn=1.5;if(c.health<=0&&!c.burn&&!c.dead)c.burn=2.5;
     if(c.ai==='police'){if(shotWantedCD<=0){addWanted(player.stars<2?2:1);shotWantedCD=2;}}else if(c.ai==='traffic'){c.cruise=22;c.yieldT=4;}}
 }
 function shoot(){
@@ -3331,7 +3334,7 @@ CARM.glassBroken=(()=>{const c=mkC(256,256),g=c.getContext('2d');g.fillStyle='rg
   for(let k=0;k<5;k++){const cx=rnd(30,226),cy=rnd(30,226);for(let i=0;i<14;i++){const a=rnd(0,6.28),l=rnd(30,120);g.beginPath();g.moveTo(cx,cy);g.lineTo(cx+Math.cos(a)*l,cy+Math.sin(a)*l);g.stroke();}
     for(let r=12;r<70;r+=rnd(10,20)){g.beginPath();g.arc(cx,cy,r,0,7);g.stroke();}}
   const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return new THREE.MeshPhongMaterial({map:t,transparent:true,opacity:.92,shininess:60,depthWrite:false,side:THREE.DoubleSide,emissive:0x333a40});})();
-const HOLEG=new THREE.CircleGeometry(.032,10),HOLEM=new THREE.MeshBasicMaterial({color:0x0a0a0b,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4}),HOLERG=new THREE.RingGeometry(.032,.052,10),HOLERM=new THREE.MeshBasicMaterial({color:0x9aa0a6,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-3});
+const HOLEG=new THREE.CircleGeometry(.04,10),HOLEM=new THREE.MeshBasicMaterial({color:0x0a0a0b,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-4}),HOLERG=new THREE.RingGeometry(.04,.075,10),HOLERM=new THREE.MeshBasicMaterial({color:0x9aa0a6,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-3});
 function dirtyColor(col,k){const c=new THREE.Color(col).lerp(new THREE.Color('#2a2622'),k);return '#'+c.getHexString();}
 function carDirt(c){if(c.dead||!c.paintMesh)return;const lvl=c.health<35?2:c.health<70?1:0;if(lvl===c.dirtLvl)return;c.dirtLvl=lvl;c.paintMesh.material=paint(lvl?dirtyColor(c.color,lvl*.22):c.color);}
 function carGlassBreak(c,all){if(!c.glassM)return;let any=false;for(const g of c.glassM){if(g.broken)continue;g.material=CARM.glassBroken;g.broken=true;any=true;if(!all)break;}
@@ -3348,7 +3351,7 @@ function carShotFx(c,pt,from){
       if(ax!=='y'&&hp.y>(c.T.roofY||1.45)*.6)carGlassBreak(c,false);}}
   carDirt(c);
 }
-function carRepairFx(c){if(!c)return;if(c.glassM)for(const g of c.glassM){g.material=CARM.glass;g.broken=false;}
+function carRepairFx(c){if(!c)return;fixTyres(c);if(c.glassM)for(const g of c.glassM){g.material=CARM.glass;g.broken=false;}
   for(const m of c.body.children.slice())if(m.geometry===HOLEG||m.geometry===HOLERG)c.body.remove(m);c.holes=0;c.dirtLvl=-1;carDirt(c);}
 
 /* ================= talking to people : personalities, voice / text conversation, reactions ================= */
@@ -3885,6 +3888,31 @@ function updateWounds(dt,P){
   // screen blood
   WOUND.pulse=Math.max(0,WOUND.pulse-dt*1.4);const low=player.dead?0:clamp((55-player.hp)/55,0,1)*.75;WOUND.fx.style.opacity=Math.max(WOUND.pulse,low).toFixed(2);
 }
+
+/* ================= shooting cars : flat tyres, sparks on the bodywork ================= */
+function tyreHit(c,o,d){if(!c.wheels||c.wheels.length<4||c.T.moto||c.T.boat||c.T.fly||c.T.custom)return -1;c.group.updateMatrixWorld(true);
+  let best=-1,bd=.42;const wp=new THREE.Vector3();
+  for(let i=0;i<4;i++){c.wheels[i].getWorldPosition(wp);const vx=wp.x-o.x,vy=wp.y-o.y,vz=wp.z-o.z,t=vx*d.x+vy*d.y+vz*d.z;if(t<0)continue;
+    const qx=vx-d.x*t,qy=vy-d.y*t,qz=vz-d.z*t,dist=Math.sqrt(qx*qx+qy*qy+qz*qz);if(dist<bd){bd=dist;best=i;}}
+  return best;}
+function popTyre(c,i){if(!c.flat)c.flat=[0,0,0,0];if(c.flat[i])return;c.flat[i]=1;const w=c.wheels[i];
+  const sq=new THREE.Group();sq.position.copy(w.position);w.parent.add(sq);sq.add(w);w.position.set(0,0,0);sq.scale.set(1,.7,1);sq.position.y-=.1;w.userData.sq=sq;
+  const wp=new THREE.Vector3();w.getWorldPosition(wp);for(let k=0;k<10;k++)emit(wp.x,wp.y,wp.z,'#3a3a3a',rnd(.15,.3),rnd(.4,.8),rnd(-2,2),rnd(.5,2),rnd(-2,2),1.5);
+  for(let k=0;k<6;k++)emit(wp.x,wp.y,wp.z,'#bfbfbf',rnd(.2,.4),rnd(.6,1.1),rnd(-.6,.6),rnd(.3,1),rnd(-.6,.6),2.5);
+  sfx.pop&&sfx.pop();tyreTilt(c);if(c===player.car)toast('Pneu crevé !\nLa voiture tire d\'un côté et ralentit');
+  if(c.ai==='traffic'){c.cruise=Math.min(c.cruise||12,6);c.yieldT=6;}}
+function tyreTilt(c){const f=c.flat||[0,0,0,0];c.flatR=((f[0]+f[2])-(f[1]+f[3]))*.045;c.flatP=((f[0]+f[1])-(f[2]+f[3]))*.035;}
+function fixTyres(c){if(!c.flat)return;for(let i=0;i<4;i++){const w=c.wheels[i],sq=w&&w.userData.sq;if(!sq)continue;sq.parent.add(w);w.position.copy(sq.position);w.position.y+=.1;sq.parent.remove(sq);w.userData.sq=null;}c.flat=null;c.flatR=c.flatP=0;}
+function flatCount(c){return c.flat?c.flat[0]+c.flat[1]+c.flat[2]+c.flat[3]:0;}
+// physics : slower, pulls towards the flat side, rims throw sparks
+function tyrePhysics(c,dt){const f=c.flat;if(!f)return;const n=flatCount(c);if(!n)return;
+  const sp=Math.hypot(c.vx,c.vz),cap=c.T.maxV*(1-n*.17);if(sp>cap){const k=cap/sp;c.vx=lerp(c.vx,c.vx*k,1-Math.exp(-2*dt));c.vz=lerp(c.vz,c.vz*k,1-Math.exp(-2*dt));}
+  const pull=((f[1]*1.4+f[3])-(f[0]*1.4+f[2]))*.08*Math.min(1,sp/8);c.h+=pull*dt*((c.vf||0)>=0?1:-1);
+  if(sp>7&&Math.random()<dt*sp*.6){const i=f.findIndex((v,k)=>v&&Math.random()<.7);if(i>=0){const wp=new THREE.Vector3();c.wheels[i].getWorldPosition(wp);
+    for(let k=0;k<3;k++)emit(wp.x,c.y+.05,wp.z,'#ffc04d',rnd(.05,.09),rnd(.15,.3),-c.vx*.15+rnd(-1.5,1.5),rnd(.5,2),-c.vz*.15+rnd(-1.5,1.5),.2,true);}}}
+// sparks + metal "ping" where the bullet hits the bodywork
+function metalSpark(pt,d){for(let k=0;k<6;k++)emit(pt.x,pt.y,pt.z,Math.random()<.5?'#ffd27f':'#fff1c4',rnd(.04,.08),rnd(.12,.28),-d.x*rnd(1,4)+rnd(-2,2),rnd(0,3),-d.z*rnd(1,4)+rnd(-2,2),.2,true,6);
+  emit(pt.x,pt.y,pt.z,'#9a9a9a',.25,.5,0,.6,0,2);sfx.ping&&sfx.ping();}
 
 /* ================= multiplayer (WebRTC peer-to-peer, Trystero + Nostr relays, no server) ================= */
 const MP={on:false,joining:false,room:null,self:null,peers:new Map(),sendT:0,code:'public',name:'',hitCD:0};

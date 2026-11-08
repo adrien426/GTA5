@@ -57,6 +57,12 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Tirer sur les voitures
+
+- **Pneus** : vise une roue pour la crever (bruit d'éclatement, poussière). La roue s'écrase, la voiture penche de ce côté, tire d'un côté, ralentit, et la jante frotte en faisant des étincelles. Pratique pour stopper la police ou une voiture qui fuit.
+- **Carrosserie** : chaque balle laisse un trou bien visible, avec étincelles et bruit de métal ; les vitres touchées se brisent.
+- La carrosserie (garage) répare tout : trous, vitres et pneus.
+
 ## Sang et blessures
 
 - Chaque balle projette du sang dans la direction du tir, avec des éclaboussures au sol derrière la victime.
