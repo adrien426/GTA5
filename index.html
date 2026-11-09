@@ -4747,7 +4747,7 @@ function genCountry2(C){const {x,z,r}=C,fr=F(x,z,0),snow=C.theme==='snow',gh=(px
   for(let i=0;i<14;i++){const p=new Ped();const v=i<6?{x,z,r:200}:C.villages[i%2];p.wander={x:v.x,z:v.z,r:v.r||90};p.kind=rpick(['adam','pull','blond','femme','femme']);const lk=randLook();if(snow)lk.shirt=rpick(['#2c3e50','#7a1f1f','#1f3a5f','#3a3a3a']);setLook(p.m,lk);
     const px=p.wander.x+rnd(-30,30),pz=p.wander.z+rnd(-30,30);p.post={x:px,z:pz};p.x=px;p.z=pz;p.y=gh(px,pz);p.state='idle';peds.push(p);persona(p);p.pname=rpick(C.names);p.country=C.id;}}
 
-function updateGta3(dt,P){if(pressed.fp)fpToggle();updateDrops(dt,P);updateBoosts(dt);if(pressed.spec)specToggle();
+function updateGta3(dt,P){if(pressed.fp)fpToggle();if((frame&15)===0){const op=nightF>.3?.1:.02;for(const id in wMeshes){const g=wMeshes[id];for(const c of g.children)if(c.userData.beam&&c.geometry&&c.geometry.type==='ConeGeometry')c.material.opacity=op;}}updateDrops(dt,P);updateBoosts(dt);if(pressed.spec)specToggle();
   if(!prison.on&&prison.look){setLook(player.m,prison.look);if(HUM.playerH)applyLook(HUM.playerH,prison.look);prison.look=null;}
   if(prison.on&&!prison.look){prison.look=player.m.look;const lk={...player.m.look,shirt:'#e8771e',pants:'#e8771e',custom:true};setLook(player.m,lk);if(HUM.playerH)applyLook(HUM.playerH,lk);}
   updateGta3.pt=(updateGta3.pt||12)-dt;if(updateGta3.pt<=0){updateGta3.pt=12;const gs=peds.filter(q=>q.pguard&&q.state!=='down');const g=rpick(gs);if(g&&prison.escaping<=0)g.post={x:rnd(PRISON.x0+15,PRISON.x1-15),z:rnd(PRISON.z0+15,PRISON.z1-25)};}}
