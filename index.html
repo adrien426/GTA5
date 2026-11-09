@@ -1219,7 +1219,7 @@ function carGeos(type){
 /* ================= 3D models (assets/models) ================= */
 const VM={};      // loaded models : key -> {scene,meta,wheels}
 const VTYPE={sedan:['volvo',4.55],police:['volvo',4.65],sport:['nsx',4.45],taxi:['kia',3.95],citadine:['kia',3.7],supercar:['ferrari',4.55],concept:['concept',4.45],moto:['sonic',2.0],superbike:['h2r',2.15],scooter:['sonic',1.75],chopper:['h2r',2.45]};
-const WMOD={pistolet:'deagle',assaut:'ak',smg:'aug',carabine:'m16',minigun:'minigun',laser:'rail'};
+const WMOD={lourd:'deagle',micro:'aug',combat:'m16',lmg:'ak',pistolet:'deagle',assaut:'ak',smg:'aug',carabine:'m16',minigun:'minigun',laser:'rail'};
 // grip position in each model, as a fraction of its length from the rear and of its height from the bottom
 const WGRIP={deagle:[.24,.3],ak:[.44,.32],aug:[.56,.3],m16:[.42,.32],minigun:[.42,.55],rail:[.4,.3]};
 const MODEL_FILES=[['volvo',465],['volvo_lo',125],['kia',570],['kia_lo',125],['nsx',885],['nsx_lo',380],['ferrari',425],['ferrari_lo',90],['concept',975],['concept_lo',250],['sonic',220],['h2r',290],['heli',90],['w_deagle',70],['w_ak',290],['w_aug',70],['w_m16',240],['w_minigun',120],['w_rail',70]];
@@ -1601,10 +1601,11 @@ function updateHumans(dt,P){
   if(moto){if(ph.root.parent!==moto.body){moto.body.add(ph.root);ph.root.position.set(0,moto.T.seatY,moto.T.seatZ);ph.root.quaternion.identity();}
     setAnim(ph,'idle',0);ph.mixer.update(dt);ridePose(ph);}
   else if(ph.root.parent!==scene)scene.add(ph.root);
-  if(!player.car){ph.root.position.set(player.x,player.y,player.z);ph.root.rotation.set(0,player.h,0);
+  if(!player.car){ph.root.position.set(player.x,player.y+CHUTE.skyX*.75,player.z);ph.root.rotation.order='YXZ';ph.root.rotation.set(CHUTE.skyX,player.h,0);
     if(player.knock>0)setAnim(ph,player.knock>1.4?'trip':'getUp',player.knock>1.4?1:2.2);
     else if(player.atkT>0&&player.weap==='poings')setAnim(ph,'kick',1.4);
-    else if(!player.ground)setAnim(ph,'run',.35);
+    else if(CHUTE.open)setAnim(ph,'idle',1);
+    else if(!player.ground)setAnim(ph,CHUTE.free?'idle':'run',.35);
     else locoAnim(ph,Math.hypot(player.vx,player.vz));
     ph.mixer.update(dt);const ad=player.swingDir||player.aim;if(ad)aimArm(ph,ad);}
   if(frame%8===0){
@@ -2079,7 +2080,8 @@ function exitCar(force){
   let ok=false;
   for(const s of[1,-1]){const p={x:c.x+lx*s*1.9,z:c.z+lz*s*1.9};resolveCircle(p,.35,false);if(Math.hypot(p.x-c.x,p.z-c.z)>1.4){player.x=p.x;player.z=p.z;ok=true;break;}}
   if(!ok){player.x=c.x;player.z=c.z;}
-  player.y=groundY(player.x,player.z)+.1;player.vx=c.vx*.4;player.vz=c.vz*.4;player.h=c.h;
+  const airY=c.T.fly&&c.y>groundY(c.x,c.z)+4;player.y=airY?c.y+.3:groundY(player.x,player.z)+.1;player.vx=c.vx*.4;player.vz=c.vz*.4;player.h=c.h;player.vy=airY?(c.vy||0):0;
+  if(airY){player.ground=false;CHUTE.peak=player.y;if(!player.chutes){player.chutes=1;}toast('Tu sautes ! ESPACE pour ouvrir le parachute');}
   c.setDriver(false);c.ai=c.dead?'wreck':'parked';player.car=null;player.m.group.visible=true;
   if(force&&Math.abs(c.vf)>9){player.knock=1.4;}
 }
@@ -2090,7 +2092,7 @@ function showFade(t,s,cb){$('fadeT').textContent=t;$('fadeS').textContent=s;$('f
 function respawnAt(L,cost){
   if(player.car){player.car.setDriver(false);player.car.ai=player.car.dead?'wreck':'parked';player.car=null;}
   player.m.group.visible=true;player.x=L.x;player.z=L.z;player.y=.2;player.vx=player.vz=0;player.h=L.h;cam.yaw=L.h;player.hp=100;player.knock=0;player.dead=false;
-  player.wounds=[];if(HUM.playerH)clearStains(HUM.playerH);player.legT=0;player.money=Math.max(0,player.money-cost);player.stars=0;policeETA=0;player.atkT=0;player.aimT=0;player.reload=0;seenT=0;bustT=0;
+  player.wounds=[];CHUTE.peak=0;CHUTE.open=false;CHUTE.free=false;if(HUM.playerH)clearStains(HUM.playerH);player.legT=0;player.money=Math.max(0,player.money-cost);player.stars=0;policeETA=0;player.atkT=0;player.aimT=0;player.reload=0;seenT=0;bustT=0;
   for(const c of police)if(c.ai==='police'){c.ai='off';c.on=false;c.group.visible=false;c.x=c.z=9999;}
   if(mission){mission=null;missionBeam.visible=false;nextBeam.visible=false;}
   $('fade').classList.remove('on');save();
@@ -2145,18 +2147,29 @@ const WEAPONS=[
  {id:'golf',name:'Club de golf',melee:true,dmg:7,reach:2.4,icon:'club',price:90,len:1,col:'#9aa3aa'},
  {id:'biche',name:'Pied-de-biche',melee:true,dmg:9,reach:2.1,icon:'bar',price:70,len:.7,col:'#b03a2e'},
  {id:'katana',name:'Katana',melee:true,dmg:14,reach:2.6,icon:'sword',price:300,len:1,col:'#eef2f5'},
+ {id:'machette',name:'Machette',melee:true,dmg:13,reach:2.3,icon:'sword',price:180,len:.6,col:'#c9ced4'},
+ {id:'hache',name:'Hache',melee:true,dmg:15,reach:2.2,icon:'bar',price:220,len:.75,col:'#8a5a2b'},
+ {id:'poingam',name:'Poing américain',melee:true,dmg:7,reach:1.9,icon:'fist',price:120,len:.1,col:'#c9b27c'},
  {id:'pistolet',name:'Pistolet',mag:12,rate:.26,dmg:9,spread:.004,reload:1.3,icon:'pistol',price:150,len:.24},
  {id:'revolver',name:'Revolver',mag:6,rate:.6,dmg:24,spread:.002,reload:2,icon:'revolver',price:250,len:.3},
+ {id:'lourd',name:'Pistolet lourd',mag:9,rate:.38,dmg:16,spread:.004,reload:1.6,icon:'pistol',price:400,len:.27},
+ {id:'taser',name:'Taser',mag:1,rate:1,dmg:0,taser:true,spread:.002,reload:1.4,range:12,icon:'pistol',price:220,len:.2},
+ {id:'micro',name:'Micro-SMG',mag:24,rate:.06,dmg:5,spread:.032,reload:1.4,auto:true,icon:'smg',price:500,len:.3},
  {id:'smg',name:'Mitraillette',mag:30,rate:.08,dmg:6,spread:.022,reload:1.6,auto:true,icon:'smg',price:600,len:.42},
  {id:'pompe',name:'Fusil à pompe',mag:8,rate:.8,dmg:7,pellets:8,spread:.07,reload:2.2,range:35,icon:'shotgun',price:700,len:.9},
  {id:'assaut',name:"Fusil d'assaut",mag:30,rate:.11,dmg:10,spread:.012,reload:1.8,auto:true,icon:'rifle',price:1200,len:.85},
  {id:'carabine',name:'Carabine',mag:30,rate:.095,dmg:11,spread:.009,reload:1.7,auto:true,icon:'rifle',price:1500,len:.8},
+ {id:'combat',name:'Fusil de combat',mag:30,rate:.1,dmg:12,spread:.008,reload:1.7,auto:true,icon:'rifle',price:2200,len:.82},
+ {id:'pompeauto',name:'Fusil à pompe automatique',mag:10,rate:.32,dmg:6,pellets:7,spread:.08,reload:2.4,range:32,auto:true,icon:'shotgun',price:2600,len:.85},
+ {id:'lmg',name:'Mitrailleuse légère',mag:100,rate:.07,dmg:9,spread:.024,reload:3.2,auto:true,icon:'rifle',price:4200,len:.95},
+ {id:'sniperl',name:'Sniper lourd',mag:6,rate:1.6,dmg:120,spread:0,reload:2.8,scope:true,range:400,icon:'sniper',price:5200,len:1.35},
+ {id:'lancegr',name:'Lance-grenades',mag:6,rate:.8,dmg:0,gl:true,reload:2.6,icon:'rocket',price:4500,len:.75},
  {id:'sniper',name:'Fusil de précision',mag:5,rate:1.1,dmg:70,spread:0,reload:2.4,scope:true,range:300,icon:'sniper',price:2000,len:1.2},
  {id:'minigun',name:'Minigun',mag:200,rate:.045,dmg:6,spread:.03,reload:3,auto:true,icon:'minigun',price:6000,len:1,army:true},
  {id:'roquette',name:'Lance-roquettes',mag:1,rate:1,dmg:0,rocket:true,reload:2.2,icon:'rocket',price:5000,len:1.1,army:true},
  {id:'laser',name:'Fusil laser',mag:40,rate:.12,dmg:26,laser:true,reload:1.5,auto:true,icon:'laser',price:9000,len:.9,army:true},
 ];
-WEAPONS.splice(WEAPONS.findIndex(w=>w.id==='roquette'),0,{id:'grenade',name:'Grenade',throw:true,mag:1,rate:.9,dmg:0,reload:.5,icon:'grenade',price:350,len:.12,col:'#3f5a2a'});
+WEAPONS.splice(WEAPONS.findIndex(w=>w.id==='roquette'),0,{id:'grenade',name:'Grenade',throw:true,mag:1,rate:.9,dmg:0,reload:.5,icon:'grenade',price:350,len:.12,col:'#3f5a2a'},{id:'molotov',name:'Cocktail Molotov',throw:true,kind:'molotov',mag:1,rate:.9,dmg:0,reload:.5,icon:'grenade',price:250,len:.18,col:'#c8551b'},{id:'collante',name:'Bombe collante',throw:true,kind:'sticky',mag:1,rate:.9,dmg:0,reload:.5,icon:'grenade',price:600,len:.14,col:'#4a4a4a'});
 const WBY={};WEAPONS.forEach(w=>{WBY[w.id]=w;w.svg=svgI(w.icon);});
 Object.assign(player,{weap:'poings',owned:new Set(['poings','pistolet']),mag:{},ammo:{},reload:0,fireCD:0,atkT:0,atkDur:.95,atkHit:false,aimT:0,aim:null,swingDir:null,crossHit:0});
 function W(){return WBY[player.weap];}
@@ -2233,13 +2246,15 @@ function muzzle(){const w=W(),g=weaponMesh(w);g.updateMatrixWorld();return _v3.s
 function applyHit(r,w){
   const P=playerPos();if(!r.hit)return;player.crossHit=.2;
   if(r.hit.kind==='mp'){mpDamage(r.hit.ref,w.dmg*perkDmg(),false);return;}if(r.hit.kind==='dog'){dogHit(r.hit.ref,w.dmg*perkDmg());return;}if(r.hit.ref.ai==='remote')return;
+  if(w.taser){if(r.hit.kind==='ped'){const p=r.hit.ref;if(p.state!=='down')knockPed(p,r.d.x*1.5,r.d.z*1.5);p.t=-4;for(let k=0;k<12;k++)emit(p.x,p.y+1,p.z,'#8fd3ff',.12,.3,rnd(-2,2),rnd(0,2),rnd(-2,2),.5,true);npcSay&&npcSay(p,'Aaargh !');}beamFx(muzzle(),r.end);return;}
   if(r.hit.kind==='ped'){const p=r.hit.ref;if(!p.gdead){if(p.state!=='down')pedLoot(p);woundPed(p,r.hit.part||'torse',w,r.d);}if(shotWantedCD<=0){addWanted(nearPolice(P,90)?2:1);shotWantedCD=3;}}
   else{const c=r.hit.ref;c.health-=w.dmg*perkDmg();{const ti=tyreHit(c,r.o,r.d);if(ti>=0)popTyre(c,ti);else metalSpark(r.end,r.d);}carShotFx(c,r.end,r.o);if(w.laser&&!c.burn&&c.health<45)c.burn=1.5;if(c.health<=0&&!c.burn&&!c.dead)c.burn=2.5;
     if(c.ai==='police'){if(shotWantedCD<=0){addWanted(player.stars<2?2:1);shotWantedCD=2;}}else if(c.ai==='traffic'){c.cruise=22;c.yieldT=4;}}
 }
 function shoot(){
   const w=W(),mz=muzzle();
-  if(w.throw){camera.getWorldDirection(_v1);const d=_v1.clone();d.y=Math.max(d.y,-.2)+.25;d.normalize();const o=mz.clone();throwGrenade(o,d,false);mpShotFx(o,o.clone().add(d),false,false,true);return;}
+  if(w.gl){const r=castShot(120,0);const d=r.end.clone().sub(mz).normalize();d.y+=.06;throwGrenade(mz.clone(),d,false,'gl',34);sfx.shot('heavy');scarePeds(40);return;}
+  if(w.throw){camera.getWorldDirection(_v1);const d=_v1.clone();d.y=Math.max(d.y,-.2)+.25;d.normalize();const o=mz.clone();throwGrenade(o,d,false,w.kind);mpShotFx(o,o.clone().add(d),false,false,true);return;}
   if(w.rocket){const r=castShot(200,0);launchRocket(mz,r.end.clone().sub(mz).normalize());mpShotFx(mz,r.end,false,true);scarePeds(40);return;}
   const n=w.pellets||1;
   for(let i=0;i<n;i++){const r=castShot(w.range||90,(w.spread||0)*(player.aim||!IS_TOUCH?1:1.4)*perkSpread());
@@ -2366,12 +2381,13 @@ function wPrice(w){return Math.round(w.price*(shopUI.online?1.15:1));}
 function openShop(online){shopUI.online=!!online;$('shop').querySelector('h3').textContent=online?'ARMURERIE ÉCLAT — EN LIGNE (livraison +15 %)':'ARMURERIE ÉCLAT';shopUI.open=true;renderShop();$('shop').hidden=false;if(document.pointerLockElement)document.exitPointerLock();}
 function closeShop(){shopUI.open=false;$('shop').hidden=true;}
 function renderShop(){
-  $('shopList').innerHTML=`<div class="srow"><div><b>Solde : $${player.money.toLocaleString('fr-FR')}</b><small>Les armes de l'armée ne sont pas en vente</small></div></div>`+
+  $('shopList').innerHTML=`<div class="srow"><div><b>Solde : $${player.money.toLocaleString('fr-FR')}</b><small>Les armes de l'armée ne sont pas en vente</small></div></div>`+`<div class="srow"><span style="font-size:26px;width:44px;text-align:center">🪂</span><div><b>Parachute</b><small>Tu en as ${player.chutes||0} · ESPACE en chute pour l'ouvrir</small></div><button data-chute="1">$${shopUI.online?345:300}</button></div>`+
   WEAPONS.filter(w=>w.id!=='poings').map(w=>{const own=player.owned.has(w.id),ammoCost=Math.max(20,Math.round(w.price*.12));
     const act=w.army&&!own?'<button disabled>Armée</button>':!own?`<button data-buy="${w.id}">$${wPrice(w)}</button>`:w.melee?'<button disabled>Possédé</button>':`<button data-ammo="${w.id}">+ munitions $${ammoCost}</button>`;
     return `<div class="srow">${w.svg}<div><b>${w.name}</b><small>${w.melee?'Corps à corps':'Chargeur '+w.mag+(own?' · réserve '+(player.ammo[w.id]||0):'')}</small></div>${act}</div>`;}).join('');
 }
 $('shopList').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;
+  if(b.dataset.chute){const pr=shopUI.online?345:300;if(player.money<pr){toast('Pas assez d\'argent');return;}player.money-=pr;player.chutes=(player.chutes||0)+1;sfx.coin();toast('Parachute acheté');renderShop();return;}
   if(b.dataset.buy){const w=WBY[b.dataset.buy];const pr=wPrice(w);if(player.money<pr){toast('Pas assez d\'argent');return;}player.money-=pr;giveWeapon(w.id,3);player.weap=w.id;sfx.coin();toast(w.name+' acheté');save();}
   else if(b.dataset.ammo){const w=WBY[b.dataset.ammo],c=Math.max(20,Math.round(w.price*.12));if(player.money<c){toast('Pas assez d\'argent');return;}player.money-=c;player.ammo[w.id]=(player.ammo[w.id]||0)+w.mag*3;sfx.coin();save();}
   renderShop();});
@@ -2544,11 +2560,11 @@ function updateFoot(dt,inp){
         if(sp>4.5&&c.ai!=='parked'){hurtPlayer(sp*2.2,true);p.vx=c.vx*.9+ex/d*3;p.vz=c.vz*.9+ez/d*3;p.vy=4;if(c===player.car)continue;return;}
         p.x+=ex/d*(rr2-d);p.z+=ez/d*(rr2-d);}}}
   const g=groundY(p.x,p.z);
-  if(pressed.jump&&p.ground){p.vy=6.6;p.ground=false;}
-  p.vy-=21*dt;p.y+=p.vy*dt;
+  if(pressed.jump&&p.ground){p.vy=6.6;p.ground=false;pressed.jump=false;}
+  chuteFall(p,dt,inp);
   // stand on car roofs
   let floor=g;for(const c of cars){if(!c.on)continue;const ex=p.x-c.x,ez=p.z-c.z;if(ex*ex+ez*ez<5){const along=Math.abs(ex*Math.sin(c.h)+ez*Math.cos(c.h)),lat=Math.abs(-ex*Math.cos(c.h)+ez*Math.sin(c.h));if(along<c.T.len/2&&lat<c.T.w/2){const top=c.y+c.T.roofY;if(p.y>=top-.4)floor=Math.max(floor,top);}}}
-  if(p.y<=floor){p.y=floor;p.vy=0;p.ground=true;}else if(p.y>floor+.05)p.ground=false;
+  if(p.y<=floor){if(!p.ground)chuteLand(p,floor);p.y=floor;p.vy=0;p.ground=true;}else if(p.y>floor+.05)p.ground=false;
   m.group.position.set(p.x,p.y,p.z);m.group.rotation.y=p.h;animPerson(m,Math.hypot(p.vx,p.vz),dt,!p.ground);
   if(p.aim)m.armR.rotation.x=-Math.PI/2;if(p.atkT>0)m.legR.rotation.x=-1.4*Math.sin(Math.PI*clamp((.95-p.atkT)/.6,0,1));
 }
@@ -2681,7 +2697,7 @@ function loop(now){
   placeWeapon();gangWeapons();
   updateRockets(dt);policeFire(dt,P);updateHeli(dt,P);
   updateWater(dt,P);updateSeaLife(dt,P);updateMilHeli(dt,P);
-  updateBubble(dt);updateRemarks(dt,P);updateArm(dt,P);audUpdate(dt,P);updateBlood(dt,P);updateWounds(dt,P);updateGav(dt,P);updateFBI(dt,P);updateDogs(dt,P);updatePrison(dt,P);updateWake(dt);
+  updateBubble(dt);updateRemarks(dt,P);updateArm(dt,P);updateFires(dt,P);audUpdate(dt,P);updateBlood(dt,P);updateWounds(dt,P);updateGav(dt,P);updateFBI(dt,P);updateDogs(dt,P);updatePrison(dt,P);updateWake(dt);
   updateAutoAim();updateLockMark();updateWaypoint(dt,P);updateStory(dt,P);
   updateGrenades(dt);updatePickups(dt,P);updateRobbery(dt);updateBusiness();updateChatter(dt,P);if(typeof updateGangs==='function')updateGangs(dt,P);
   if(inBase(P.x,P.z)&&!player.dead){if(player.stars<4){player.stars=4;toast('ZONE MILITAIRE INTERDITE');sfx.fail();}seenT=0;}
@@ -2764,13 +2780,14 @@ let promptOverride=null;function showPrompt(t){promptOverride=t;}
 
 // ---- grenades : thrown, bounce, explode ; opening safes
 const grenades=[];const GRG=new THREE.SphereGeometry(.09,10,8),GRM=new THREE.MeshLambertMaterial({color:0x3f5a2a});
-function throwGrenade(o,d,remote){const m=new THREE.Mesh(GRG,GRM);m.position.copy(o);m.castShadow=true;scene.add(m);
-  grenades.push({m,vx:d.x*15,vy:d.y*15+4.5,vz:d.z*15,t:2.3,remote});sfx.swish();}
+function throwGrenade(o,d,remote,kind,spd=15){const m=new THREE.Mesh(GRG,kind==='molotov'?lam('#c8551b'):kind==='sticky'?lam('#4a4a4a'):GRM);m.position.copy(o);m.castShadow=true;scene.add(m);
+  grenades.push({m,vx:d.x*spd,vy:d.y*spd+(kind==='gl'?1.5:4.5),vz:d.z*spd,t:kind==='sticky'?4:kind==='gl'?6:2.3,remote,kind});sfx.swish();}
 function updateGrenades(dt){for(let i=grenades.length-1;i>=0;i--){const g=grenades[i],p=g.m.position;g.t-=dt;g.vy-=18*dt;
   const nx=p.x+g.vx*dt,ny=p.y+g.vy*dt,nz=p.z+g.vz*dt;const gy=groundY(nx,nz)+.09;
-  if(rayT(p.x,p.y,p.z,nx,ny,nz)<1){g.vx*=-.35;g.vz*=-.35;}else{p.x=nx;p.z=nz;}
-  if(ny<gy){p.y=gy;g.vy=Math.abs(g.vy)*.35;g.vx*=.6;g.vz*=.6;}else p.y=ny;g.m.rotation.x+=dt*8;
-  if(g.t<=0){scene.remove(g.m);grenades.splice(i,1);blast(p.x,p.y+.2,p.z,7);}}}
+  if(g.stuck){g.vx=g.vy=g.vz=0;if(Math.random()<dt*3)emit(p.x,p.y+.1,p.z,'#ff3030',.12,.15,0,0,0,0,true);}
+  else{const hitW=rayT(p.x,p.y,p.z,nx,ny,nz)<1;if(hitW){if(g.kind==='molotov'||g.kind==='gl')g.t=0;else if(g.kind==='sticky')g.stuck=true;else{g.vx*=-.35;g.vz*=-.35;}}else{p.x=nx;p.z=nz;}
+  if(ny<gy){p.y=gy;if(g.kind==='molotov'||g.kind==='gl')g.t=0;else if(g.kind==='sticky')g.stuck=true;else{g.vy=Math.abs(g.vy)*.35;g.vx*=.6;g.vz*=.6;}}else p.y=ny;g.m.rotation.x+=dt*8;}
+  if(g.t<=0){scene.remove(g.m);grenades.splice(i,1);if(g.kind==='molotov'){fireAt(p.x,p.z);blast(p.x,p.y+.2,p.z,2.5);}else blast(p.x,p.y+.2,p.z,g.kind==='sticky'?9:g.kind==='gl'?6:7);}}}
 // safes in banks and jewellers
 const safes=[];
 function makeSafe(fr,lx,lz,kind){const [x,z]=fw(fr,lx,lz);const g=new THREE.Group();g.position.set(x,.22,z);g.rotation.y=fr.ry;
@@ -4141,6 +4158,7 @@ function audUpdate(dt,P){audInit();if(!AUD.ready)return;const ac=AUD.ac,t=ac.cur
       set(AUD.out.gain,(.08+thr*.07+rpm*.03)*(AUD.shift>0?.6:1)*(c.health<25?.8:1),.05);set(AUD.nf.frequency,f*3);set(AUD.ng.gain,(E.clat?.35:.12)*(.3+thr));
       // tyre screech when sliding
       if(!T.moto&&!T.boat){const fx=Math.sin(c.h),fz=Math.cos(c.h),lat=Math.abs(-c.vx*fz+c.vz*fx);screech=sp>8?Math.min(1,Math.max(0,(lat-3.5)/6)):0;if((keys.Space||touch.jump)&&sp>10)screech=Math.max(screech,.6);if(acc<-14&&sp>8)screech=Math.max(screech,.8);}}}
+  if(typeof CHUTE!=='undefined'&&!c)jet=Math.max(jet,CHUTE.free?.9:CHUTE.open?.3:0);
   if(!eOn)set(AUD.out.gain,0,.1);set(AUD.rg.gain,rotor*.6,.2);set(AUD.twg.gain,rotor*.025,.2);set(AUD.jg.gain,jet*.18,.3);set(AUD.jf.frequency,1200+jet*1800,.3);
   set(AUD.sg.gain,screech*.12,.05);set(AUD.sf.frequency,2300+screech*900,.05);
   // ---- ambience : city hum, sea waves, wind in the mountains or high up
@@ -4153,6 +4171,47 @@ function audUpdate(dt,P){audInit();if(!AUD.ready)return;const ac=AUD.ac,t=ac.cur
   if(!c&&!player.dead&&player.ground!==false){const v=Math.hypot(player.vx,player.vz);if(v>.8){AUD.stepD+=v*dt;const L=v>6?1.25:.75;if(AUD.stepD>L){AUD.stepD=0;const g=groundY(player.x,player.z),grass=!city||isDesert(player.x,player.z);
     audBurst(v>6?.16:.1,.07,grass?900:2600,grass?'lowpass':'bandpass',0);}}else AUD.stepD=0;}
 }
+
+/* ================= falls, parachute, molotov / sticky bomb / grenade launcher fire ================= */
+const CHUTE={g:null,open:false,free:false,peak:0,hintT:0,skyX:0};
+function initChute(){
+  const c=document.createElement('canvas');c.width=256;c.height=64;const x=c.getContext('2d');for(let i=0;i<8;i++){x.fillStyle=i%2?'#f2f2f2':'#e5484d';x.fillRect(i*32,0,32,64);}
+  const t=new THREE.CanvasTexture(c);t.encoding=THREE.sRGBEncoding;
+  const g=new THREE.Group();const can=new THREE.Mesh(new THREE.SphereGeometry(1,18,8,0,Math.PI*2,0,Math.PI/2.4),new THREE.MeshLambertMaterial({map:t,side:THREE.DoubleSide}));can.scale.set(3.4,1.1,2.1);can.position.y=4.6;can.castShadow=true;g.add(can);
+  const lm=new THREE.LineBasicMaterial({color:0x222222});for(let i=0;i<8;i++){const a=i/8*Math.PI*2,px=Math.cos(a)*3.1,pz=Math.sin(a)*1.9;
+    g.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(px,4.75,pz),new THREE.Vector3(0,1.55,0)]),lm));}
+  g.visible=false;scene.add(g);CHUTE.g=g;
+  const h=document.createElement('div');h.id='chuteHint';h.style.cssText='position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:6;pointer-events:none;background:rgba(0,0,0,.6);color:#fff;font:800 17px var(--font,system-ui);padding:8px 14px;border-radius:10px;display:none';document.body.appendChild(h);CHUTE.hint=h;
+  if(player.chutes==null)player.chutes=1;}
+// gravity / air control / parachute, called every frame on foot instead of the plain gravity
+function chuteFall(p,dt,inp){const g=groundY(p.x,p.z),above=p.y-g;
+  if(p.ground){CHUTE.peak=p.y;CHUTE.free=false;}else CHUTE.peak=Math.max(CHUTE.peak,p.y);
+  if(CHUTE.open){p.vy=lerp(p.vy,(keys.ShiftLeft||keys.ShiftRight||touch.sprint)?-8:-4,1-Math.exp(-3*dt));p.h+=-inp.x*1.1*dt;const fwd=7+Math.max(0,inp.y)*4-Math.max(0,-inp.y)*4;
+    p.vx=lerp(p.vx,Math.sin(p.h)*fwd,1-Math.exp(-2*dt));p.vz=lerp(p.vz,Math.cos(p.h)*fwd,1-Math.exp(-2*dt));CHUTE.peak=p.y;}
+  else{p.vy=Math.max(-55,p.vy-21*dt);
+    if(!p.ground&&above>10&&p.vy<-9){CHUTE.free=true;const fx=Math.sin(cam.yaw),fz=Math.cos(cam.yaw),k=1-Math.exp(-1.2*dt);p.vx=lerp(p.vx,(fx*inp.y-fz*inp.x)*14,k);p.vz=lerp(p.vz,(fz*inp.y+fx*inp.x)*14,k);if(Math.hypot(p.vx,p.vz)>.5)p.h=Math.atan2(p.vx,p.vz);}
+    if(!p.ground&&pressed.jump&&above>5&&p.vy<-2){if(player.chutes>0){CHUTE.open=true;CHUTE.free=false;player.chutes--;p.vy=Math.max(p.vy,-12);sfx.swish();audBurst&&AUD.ready&&audBurst(.5,.4,900,'lowpass',.2);toast('Parachute ouvert !\nQ/D pour tourner · Z accélérer · Maj descendre plus vite');}else toast('Pas de parachute ! (armurerie)');}}
+  p.y+=p.vy*dt;
+  // hint + sky pose
+  const show=!p.ground&&!CHUTE.open&&above>8&&p.vy<-4;CHUTE.hint.style.display=show?'block':'none';if(show)CHUTE.hint.textContent=player.chutes>0?`ESPACE : ouvrir le parachute (${player.chutes})`:'Pas de parachute… prépare-toi au choc !';
+  CHUTE.skyX=lerp(CHUTE.skyX,CHUTE.free?1.25:0,1-Math.exp(-4*dt));
+  if(CHUTE.g){CHUTE.g.visible=CHUTE.open;if(CHUTE.open){CHUTE.g.position.set(p.x,p.y,p.z);CHUTE.g.rotation.set(0,p.h,0);}}}
+// landing : damage grows with the height, too high = death
+function chuteLand(p,floor){const h=CHUTE.peak-floor;CHUTE.peak=floor;CHUTE.free=false;
+  if(CHUTE.open){CHUTE.open=false;if(CHUTE.g)CHUTE.g.visible=false;if(h>1)toast('Atterrissage réussi');return;}
+  if(isWater(p.x,p.z)||h<5)return;
+  if(h>=22){hurtPlayer(999,true);toast(`Chute de ${Math.round(h)} m…`);sfx.crash(1);return;}
+  const dmg=Math.round((h-5)*(h>12?9:7));sfx.thud();sfx.crash(Math.min(1,h/20));shake=Math.min(1,h/15);hurtPlayer(dmg,h>8);if(h>9)player.legT=Math.max(player.legT||0,8);
+  if(!player.dead)toast(`Chute de ${Math.round(h)} m : −${dmg} PV${h>9?' · tu boites':''}`);}
+// molotov fire zones
+const FIRES=[];
+function fireAt(x,z){FIRES.push({x,z,t:8});sfx.boom(.3);for(const c of cars)if(c.on&&!c.dead&&Math.hypot(c.x-x,c.z-z)<4){c.burn=c.burn||3;}}
+function updateFires(dt,P){for(let i=FIRES.length-1;i>=0;i--){const f=FIRES[i];f.t-=dt;if(f.t<=0){FIRES.splice(i,1);continue;}
+  if(Math.random()<dt*25){const a=Math.random()*7,r=Math.random()*3;emit(f.x+Math.cos(a)*r,groundY(f.x,f.z)+.2,f.z+Math.sin(a)*r,Math.random()<.5?'#ff8a1f':'#ffd04a',rnd(.4,.9),rnd(.4,.8),0,rnd(1,2.5),0,1.2,true);
+    if(Math.random()<.3)emit(f.x+rnd(-2,2),groundY(f.x,f.z)+1.5,f.z+rnd(-2,2),'#333',rnd(.8,1.4),1.5,0,1.5,0,2);}
+  f.dmgT=(f.dmgT||0)-dt;if(f.dmgT<=0){f.dmgT=.5;
+    if(!player.car&&Math.hypot(P.x-f.x,P.z-f.z)<3.4)hurtPlayer(6,false);
+    for(const p of peds){if(p.off||p.gdead)continue;if(Math.hypot(p.x-f.x,p.z-f.z)<3.4){if(p.php==null)p.php=100;p.php-=22;if(p.php<=0){p.gdead=true;p.state='down';p.t=0;p.vx=p.vz=0;p.vy=0;}else if(p.state!=='down'){p.state='flee';p.t=0;p.fx=p.x-f.x;p.fz=p.z-f.z;sfx.scream(p);}}}}}}
 
 /* ================= multiplayer (WebRTC peer-to-peer, Trystero + Nostr relays, no server) ================= */
 const MP={on:false,joining:false,room:null,self:null,peers:new Map(),sendT:0,code:'public',name:'',hitCD:0};
@@ -4305,6 +4364,7 @@ initDogs();
 genArmSigns();
 initBlood();
 initWounds();
+initChute();
 initWorldVehicles();
 initMilHeli();
 initSeaLife();

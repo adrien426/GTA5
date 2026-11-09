@@ -57,6 +57,15 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Chutes et parachute
+
+- **Dégâts de chute** selon la hauteur : rien sous 5 m, puis de plus en plus (6 m ≈ −7 PV, 10 m ≈ −35 PV, 15 m ≈ −90 PV), et **mort au-delà d'environ 20 m**. Une grosse chute te fait boiter. Tomber dans l'eau ne fait pas mal.
+- **Parachute** : saute d'un hélico ou d'un avion en vol (tu reçois un parachute de bord), ou achète-en à l'armurerie ($300). En chute libre tu te diriges ; **ESPACE** ouvre le parachute ; Q/D pour tourner, Z pour aller plus vite, Maj pour descendre plus vite.
+
+## Nouvelles armes
+
+Pistolet lourd, taser (paralyse sans tuer), micro-SMG, fusil de combat, fusil à pompe automatique, mitrailleuse légère, sniper lourd, lance-grenades (explose à l'impact), cocktail Molotov (feu au sol pendant 8 s), bombe collante (se colle et explose après 4 s), machette, hache, poing américain.
+
 ## Prison (4-5 étoiles)
 
 - **Peine** : 15 min (4 étoiles) ou 25 min (5 étoiles). Le pénitencier est indiqué sur la carte (bouton « ⛓ Prison »).
