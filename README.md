@@ -57,6 +57,16 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Première personne, blessures par zone, armes, FBI, commerces, pays
+
+- **Vue à la première personne** : touche **B** (bouton 👁 sur téléphone), à pied et en voiture. L'arme équipée est visible devant toi, la lunette zoome.
+- **Blessures par zone** : **tête** ou **cœur** = mort ; **pied** ou **jambe** = la personne ne peut plus courir et boite ; **bras** = elle lâche son arme. Pour toi aussi : pied (plus de course), bras (tu vises moins bien), tête et cœur très dangereux. Les ennemis font plus mal.
+- **15 accessoires d'armes** : silencieux, chargeur grande capacité, chargeur tambour, lunette, viseur holographique, poignée, crosse tactique, frein de bouche, viseur laser, lampe torche, peinture (12 couleurs), munitions perforantes, incendiaires, explosives, balles traçantes.
+- **59 armes** : couteau de combat, couteau papillon, dague, hachette, marteau, matraque, pistolet de combat, revolver lourd, pistolet de détresse, PM compact, PM tactique, fusil à double canon, pompe tactique, carabine spéciale, fusil de bataille, sniper militaire, fusil anti-matériel, grenade fumigène, lacrymogène, mine de proximité… en plus de toutes les précédentes.
+- **QG du FBI** au nord de Néo Cité : tours, grillage, agents fédéraux armés, SUV noirs, hélicoptère ; y entrer = 3 étoiles.
+- **Commerces** : pharmacies (soins + blessures), fast-foods « Néo Burger », 6 stations-service « Néo Fuel » sur les routes (boutique, plein + lavage du véhicule).
+- **5 pays** reliés par 5 ponts : Isla Dorada, Nordheim, Sakura-Shi, **Saharia** (désert, coupoles, palmiers ; couscous) et **Liberty City-sur-Mer** (mégapole de gratte-ciel ; burger XXL).
+
 ## Escalade et lieux plus réalistes
 
 - **Grimper** : face à un mur, une clôture, un muret, un conteneur ou le toit d'un petit bâtiment (jusqu'à 7 m), appuie sur **ESPACE** (bouton saut sur téléphone) — l'indication « ESPACE : grimper » apparaît. Un mur fin est franchi (tu retombes de l'autre côté, gare à la hauteur), un bloc épais te laisse debout dessus. Le mur de la prison s'escalade… mais les gardiens réagissent.
