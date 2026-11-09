@@ -57,6 +57,15 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Intérieurs, maison et monde agrandi
+
+- **Entrer dans les immeubles** : la plupart des immeubles ont une porte d'entrée (E). Hall avec boîtes aux lettres et concierge, ascenseur, puis **appartement meublé** (salon avec télé, cuisine, chambre, salle de bain, vue sur la ville). Chaque appartement est **à vendre** : une fois acheté, tu peux y dormir et sauvegarder.
+- **Ta maison** : une villa avec piscine au sud de Néo Cité (icône ⌂ verte), avec lit (sauvegarde), dressing, coffre-fort (munitions + parachute), télé, frigo, et **ta voiture** sous l'abri (Furia GT ; le garage permet de changer pour une voiture que tu as achetée). Appli **Maison** sur le téléphone.
+- **Commissariat** : ordinateur de la police (effacer une étoile… ou se faire prendre, ou prendre une prime), vestiaire (uniforme), armurerie de la police (vol : 3 étoiles), machine à café.
+- **Carte agrandie** vers l'est et le sud : 2 nouvelles villes (**Bellerive**, **Pinède**), 2 lacs (on peut nager), 3 fermes (champs, granges, silos), des milliers d'arbres en plus (sapins, feuillus, palmiers sur les plages), buissons.
+- **Animaux** : vaches, chevaux, moutons dans les fermes ; cerfs, sangliers (ils chargent), lapins, renards dans la nature ; mouettes et pigeons qui volent. Ils fuient, saignent, et peuvent être chassés.
+- **Encore plus** : armes (pistolet silencieux, fusil à canon scié, arbalète silencieuse, lance-flammes) et véhicules (ambulance, camion de pompiers, tracteur, voilier).
+
 ## Chutes et parachute
 
 - **Dégâts de chute** selon la hauteur : rien sous 5 m, puis de plus en plus (6 m ≈ −7 PV, 10 m ≈ −35 PV, 15 m ≈ −90 PV), et **mort au-delà d'environ 20 m**. Une grosse chute te fait boiter. Tomber dans l'eau ne fait pas mal.
