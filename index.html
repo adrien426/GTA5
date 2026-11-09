@@ -424,7 +424,7 @@ window.addEventListener('error',e=>{if(!finished&&/THREE|three/.test(String(e.me
   <button class="tb" id="tR" hidden>RADIO</button>
 </div>
 
-<div id="bigmap" hidden><button id="mapClose" aria-label="Fermer la carte">✕ FERMER</button><button id="heroBtn">☺ Changer de personnage</button><div id="mapBtns"><button data-find="armurerie">🔫 Armurerie</button><button data-find="banque">€ Banque</button><button data-find="superette">S Supérette</button><button data-zoom="1">🔍 Zoom ×1</button></div><div id="heroMenu" hidden></div><canvas id="big" width="1000" height="1000"></canvas><div id="mapHint">M ou Échap pour fermer</div></div>
+<div id="bigmap" hidden><button id="mapClose" aria-label="Fermer la carte">✕ FERMER</button><button id="heroBtn">☺ Changer de personnage</button><div id="mapBtns"><button data-find="armurerie">🔫 Armurerie</button><button data-find="banque">€ Banque</button><button data-find="superette">S Supérette</button><button data-find="prison">⛓ Prison</button><button data-zoom="1">🔍 Zoom ×1</button></div><div id="heroMenu" hidden></div><canvas id="big" width="1000" height="1000"></canvas><div id="mapHint">M ou Échap pour fermer</div></div>
 <div id="fade"><h2 id="fadeT"></h2><p id="fadeS"></p></div>
 <div id="phone" hidden><div id="phScreen"><div id="phBar"><span id="phTime">12:00</span><span>NéoPhone</span><span>87 %</span></div><div id="phBody"></div></div><button id="phHome" aria-label="Accueil du téléphone"></button></div>
 
@@ -1432,7 +1432,7 @@ function knockPed(p,vx,vz){p.state='down';p.t=0;p.vx=vx;p.vz=vz;p.vy=Math.min(7,
 function updatePed(p,dt,P){
   const m=p.m;let speed=0;
   if(p.gang&&p.state==='flee')p.state='idle';
-  if(!p.gang&&p.state!=='down'&&p.state!=='flee'&&(p.cop||p.soldier||p.pguard||p.mood)){const sp=guardAct(p,dt,P);if(sp!==null){speed=sp;p.curSpeed=speed;m.group.position.set(p.x,p.y,p.z);m.group.rotation.y=p.h;animPerson(m,speed,dt,false);return;}}
+  if(!p.gang&&p.state!=='down'&&p.state!=='flee'&&(p.cop||p.soldier||p.pguard||p.mood||p.inmate)){const sp=guardAct(p,dt,P);if(sp!==null){speed=sp;p.curSpeed=speed;m.group.position.set(p.x,p.y,p.z);m.group.rotation.y=p.h;animPerson(m,speed,dt,false);return;}}
   if(p.gang&&p.state!=='down'){speed=gangPed(p,dt,P);p.curSpeed=speed;m.group.position.set(p.x,p.y,p.z);m.group.rotation.y=p.h;animPerson(m,speed,dt,false);return;}
   if(p.state==='down'){
     p.t+=dt;p.x+=p.vx*dt;p.z+=p.vz*dt;p.vy-=20*dt;p.y+=p.vy*dt;const g=groundY(p.x,p.z);if(p.y<g){p.y=g;p.vy=0;p.vx*=.8;p.vz*=.8;}
@@ -1978,7 +1978,7 @@ function drawMapBase(){
   g.fillStyle='#3a3d42';g.fillRect(X(RUNWAY.x0),X(RUNWAY.z-RUNWAY.w/2),(RUNWAY.x1-RUNWAY.x0)*MAPS,RUNWAY.w*MAPS);g.fillRect(X(-340),X(337),220*MAPS,40*MAPS);
   g.fillStyle='#8a6b45';for(const [px,z0,z1] of PIERS)g.fillRect(X(px-4),X(z1),8*MAPS,(z0-z1)*MAPS);
   g.fillStyle='#d9c48f';g.beginPath();g.arc(X(ISL.x),X(ISL.z),ISL.r*MAPS,0,7);g.fill();g.strokeStyle='#e5484d';g.lineWidth=3;g.setLineDash([8,6]);g.beginPath();g.arc(X(ISL.x),X(ISL.z),(ISL.r+40)*MAPS,0,7);g.stroke();g.setLineDash([]);
-  g.fillStyle='#fff';g.font=`bold ${11*MAPS}px Arial`;g.textAlign='center';g.fillText('PORT',X(72),X(-1745));g.fillText('AÉROPORT',X(-60),X(420));g.fillText('ÎLE INTERDITE',X(ISL.x),X(ISL.z-ISL.r-48));g.fillText('PLAGE',X(LAND.x0-14),X(0));
+  g.fillStyle='#fff';g.font=`bold ${11*MAPS}px Arial`;g.textAlign='center';g.fillText('PORT',X(72),X(-1745));g.fillText('PÉNITENCIER',X(-700),X(PRISON.z0-14));g.fillText('AÉROPORT',X(-60),X(420));g.fillText('ÎLE INTERDITE',X(ISL.x),X(ISL.z-ISL.r-48));g.fillText('PLAGE',X(LAND.x0-14),X(0));
   g.fillStyle='#55595f';g.fillRect(X(-HALF-8),X(-HALF-8),(2*HALF+16)*MAPS,(2*HALF+16)*MAPS);
   for(const k in GANGS){const G=GANGS[k],x0=-HALF+G.a0*CELL,z0=-HALF+G.b0*CELL;g.fillStyle=G.col;g.globalAlpha=.32;g.fillRect(X(x0),X(z0),(G.a1-G.a0+1)*CELL*MAPS,(G.b1-G.b0+1)*CELL*MAPS);g.globalAlpha=1;}
   g.fillRect(X(HALF),X(-7),(BASE.x0-HALF)*MAPS,14*MAPS);g.fillStyle='#6b7058';g.fillRect(X(BASE.x0),X(BASE.z0),(BASE.x1-BASE.x0)*MAPS,(BASE.z1-BASE.z0)*MAPS);
@@ -2076,6 +2076,7 @@ function wasted(){if(player.dead)return;player.dead=true;if(player.car)exitCar(t
 
 /* ================= shop actions ================= */
 function shopAction(kind){
+  if(P_ACT[kind]){P_ACT[kind]();return;}
   const P=player;
   const buy=(cost,fn,msg)=>{if(P.money<cost){toast('Pas assez d\'argent');return;}P.money-=cost;fn();toast(msg);sfx.coin();save();};
   if(kind==='superette')buy(40,()=>P.hp=100,'Santé restaurée');
@@ -2085,14 +2086,13 @@ function shopAction(kind){
   else if(kind==='police'){if(P.stars===0){toast('Rien à te reprocher');return;}buy(100*P.stars,()=>{P.stars=0;for(const c of police)if(c.ai==='police'){c.ai='traffic';snapToGraph(c);}},'Amende payée · étoiles effacées');}
   else if(kind==='armurerie'){openShop();}
   else if(kind==='serrure'){gavPick();}
-  else if(kind==='cellule'){if(prison.on){prison.t=Math.max(3,prison.t-60);showFade('ZZZ…','Une nuit en cellule · −1 min de peine',()=>$('fade').classList.remove('on'));fadeT=1.3;}else toast('Tu n\'es pas en prison');}
   else if(kind==='banque'){openPhone();phView('banque');}
   else if(kind==='coiffeur')buy(50,()=>{const lk={...P.m.look,hair:rpick(['#1a1410','#6b4423','#d4b06a','#b8471f','#e8e8e8','#2b4fd6','#d6336c','#111']),custom:true};setLook(P.m,lk);if(HUM.playerH)applyLook(HUM.playerH,lk);},'Nouvelle coupe !');
   else if(kind==='bijouterie')buy(1200,()=>addItem('bague',1),'Bague achetée');
   else if(kind==='base'){for(const id of['sniper','minigun','roquette','laser','assaut','pompe'])giveWeapon(id,4);for(const id in P.ammo)P.ammo[id]=Math.max(P.ammo[id],WBY[id].mag*4);toast('Arsenal militaire récupéré !\nLaser, minigun, lance-roquettes…');sfx.win();save();}
   else if(kind==='garage'){const c=P.car;buy(120,()=>{c.repaint(rpick(PAINTS.filter(p=>p!==c.color)));c.health=100;carRepairFx(c);c.burn=0;P.stars=0;for(const o of police)if(o.ai==='police'){o.ai='traffic';snapToGraph(o);}},'Repeinte & réparée · étoiles effacées');}
 }
-const SPOTTXT={serrure:'Crocheter la serrure de la cellule',cellule:'Dormir dans ta cellule (−1 min de peine)',coiffeur:'Coiffeur — nouvelle couleur $50',banque:'Banque — consulter ton compte',bijouterie:'Bijouterie — acheter une bague $1 200',armurerie:'Armurerie — acheter des armes',base:'Caisse d\'armes de l\'armée',superette:'Soins — $40',cafe:'Café & sauvegarde — $10',boutique:'Nouvelle tenue — $80',hopital:'Se faire soigner — gratuit',police:'Payer l\'amende',garage:'Réparer & repeindre — $120'};
+const SPOTTXT={p_dormir:'Dormir (−3 min, le temps passe)',p_creuser:()=>prison.spoon?`Creuser le tunnel (${Math.round(prison.dig*100)} %)`:'Le mur derrière le poster…',p_cantine:'Manger à la cantine',p_cuisine:'Voler un couteau en cuisine',p_buanderie:'Travailler à la buanderie',p_muscu:'Faire de la muscu',p_camion:'Se cacher dans le camion de linge',p_mur:'Lancer une corde de draps par-dessus le mur',p_corruption:()=>prison.bribed>0?'Porte de service ouverte (mur est)':'Soudoyer le gardien',p_telephone:'Appeler un avocat ($3 000)',p_caid:'Parler au Caïd',serrure:'Crocheter la serrure de la cellule',cellule:'Dormir dans ta cellule (−1 min de peine)',coiffeur:'Coiffeur — nouvelle couleur $50',banque:'Banque — consulter ton compte',bijouterie:'Bijouterie — acheter une bague $1 200',armurerie:'Armurerie — acheter des armes',base:'Caisse d\'armes de l\'armée',superette:'Soins — $40',cafe:'Café & sauvegarde — $10',boutique:'Nouvelle tenue — $80',hopital:'Se faire soigner — gratuit',police:'Payer l\'amende',garage:'Réparer & repeindre — $120'};
 
 
 /* ================= combat ================= */
@@ -2644,7 +2644,7 @@ function loop(now){
     if(player.car){const z=zones.find(z=>z.kind==='garage'&&player.car.x>z.minx&&player.car.x<z.maxx&&player.car.z>z.minz&&player.car.z<z.maxz);
       if(z)pr=`${KEYE}${SPOTTXT.garage}`;}
     else{const s=spots.find(s=>Math.hypot(s.x-player.x,s.z-player.z)<s.r);
-      if(s)pr=`${KEYE}${s.kind==='police'&&player.stars?`Payer l'amende — $${100*player.stars}`:SPOTTXT[s.kind]}`;
+      if(s)pr=`${KEYE}${s.kind==='police'&&player.stars?`Payer l'amende — $${100*player.stars}`:(typeof SPOTTXT[s.kind]==='function'?SPOTTXT[s.kind]():SPOTTXT[s.kind])}`;
       else{const c=nearestCar(3.4);if(c)pr=`${KEYE}${c.hasDriver?'Voler ce véhicule':'Monter'} · ${c.T.name}`;}}
   }
   if(promptOverride){pr=promptOverride;promptOverride=null;}
@@ -2957,7 +2957,7 @@ function updateWaypoint(dt,P){if(!WP)return;wpBeam.ring.rotation.z+=dt;if(Math.h
 let bigZoom=1;function bigView(){const span=2*MAPO/bigZoom,P=playerPos();let cx=bigZoom>1?P.x:0,cz=bigZoom>1?P.z:0;cx=clamp(cx,-MAPO+span/2,MAPO-span/2);cz=clamp(cz,-MAPO+span/2,MAPO-span/2);return {span,lx:cx-span/2,lz:cz-span/2};}
 function bigMapPick(e){const cv=$('big'),r=cv.getBoundingClientRect(),W=cv.width,V=bigView(),s=W/V.span;
   const px=(e.clientX-r.left)/r.width*W,py=(e.clientY-r.top)/r.height*W;return {x:px/s+V.lx,z:py/s+V.lz};}
-function findNearest(kind){const s=shopPos(kind);if(!s){toast('Introuvable');return;}WP=null;setWaypoint(s.x,s.z);toast(`${kind==='banque'?'Banque':kind==='armurerie'?'Armurerie':kind} la plus proche : ${Math.round(Math.hypot(s.x-player.x,s.z-player.z))} m`);}
+function findNearest(kind){if(kind==='prison'){WP=null;setWaypoint(PRISON.gate.x,PRISON.gate.z);toast(`Pénitencier : ${Math.round(Math.hypot(PRISON.gate.x-player.x,PRISON.gate.z-player.z))} m`);return;}const s=shopPos(kind);if(!s){toast('Introuvable');return;}WP=null;setWaypoint(s.x,s.z);toast(`${kind==='banque'?'Banque':kind==='armurerie'?'Armurerie':kind} la plus proche : ${Math.round(Math.hypot(s.x-player.x,s.z-player.z))} m`);}
 
 /* ================= story : 50 missions, heists included ================= */
 let story=null;const ROBLAST={kind:null,t:-1},SAFELAST={kind:null,t:-1};
@@ -3428,6 +3428,7 @@ function talkToNPC(text,p){
   // ---- police officers
   if(role==='police'){
     if(it==='surrender'){if(player.stars>0){npcSay(p,'Les mains derrière la tête ! Vous êtes en état d\'arrestation.');setTimeout(()=>busted(),1500);}else npcSay(p,'Vous rendre ? Vous n\'avez rien fait… circulez.');return;}
+    if(it==='bribe'&&prison.on&&p.pguard){P_ACT.p_corruption();npcSay(p,prison.bribed>0?'…Porte de service. 70 secondes.':'Pas assez. Reviens avec plus.');return;}
     if(it==='bribe'){if(player.stars===0){npcSay(p,'Je n\'ai pas besoin de votre argent. Circulez.');return;}const cost=400*player.stars;
       if(player.money>=cost&&Math.random()<.55){player.money-=cost;player.stars=0;seenT=0;for(const c of police)if(c.ai==='police'){c.ai='traffic';snapToGraph(c);}npcSay(p,`…Bon. ${cost} dollars et je n\'ai rien vu.`);sfx.coin();}
       else{addWanted(1);npcSay(p,'Tentative de corruption d\'un agent ! Vous êtes en état d\'arrestation !');setMood(p,'shoot');}return;}
@@ -3515,6 +3516,7 @@ function initGuards(){
 }
 function guardAct(p,dt,P){// returns speed, or null to use the normal ped logic
   if(p.fbi)return p.off?0:fbiAct(p,dt,P);
+  if(p.inmate&&!p.mood)return inmateAct(p,dt,P);
   if(p.soldier||p.pguard){const inZone=p.pguard?prison.escaping>0:(inBase(P.x,P.z)||Math.hypot(P.x-ISL.x,P.z-ISL.z)<ISL.r+40),d=Math.hypot(p.x-P.x,p.z-P.z);
     if((inZone||(!p.pguard&&player.stars>=4))&&d<(p.pguard?90:70)&&!player.dead){if(!p.mood||p.mood.k!=='shoot'){p.mood={k:'shoot',t:30};if(Math.random()<.5)npcSay(p,p.pguard?'Évasion ! Arrêtez-le !':'Intrus ! Ouvrez le feu !');}return civAct(p,dt,P)||0;}
     if(p.mood)return civAct(p,dt,P)||0;p.aiming=false;const dx=p.post.x-p.x,dz=p.post.z-p.z,dp=Math.hypot(dx,dz);if(dp>1){p.h=Math.atan2(dx,dz);p.x+=dx/dp*1.6*dt;p.z+=dz/dp*1.6*dt;p.y=groundY(p.x,p.z);return 1.6;}return 0;}
@@ -3540,47 +3542,163 @@ function startListening(){const SR=window.SpeechRecognition||window.webkitSpeech
 function stopListening(){talk.on=false;try{talk.rec&&talk.rec.stop();}catch(e){}$('mic').classList.remove('on');toast('Micro coupé');}
 function openSayBox(){const b=$('sayBox');b.hidden=false;const i=$('sayIn');i.value='';setTimeout(()=>i.focus(),30);if(document.pointerLockElement)document.exitPointerLock();}
 
-/* ================= arrests : fines, confiscation, prison and escapes ================= */
-// 1 star : fine · 2-3 stars : everything confiscated (weapons, items, 30 % of the money) · 4-5 stars : prison (3 or 5 min), escape possible
-const PRISON={x0:-775,x1:-625,z0:1090,z1:1210,gapX:-640,gate:{x:-700,z:1066}};
-const prison={on:false,t:0,escaping:0};
+/* ================= arrests : fines, custody, prison life and escapes ================= */
+// 1 star : fine · 2-3 stars : custody at the police station · 4-5 stars : penitentiary (15 or 25 min), many ways out
+const PRISON={x0:-775,x1:-625,z0:1090,z1:1210,gate:{x:-700,z:1066},cellZ:1203.5,myCell:5,svc:{x:-625,z:1150}};
+const prison={on:false,t:0,escaping:0,lock:0,spoon:false,knives:0,sheets:0,dig:0,lawyer:false,bribed:0,riot:0,exitStars:4,caidTalk:0,truckT:0,gateOpen:0,svcOpen:0,caught:0};
+const PZ={cells:[],gate:null,gateCol:null,svc:null,svcCol:null,truck:null,rope:null,inmates:[],caid:null};
 function inPrison(x,z){return x>PRISON.x0&&x<PRISON.x1&&z>PRISON.z0&&z<PRISON.z1;}
+function cellX(i){return PRISON.x0+15+i*5+2.5;}
 function genPrison(){
-  const {x0,x1,z0,z1}=PRISON,cx=(x0+x1)/2,cz=(z0+z1)/2,fr0=F(0,0,0),H=5.5,wallM=lam('#9da3a8'),fenceTop=MAT.metal;
-  {const g=new THREE.PlaneGeometry(x1-x0,z1-z0);g.rotateX(-Math.PI/2);place(g,cx,.02,cz);addStatic(g,MAT.conc);}
-  const wall=(ax,az,bx,bz)=>{const w=Math.abs(bx-ax)||1,d=Math.abs(bz-az)||1,mx=(ax+bx)/2,mz=(az+bz)/2;const g=boxGeo(w,H,d);place(g,mx,H/2,mz);addStatic(g,wallM);
-    addCollider(mx-w/2,mx+w/2,mz-d/2,mz+d/2,0,H+1,{});const t=boxGeo(w,.12,d);place(t,mx,H+.4,mz);addStatic(t,fenceTop);};
-  wall(x0,z0,cx-5,z0);wall(cx+5,z0,x1,z0);// north wall with the gate
-  wall(x0,z1,PRISON.gapX-1.4,z1);wall(PRISON.gapX+1.4,z1,x1,z1);// south wall : a hole behind the cell block
-  wall(x0,z0,x0,z1);wall(x1,z0,x1,z1);
-  {const g=boxGeo(10,4,.3);place(g,cx,2,z0);addStatic(g,MAT.dark);addCollider(cx-5,cx+5,z0-.3,z0+.3,0,6,{});}// closed gate
-  for(let k=0;k<5;k++){const r=boxGeo(.9,.5,.9);place(r,PRISON.gapX+rnd(-2,2),.25,z1+rnd(.6,2));addStatic(r,lam('#7d756a'));}// rubble outside the hole
-  building(cx,z1-20,64,16,9,4,0,{noBand:true,noRoofProps:true});
-  building(x0+22,cz-10,22,18,7,2,0,{noBand:true,noRoofProps:true});
-  for(const [tx,tz] of[[x0+3,z0+3],[x1-3,z0+3],[x0+3,z1-3],[x1-3,z1-3]]){for(const [lx,lz] of[[-1,-1],[1,-1],[-1,1],[1,1]]){const c=new THREE.CylinderGeometry(.12,.12,9,6);place(c,tx+lx,4.5,tz+lz);addStatic(c,MAT.frame);}
-    fbox(fr0,wallM,tx,9.6,tz,3,1.2,3,{collide:false});fbox(fr0,GLASS,tx,10.8,tz,2.8,1,2.8,{collide:false});fbox(fr0,MAT.dark,tx,11.5,tz,3.4,.2,3.4,{collide:false});}
-  {const pole=new THREE.CylinderGeometry(.1,.1,3.2,6);place(pole,cx+30,1.6,cz-12);addStatic(pole,MAT.frame);const bd=boxGeo(1.8,1.1,.08);place(bd,cx+30,3.4,cz-11.6);addStatic(bd,MAT.white);}
-  for(const x of[-20,-10,0,10])bench(fr0,cx+x,cz+8);
-  const [sx,sz]=[cx,z1-11];spots.push({x:sx,z:sz,kind:'cellule',r:2.2});
+  const {x0,x1,z0,z1}=PRISON,cx=(x0+x1)/2,cz=(z0+z1)/2,fr=F(0,0,0),H=6,wallM=lam('#9da3a8'),conc=lam('#b9bcbf'),bars=MAT.metal,orange=lam('#d9772b');
+  {const g=new THREE.PlaneGeometry(x1-x0,z1-z0);g.rotateX(-Math.PI/2);place(g,cx,.02,cz);addStatic(g,lam('#80858a'));}
+  const wall=(ax,az,bx,bz)=>{const w=Math.abs(bx-ax)||1,d=Math.abs(bz-az)||1,mx=(ax+bx)/2,mz=(az+bz)/2;fbox(fr,wallM,mx,H/2,mz,w,H,d,{});
+    fbox(fr,MAT.metal,mx,H+.35,mz,w,.12,d,{collide:false});for(let k=0;k<Math.max(w,d);k+=3){const px=w>d?mx-w/2+k:mx,pz=w>d?mz:mz-d/2+k;fcyl(fr,MAT.frame,px,H+.6,pz,.04,1.2,5,{collide:false});}};
+  wall(x0,z0,cx-5,z0);wall(cx+5,z0,x1,z0);wall(x0,z1,x1,z1);wall(x0,z0,x0,z1);wall(x1,z0,x1,PRISON.svc.z-1.3);wall(x1,PRISON.svc.z+1.3,x1,z1);
+  // main gate (slides open during a riot) and the service door (open when a guard is bribed)
+  {const g=new THREE.Group();g.position.set(cx,0,z0);const m=new THREE.Mesh(boxGeo(10,4.5,.3),MAT.dark);m.position.y=2.25;g.add(m);for(let k=-4.5;k<=4.5;k+=.5){const b=new THREE.Mesh(boxGeo(.06,4.4,.36),MAT.metal);b.position.set(k,2.25,0);g.add(b);}scene.add(g);PZ.gate=g;
+   PZ.gateCol=addCollider(cx-5,cx+5,z0-.4,z0+.4,0,6,{});}
+  {const g=new THREE.Group();g.position.set(x1,0,PRISON.svc.z);const m=new THREE.Mesh(boxGeo(.25,2.6,2.6),lam('#4d5560'));m.position.y=1.3;g.add(m);scene.add(g);PZ.svc=g;PZ.svcCol=addCollider(x1-.4,x1+.4,PRISON.svc.z-1.3,PRISON.svc.z+1.3,0,4,{});}
+  // watchtowers
+  for(const [tx,tz] of[[x0+3,z0+3],[x1-3,z0+3],[x0+3,z1-3],[x1-3,z1-3]]){for(const [lx,lz] of[[-1,-1],[1,-1],[-1,1],[1,1]])fcyl(fr,MAT.frame,tx+lx,4.5,tz+lz,.12,9,6,{collide:false});
+    fbox(fr,wallM,tx,9.6,tz,3,1.2,3,{collide:false});fbox(fr,GLASS,tx,10.8,tz,2.8,1,2.8,{collide:false});fbox(fr,MAT.dark,tx,11.5,tz,3.4,.2,3.4,{collide:false});}
+  // ---- cell block (south wall) : 10 cells with barred doors
+  const BZ=PRISON.cellZ,back=z1-.5,cd=back-BZ,Y=3.1;fbox(fr,conc,cellX(0)-2.5+25,Y+.1,(BZ+back)/2,50,.2,cd+1.6,{collide:false});
+  fbox(fr,lam('#2c3036'),cellX(0)-2.5+25,Y+.5,BZ-.75,50,.6,.1,{collide:false});
+  for(let i=0;i<=10;i++)fbox(fr,conc,cellX(0)-2.5+i*5,Y/2,(BZ+back)/2,.25,Y,cd,{});
+  for(let i=0;i<10;i++){const ccx=cellX(i),dw=1.1;
+    for(let x=ccx-2.4;x<ccx+2.45;x+=.22){if(Math.abs(x-ccx)<dw/2+.02)continue;fbox(fr,bars,x,Y/2,BZ,.05,Y,.05,{collide:false});}
+    for(const y of[.12,1.6,Y-.05])fbox(fr,bars,ccx,y,BZ,5,.07,.07,{collide:false});
+    addCollider(ccx-2.5,ccx-dw/2,BZ-.12,BZ+.12,0,Y,{});addCollider(ccx+dw/2,ccx+2.5,BZ-.12,BZ+.12,0,Y,{});
+    const g=new THREE.Group();g.position.set(ccx,0,BZ-.08);const dr=new THREE.Group();g.add(dr);for(let x=-dw/2+.1;x<dw/2;x+=.2){const b=new THREE.Mesh(boxGeo(.05,Y-.1,.05),bars);b.position.set(x,Y/2,0);dr.add(b);}
+    for(const y of[.15,1.6,Y-.1]){const b=new THREE.Mesh(boxGeo(dw,.07,.07),bars);b.position.y=y;dr.add(b);}scene.add(g);
+    const col=addCollider(ccx-dw/2,ccx+dw/2,BZ-.2,BZ+.05,0,Y,{});col.miny=-60;col.maxy=-59;
+    fbox(fr,MAT.dark,ccx-1.2,.45,back-.55,1.9,.12,.85,{});fbox(fr,MAT.white,ccx-1.2,.56,back-.55,1.75,.1,.75,{collide:false});fcyl(fr,MAT.white,ccx+1.8,.3,back-.4,.22,.55,10,{});
+    PZ.cells.push({dr,col,open:1,cur:1,x:ccx});}
+  const my=cellX(PRISON.myCell);
+  {const t=new THREE.CanvasTexture((()=>{const c=document.createElement('canvas');c.width=128;c.height=180;const g=c.getContext('2d');g.fillStyle='#e9dcc0';g.fillRect(0,0,128,180);g.fillStyle='#2a6fb0';g.fillRect(10,10,108,110);g.fillStyle='#f2c230';g.beginPath();g.arc(64,70,26,0,7);g.fill();g.fillStyle='#222';g.font='bold 20px Arial';g.textAlign='center';g.fillText('PLAGE',64,150);return c;})());
+   const pl=new THREE.Mesh(new THREE.PlaneGeometry(.8,1.1),new THREE.MeshLambertMaterial({map:t}));pl.position.set(my+1.2,1.4,back-.13);pl.rotation.y=Math.PI;scene.add(pl);}
+  spots.push({x:my-1.2,z:back-1.3,kind:'p_dormir',r:1.1},{x:my+1.2,z:back-.9,kind:'p_creuser',r:.9});
+  // ---- canteen (north-west) + kitchen behind the counter
+  const roof=(ax,az,bx,bz)=>{fbox(fr,conc,(ax+bx)/2,3.6,(az+bz)/2,bx-ax,.25,bz-az,{collide:false});for(const [px,pz] of[[ax+.3,az+.3],[bx-.3,az+.3],[ax+.3,bz-.3],[bx-.3,bz-.3],[(ax+bx)/2,az+.3],[(ax+bx)/2,bz-.3]])fcyl(fr,conc,px,1.8,pz,.2,3.6,8,{});};
+  roof(-768,1098,-736,1120);
+  for(const z of[1102,1106.5,1111,1115.5])for(const x of[-760,-746]){fbox(fr,MAT.metal,x,.75,z,8,.08,1.2,{collide:false});fbox(fr,MAT.dark,x,.38,z,.1,.75,1,{});for(const s of[-1,1])fbox(fr,MAT.metal,x,.45,z+s*1,8,.06,.35,{collide:false});}
+  fbox(fr,MAT.metal,-757,.55,1121,18,1.1,1,{});fbox(fr,MAT.white,-757,1.12,1121,18,.05,1,{collide:false});
+  for(let x=-764;x<=-750;x+=3.5)fbox(fr,lam('#c9ced4'),x,1.18,1120.9,1.6,.12,.6,{collide:false});
+  makePersonStatic(fr,-752,1122.5,Math.PI,{shirt:'#f4f4f4',pants:'#f4f4f4',skin:rpick(SKINS),hair:'#222'});
+  spots.push({x:-754,z:1119.6,kind:'p_cantine',r:1.6});
+  // kitchen room
+  fbox(fr,wallM,-757,1.6,1134,22,3.2,.3,{});fbox(fr,wallM,-768,1.6,1127.5,.3,3.2,13,{});fbox(fr,wallM,-746,1.6,1124.4,.3,3.2,2.2,{});fbox(fr,wallM,-746,1.6,1131.6,.3,3.2,4.8,{});
+  fbox(fr,conc,-757,3.3,1127.5,22,.2,13,{collide:false});
+  fbox(fr,MAT.metal,-762,.5,1132.8,8,1,1.2,{});fbox(fr,MAT.dark,-757,1.9,1133.7,3,1,.12,{collide:false});
+  for(let k=0;k<5;k++)fbox(fr,MAT.metal,-758.2+k*.6,1.75,1133.6,.06,.5,.04,{collide:false});
+  spots.push({x:-757,z:1132.4,kind:'p_cuisine',r:1.1});
+  // ---- laundry (north-east)
+  roof(-664,1098,-634,1120);for(let k=0;k<6;k++){fbox(fr,MAT.white,-660+k*4.5,.6,1100,1.2,1.2,1.1,{});fcyl(fr,MAT.dark,-660+k*4.5,.65,1100.56,.32,.04,14,{collide:false});}
+  for(let k=0;k<3;k++)fbox(fr,lam('#5a7fb0'),-656+k*7,.9,1110,3,1.8,1.4,{});
+  spots.push({x:-649,z:1106,kind:'p_buanderie',r:1.6});
+  // laundry van inside, near the gate
+  {const c=new Car('van','#e8e8e6');c.place(-668,1128,Math.PI);c.ai='parked';c.locked=true;c.prisonVan=true;parked.push(c);PZ.truck=c;}
+  spots.push({x:-668,z:1124.4,kind:'p_camion',r:1.4});
+  // ---- yard : basket, weights, benches ; the Caid
+  {const g=new THREE.PlaneGeometry(28,15);g.rotateX(-Math.PI/2);place(g,cx,.03,cz);addStatic(g,lam('#8c5a3c'));}
+  for(const s of[-1,1]){fcyl(fr,MAT.frame,cx+s*13,1.6,cz,.08,3.2,6,{});fbox(fr,MAT.white,cx+s*12.6,3.2,cz,.06,1,1.6,{collide:false});fcyl(fr,orange,cx+s*12.1,3.0,cz,.24,.04,12,{collide:false});}
+  for(let k=0;k<3;k++){fbox(fr,MAT.dark,cx+30+k*4,.45,cz+18,1.8,.12,.5,{});fbox(fr,MAT.metal,cx+30+k*4,1.1,cz+18,2.2,.05,.05,{collide:false});for(const s of[-1,1])fcyl(fr,MAT.dark,cx+30+k*4+s*1.05,1.1,cz+18,.22,.08,10,{collide:false});}
+  spots.push({x:cx+34,z:cz+16.6,kind:'p_muscu',r:2});
+  for(const x of[-18,-9,9,18])bench(fr,cx+x,cz+16);
+  // guard booth + payphone near the gate
+  fbox(fr,wallM,-684,1.5,1097,8,3,.25,{});fbox(fr,wallM,-688,1.5,1100,.25,3,6,{});fbox(fr,wallM,-680,1.5,1100,.25,3,6,{});fbox(fr,conc,-684,3.1,1100,8.4,.2,6.4,{collide:false});
+  fbox(fr,MAT.wood,-684,.8,1101.5,5,1.1,.8,{});makePersonStatic(fr,-684,1099.6,0,{shirt:'#2c3e66',pants:'#1b2433',skin:rpick(SKINS),hair:'#111'});
+  spots.push({x:-684,z:1103.2,kind:'p_corruption',r:1.4});
+  fbox(fr,lam('#3a4048'),-692,1.4,1093.5,.8,1.4,.4,{});fbox(fr,MAT.dark,-692,1.35,1093.75,.3,.5,.1,{collide:false});spots.push({x:-692,z:1094.6,kind:'p_telephone',r:1.2});
+  // where a sheet rope can be thrown over the west wall
+  spots.push({x:x0+1.6,z:cz-20,kind:'p_mur',r:1.6});
+  // sign
   const sg=document.createElement('canvas');sg.width=512;sg.height=96;const g2=sg.getContext('2d');g2.fillStyle='#22262b';g2.fillRect(0,0,512,96);g2.fillStyle='#f2f2f2';g2.font='bold 56px Arial';g2.textAlign='center';g2.textBaseline='middle';g2.fillText('PÉNITENCIER',256,50);
-  const st=new THREE.CanvasTexture(sg);st.encoding=THREE.sRGBEncoding;const sign=new THREE.Mesh(new THREE.PlaneGeometry(12,2.2),new THREE.MeshBasicMaterial({map:st}));sign.position.set(cx,7.4,z0-.4);sign.rotation.y=Math.PI;scene.add(sign);
+  const st=new THREE.CanvasTexture(sg);st.encoding=THREE.sRGBEncoding;const sign=new THREE.Mesh(new THREE.PlaneGeometry(12,2.2),new THREE.MeshBasicMaterial({map:st}));sign.position.set(cx,7.6,z0-.45);sign.rotation.y=Math.PI;scene.add(sign);
   // guards
-  for(const [x,z] of[[cx-8,z0+6],[cx+8,z0+6],[x0+10,cz],[x1-10,cz],[cx-40,z1-8],[cx+25,z1-6]]){const p=new Ped();p.pguard=true;p.armed=true;p.kind='agent';p.post={x,z};p.x=x;p.z=z;p.y=0;p.state='idle';peds.push(p);persona(p);p.persona='calme';p.pname='Gardien '+rpick(['Duval','Perrin','Morel','Faure']);}
+  for(const [x,z] of[[cx-8,z0+6],[cx+8,z0+6],[x0+10,cz],[x1-10,cz],[cx-40,z1-12],[cx+25,z1-12],[-757,1118],[-649,1114]]){const p=new Ped();p.pguard=true;p.armed=true;p.kind='agent';p.post={x,z};p.x=x;p.z=z;p.y=0;p.state='idle';peds.push(p);persona(p);p.persona='calme';p.pname='Gardien '+rpick(['Duval','Perrin','Morel','Faure','Leclerc','Brun']);}
+  // inmates in orange jumpsuits + the Caid
+  const IN=['Kader','Tony','Marco','Yanis','Rico','Bastien','Lenny','Sacha','Dimitri','Omar','Jordan','Willy'];
+  for(let i=0;i<12;i++){const p=new Ped();p.inmate=true;p.kind=rpick(['adam','pull','blond']);setLook(p.m,{shirt:'#e8771e',pants:'#e8771e',skin:rpick(SKINS),hair:rpick(HAIRS)});
+    const x=rnd(cx-30,cx+30),z=rnd(cz-25,cz+20);p.post={x,z};p.x=x;p.z=z;p.y=0;p.state='idle';peds.push(p);persona(p);p.pname='Détenu '+IN[i];PZ.inmates.push(p);}
+  {const p=new Ped();p.inmate=true;p.caid=true;p.kind='adam';setLook(p.m,{shirt:'#e8771e',pants:'#e8771e',skin:'#8d5524',hair:'#111'});p.post={x:cx+9,z:cz+15};p.x=cx+9;p.z=cz+15;p.y=0;p.state='idle';p.h=Math.PI;peds.push(p);persona(p);p.persona='agressif';p.pname='Le Caïd';PZ.caid=p;}
+  spots.push({x:cx+9,z:cz+13.4,kind:'p_caid',r:1.6});
 }
+function pCell(i,open){const c=PZ.cells[i];if(!c)return;c.open=open;const on=open<.5;c.col.miny=on?0:-60;c.col.maxy=on?3.1:-59;}
+function pGate(open){prison.gateOpen=open;PZ.gateCol.miny=open?-60:0;PZ.gateCol.maxy=open?-59:6;}
+function pSvc(open){prison.svcOpen=open;PZ.svcCol.miny=open?-60:0;PZ.svcCol.maxy=open?-59:4;}
 function confiscate(withMoney){player.owned=new Set(['poings']);player.weap='poings';player.mag={};player.ammo={};player.inv=[];if(withMoney){const c=Math.round(player.money*.3);player.money-=c;return c;}return 0;}
 function busted(){if(player.dead)return;const st=player.stars;player.dead=true;if(player.car){player.car.vx=player.car.vz=0;}sfx.fail();
   if(story)storyEnd(false,'Arrêté');if(mission)endMission(false);
-  if(st>=4){const sec=st>=5?300:180;showFade('ARRÊTÉ',`${st} étoiles : direction le pénitencier · ${sec/60} min de prison`,()=>jail(sec));}
+  if(st>=4){const sec=st>=5?1500:900;showFade('ARRÊTÉ',`${st} étoiles : direction le pénitencier · ${sec/60} min de prison`,()=>jail(sec));}
   else if(st>=2){showFade('ARRÊTÉ',`On t'enlève tout : armes, objets et argent liquide · garde à vue ${st>=3?75:45} s au commissariat`,()=>{const c=confiscate(true);custody(st>=3?75:45);setTimeout(()=>toast(`Confisqué : armes, objets, $${c}`),3500);});}
   else{const fine=Math.min(player.money,150);showFade('ARRÊTÉ','Amende de $'+fine+' · relâché au commissariat',()=>respawnAt(shopPos('police')||landmarks.police,fine));}}
-function jail(sec){respawnAt({x:(PRISON.x0+PRISON.x1)/2+rnd(-20,20),z:(PRISON.z0+PRISON.z1)/2,h:Math.PI},0);confiscate(false);prison.on=true;prison.t=sec;prison.escaping=0;save();
-  setTimeout(()=>toast('PÉNITENCIER\nAttends ta libération… ou trouve un moyen de t\'évader'),600);}
+function toCell(){const x=cellX(PRISON.myCell);player.x=x;player.z=PRISON.z1-2.6;player.y=.2;player.vx=player.vz=0;player.h=Math.PI;cam.yaw=Math.PI;}
+function jail(sec){respawnAt({x:cellX(PRISON.myCell),z:PRISON.z1-2.6,h:Math.PI},0);confiscate(false);
+  Object.assign(prison,{on:true,t:sec,escaping:0,lock:0,spoon:false,knives:0,sheets:0,dig:0,lawyer:false,bribed:0,riot:0,exitStars:4,caidTalk:0,caught:0});pGate(false);pSvc(false);pCell(PRISON.myCell,1);save();
+  setTimeout(()=>toast('PÉNITENCIER — '+Math.round(sec/60)+' min\nVis ta vie de détenu… ou prépare ton évasion. Regarde le panneau en haut.'),600);}
+// caught doing something forbidden : back to the cell, door locked, extra time
+function pCaught(why,extra){prison.t+=extra;prison.caught++;sfx.fail();toast(`${why}\n+${Math.round(extra/60)} min · retour en cellule`);showFade('ATTRAPÉ',why,()=>{toCell();prison.lock=45;pCell(PRISON.myCell,0);$('fade').classList.remove('on');});fadeT=1.6;}
+function guardNear(r){return peds.some(p=>p.pguard&&p.state!=='down'&&Math.hypot(p.x-player.x,p.z-player.z)<r);}
+const P_ACT={
+  p_dormir(){if(!prison.on){toast('Ce n\'est pas ta cellule');return;}showFade('ZZZ…','Tu dors quelques heures · −3 min de peine',()=>{prison.t=Math.max(5,prison.t-180);dayT=(dayT+5)%24;player.hp=100;$('fade').classList.remove('on');});fadeT=1.8;},
+  p_creuser(){if(!prison.on)return;if(!prison.spoon){toast('Il te faut un outil… une cuillère de la cantine ferait l\'affaire');return;}
+    if(guardNear(9)&&Math.random()<.35){prison.spoon=false;prison.dig=Math.max(0,prison.dig-.3);pCaught('Un gardien t\'a surpris en train de creuser ! Cuillère confisquée',180);return;}
+    prison.dig=Math.min(1,prison.dig+rnd(.05,.09));sfx.thud();emit(player.x,.4,player.z+.6,'#8a7a66',.4,.6,0,.6,0,2);
+    if(prison.dig>=1){showFade('LE TUNNEL','Tu rampes sous le mur pendant des heures…',()=>{player.x=cellX(PRISON.myCell);player.z=PRISON.z1+9;player.y=groundY(player.x,player.z);prison.exitStars=2;$('fade').classList.remove('on');toast('Tu es dehors ! Personne ne s\'en est encore rendu compte… file !');});fadeT=2.2;}
+    else toast(`Tu creuses derrière le poster… ${Math.round(prison.dig*100)} %\n(appuie encore sur E — attention aux gardiens)`);},
+  p_cantine(){if(!prison.on){toast('La cantine est réservée aux détenus');return;}player.hp=100;prison.t=Math.max(5,prison.t-30);
+    if(!prison.spoon&&Math.random()<.55){prison.spoon=true;toast('Bon appétit (−30 s)\nTu glisses discrètement une cuillère dans ta manche… pour creuser ?');}else toast('Bon appétit ! Santé au max (−30 s)');sfx.ding();},
+  p_cuisine(){if(!prison.on)return;if(prison.knives>=3){toast('Tu as déjà assez de couteaux cachés');return;}
+    if(Math.random()<(guardNear(10)?.45:.2)){prison.knives=Math.max(0,prison.knives-1);pCaught('Le cuisinier t\'a vu voler un couteau !',120);return;}
+    prison.knives++;sfx.click();toast(`Couteau volé (${prison.knives})\nLe Caïd en cherche pour son plan…`);},
+  p_buanderie(){if(!prison.on){toast('Buanderie de la prison');return;}prison.t=Math.max(5,prison.t-60);if(prison.sheets<3){prison.sheets++;toast(`Travail à la buanderie (−1 min)\nTu caches un drap (${prison.sheets}/3) — avec 3 draps, tu peux faire une corde`);}else toast('Travail à la buanderie (−1 min de peine)');sfx.coin();},
+  p_muscu(){player.stamina=1;player.hp=Math.min(100,player.hp+15);if(prison.on)prison.t=Math.max(5,prison.t-20);toast('Séance de muscu ! (−20 s)');},
+  p_camion(){if(!prison.on){toast('Camion de la buanderie');return;}if(prison.sheets<1){toast('Il faut au moins un drap pour te cacher dedans (buanderie)');return;}
+    showFade('CAMION DE LINGE','Tu te caches sous les draps sales… le camion démarre',()=>{$('fade').classList.remove('on');
+      if(Math.random()<.3){prison.sheets=0;pCaught('Les chiens ont flairé ta cachette au portail !',240);return;}
+      const c=PZ.truck;c.place(PRISON.gate.x+18,PRISON.gate.z-60,Math.PI);player.x=c.x+2.5;player.z=c.z;player.y=groundY(player.x,player.z);prison.exitStars=1;prison.sheets=0;toast('Le camion s\'arrête loin du pénitencier… tu sautes dehors !');});fadeT=2.4;},
+  p_mur(){if(!prison.on)return;if(prison.sheets<3){toast(`Il te faut une corde : 3 draps de la buanderie (${prison.sheets}/3)`);return;}
+    const night=dayT>=21||dayT<5;if(!night){toast('Les miradors te verraient : attends la nuit (21 h – 5 h). Dormir en cellule fait passer le temps.');return;}
+    showFade('LA CORDE','Tu lances ta corde de draps par-dessus le mur…',()=>{$('fade').classList.remove('on');player.x=PRISON.x0-4;player.z=player.z;player.y=groundY(player.x,player.z);prison.sheets=0;prison.exitStars=Math.random()<.35?4:2;
+      toast(prison.exitStars>2?'Un projecteur t\'a repéré !':'Tu es de l\'autre côté du mur, dans la nuit…');});fadeT=2;},
+  p_corruption(){if(!prison.on){toast('Poste de garde');return;}if(prison.bribed>0){toast('La porte de service (mur est) est ouverte : vas-y !');return;}
+    const cost=Math.max(5000,Math.round(player.money*.4));if(player.money<cost){toast(`Le gardien veut $${cost.toLocaleString('fr-FR')}… tu n'as que $${player.money.toLocaleString('fr-FR')}`);return;}
+    player.money-=cost;sfx.coin();prison.bribed=70;pSvc(true);prison.exitStars=1;toast(`$${cost.toLocaleString('fr-FR')} payés au gardien\n« La porte de service, mur est. Tu as 70 secondes. Je n'ai rien vu. »`);},
+  p_telephone(){if(!prison.on){toast('Téléphone de la prison');return;}if(prison.lawyer){toast('Ton avocat fait déjà ce qu\'il peut');return;}const cost=3000;
+    if(player.money<cost){toast('Un bon avocat coûte $3 000');return;}player.money-=cost;prison.lawyer=true;prison.t=Math.round(prison.t/2);sfx.coin();toast('Ton avocat a trouvé un vice de procédure !\nPeine divisée par deux');},
+  p_caid(){if(!prison.on){toast('« Qu\'est-ce que tu regardes ? »');return;}const c=PZ.caid;
+    if(prison.riot>0){npcSay(c,'C\'est maintenant ! Le portail est ouvert, cours !');return;}
+    if(prison.knives>=2){prison.knives-=2;startRiot();return;}
+    npcSay(c,prison.caidTalk++?`Toujours pas mes couteaux ? Il m'en faut 2. T'en as ${prison.knives}.`:'Toi, t\'as l\'air de vouloir sortir. Ramène-moi 2 couteaux de la cuisine, et on met le feu à cette taule.');},
+};
+function startRiot(){prison.riot=90;pGate(true);prison.exitStars=3;npcSay(PZ.caid,'ÉMEUTE ! Tout le monde dehors !');toast('ÉMEUTE !\nLes détenus attaquent les gardiens, le portail est ouvert pendant 90 s');sfx.boom(.6);
+  for(const p of PZ.inmates){p.mood=null;p.riot=true;}}
+function inmateAct(p,dt,P){// walk around the yard, or fight the guards during a riot
+  if(prison.riot>0&&p.riot){let g=null,gd=40;for(const q of peds){if(!q.pguard||q.state==='down')continue;const d=Math.hypot(q.x-p.x,q.z-p.z);if(d<gd){gd=d;g=q;}}
+    if(g){p.h+=wrapA(Math.atan2(g.x-p.x,g.z-p.z)-p.h)*Math.min(1,dt*6);if(gd>1.2){const s=4.2;p.x+=Math.sin(p.h)*s*dt;p.z+=Math.cos(p.h)*s*dt;p.y=0;return s;}
+      p.hitT=(p.hitT||0)-dt;if(p.hitT<=0){p.hitT=1.2;p.atkAnim=.6;sfx.thud();if(Math.random()<.35)knockPed(g,Math.sin(p.h)*3,Math.cos(p.h)*3);}return 0;}}
+  if(p.caid){p.h+=wrapA(Math.atan2(P.x-p.x,P.z-p.z)-p.h)*Math.min(1,dt*2)*(Math.hypot(P.x-p.x,P.z-p.z)<8?1:0);return 0;}
+  const dx=p.post.x-p.x,dz=p.post.z-p.z,d=Math.hypot(dx,dz);if(d<.5){p.wait=(p.wait||rnd(3,10))-dt;if(p.wait<=0){p.wait=0;const cx=(PRISON.x0+PRISON.x1)/2,cz=(PRISON.z0+PRISON.z1)/2;p.post={x:rnd(cx-35,cx+35),z:rnd(cz-28,cz+22)};}return 0;}
+  p.h+=wrapA(Math.atan2(dx,dz)-p.h)*Math.min(1,dt*5);const s=1.2;p.x+=dx/d*s*dt;p.z+=dz/d*s*dt;resolveCircle(p,.3,false);p.y=0;return s;}
 function updatePrison(dt,P){
   if(prison.escaping>0)prison.escaping-=dt;
+  // doors and gates animation
+  for(const c of PZ.cells){if(Math.abs(c.cur-c.open)>.001)c.cur+=Math.sign(c.open-c.cur)*Math.min(Math.abs(c.open-c.cur),dt*1.4);c.dr.position.x=-1.05*c.cur;}
+  if(PZ.gate)PZ.gate.position.x=lerp(PZ.gate.position.x,(PRISON.x0+PRISON.x1)/2+(prison.gateOpen?9.5:0),1-Math.exp(-dt*1.5));
+  if(PZ.svc)PZ.svc.rotation.y=lerp(PZ.svc.rotation.y,prison.svcOpen?-1.4:0,1-Math.exp(-dt*3));
+  if(prison.riot>0){prison.riot-=dt;if((frame&7)===0)emit(rnd(PRISON.x0+30,PRISON.x1-30),1,rnd(PRISON.z0+20,PRISON.z1-20),'#555',1.5,2,0,1.5,0,3);if(prison.riot<=0){pGate(false);for(const p of PZ.inmates)p.riot=false;}}
+  if(prison.bribed>0){prison.bribed-=dt;if(prison.bribed<=0)pSvc(false);}
+  if(prison.lock>0){prison.lock-=dt;if(prison.lock<=0)pCell(PRISON.myCell,1);}
   if(!prison.on)return;const el=$('mission');
-  if(!inPrison(P.x,P.z)&&!player.dead){prison.on=false;prison.escaping=90;player.stars=Math.max(player.stars,4);seenT=0;toast('ÉVASION !\nLes gardiens donnent l\'alerte');sfx.fail();return;}
-  prison.t-=dt;if(prison.t<=0){prison.on=false;player.x=PRISON.gate.x;player.z=PRISON.gate.z;player.y=groundY(player.x,player.z);player.stars=0;toast('LIBÉRÉ !\nTu as purgé ta peine');sfx.win();save();return;}
-  if(!story&&!mission){el.hidden=false;const s=Math.ceil(prison.t);el.innerHTML=`PÉNITENCIER — libération dans <span style="color:#f2c230">${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</span><small>Dors dans ta cellule (E) pour gagner du temps… on dit qu'il y a un trou dans le mur du fond</small>`;}
+  if(!inPrison(P.x,P.z)&&!player.dead){prison.on=false;const st=prison.exitStars;player.stars=Math.max(player.stars,st);seenT=0;policeETA=st>=3?0:ETA[st];
+    if(st>=3){prison.escaping=90;toast('ÉVASION !\nLes gardiens donnent l\'alerte');sfx.fail();}else toast(st===1?'ÉVASION DISCRÈTE !\nTu as 1 étoile : éloigne-toi vite':'ÉVASION !\nL\'alerte sera donnée bientôt (2 étoiles)');el.hidden=true;return;}
+  prison.t-=dt;if(prison.t<=0){prison.on=false;player.x=PRISON.gate.x;player.z=PRISON.gate.z;player.y=groundY(player.x,player.z);player.stars=0;toast('LIBÉRÉ !\nTu as purgé ta peine');sfx.win();save();el.hidden=true;return;}
+  if(!story&&!mission){el.hidden=false;const s=Math.ceil(prison.t),hh=Math.floor(dayT),night=dayT>=21||dayT<5;
+    const inv=[prison.spoon?'🥄 cuillère':'',prison.knives?`🔪 ${prison.knives} couteau${prison.knives>1?'x':''}`:'',prison.sheets?`🧺 ${prison.sheets}/3 draps`:'',prison.dig>0?`⛏ tunnel ${Math.round(prison.dig*100)} %`:''].filter(Boolean).join(' · ');
+    el.innerHTML=`PÉNITENCIER — libération dans <span style="color:#f2c230">${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</span> · ${String(hh).padStart(2,'0')} h ${night?'🌙':'☀'}${prison.lock>0?' · 🔒 cellule fermée':''}`+
+      `<small>${inv?inv+'<br>':''}Évasions : creuser (cuillère de la cantine) · émeute (2 couteaux de la cuisine au Caïd) · camion de linge · corde de 3 draps la nuit · gardien corrompu · avocat au téléphone</small>`;}
 }
 
 /* ================= boats and aircraft : wake and spray, controls help, on the maps, for sale ================= */
@@ -3630,7 +3748,7 @@ function genArmSigns(){
 function nearestShop(kind,P){let best=null,bd=1e9;for(const s of spots){if(s.kind!==kind)continue;const d=Math.hypot(s.x-P.x,s.z-P.z);if(d<bd){bd=d;best=s;}}return best?{s:best,d:bd}:null;}
 function updateArm(dt,P){
   for(const s of ARM.signs){s.board.rotation.y+=dt*.8;s.lamp.visible=(gameT*2|0)%2===0;const d=Math.hypot(s.x-P.x,s.z-P.z);s.beam.visible=d>35;}
-  if(!ARM.hint&&gameT>3){ARM.hint=true;const n=nearestShop('armurerie',P);if(n)toast(`🔫 Armurerie la plus proche : ${Math.round(n.d)} m\nSuis l'enseigne rouge « ARMES » et le A rouge sur la mini-carte (appli Armurerie sur le téléphone)`);}
+  if(!ARM.hint&&gameT>3&&!prison.on){ARM.hint=true;const n=nearestShop('armurerie',P);if(n)toast(`🔫 Armurerie la plus proche : ${Math.round(n.d)} m\nSuis l'enseigne rouge « ARMES » et le A rouge sur la mini-carte (appli Armurerie sur le téléphone)`);}
 }
 function armMarkers(list,P){const n=nearestShop('armurerie',P);if(n&&!prison.on)list.push({x:n.s.x,z:n.s.z,c:'#e5484d',l:'A',edge:true});
   for(const c of FBI.cars)if(c.ai==='police')list.push({x:c.x,z:c.z,c:(gameT*4|0)%2?'#111':'#e5484d',dot:true,edge:true});}
