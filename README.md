@@ -57,6 +57,18 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Physique, armes personnalisées, banques, héros, ponts
+
+- **Chocs** : à moto, un choc violent t'**éjecte** et les dégâts dépendent de la zone touchée (tête, torse, bras, jambe → tu boites). En voiture, un gros choc fait mal, et au-delà de ~110 km/h tu peux passer à travers le pare-brise. Se faire renverser : peu de dégâts à faible vitesse, beaucoup à grande vitesse (et du sang).
+- **Motos plus puissantes** (superbike ~280 km/h), **avions** jusqu'à ~1000 km/h (chasseur), 900 km/h (avion de ligne), 830 km/h (jet).
+- **Personnaliser ses armes** à l'armurerie (bouton ⚙ Modifier) : silencieux, chargeur grande capacité, lunette, poignée, viseur laser, peinture (or, camo, rose…). Visibles sur l'arme.
+- **Ramasser les armes** : les policiers, soldats et gangsters neutralisés lâchent leur arme (anneau jaune) ; passe dessus pour la prendre.
+- **Armes** : pistolet automatique, fusil d'assaut bullpup, fusil de précision semi-auto, mitrailleuse lourde. Explosifs plus chers.
+- **Banques** : beaucoup plus de banques, avec une grande enseigne verte « € BANQUE » et le **€ vert** toujours sur la mini-carte. Nouveaux contrats **Braquage de banque** et **Gros braquage** (téléphone → Missions).
+- **Héros** : chacun a sa personnalité et une **capacité spéciale** (touche **C**, ou bouton ⚡ sur téléphone ; jauge bleue) : Adam ralentit le temps en conduisant, James entre en **rage** (dégâts ×2, encaisse 3× moins), Victoria ralentit le temps en visant.
+- **Ponts** géants (2,2 km, 1,4 km) qui relient Néo Cité aux 3 pays, désormais bien plus grands (2,6 km de large) avec collines, villages, forêts, routes. Chaque pays a sa **nourriture** et son bonus : tapas (endurance et vitesse), soupe de poisson (−40 % de dégâts), ramen (précision). Hot-dogs à Néo Cité.
+- **Prison** : tenue orange pour le détenu, les gardiens font des rondes.
+
 ## Animaux réalistes, autres pays, reflets
 
 - **Vrais animaux animés** (marche, galop, broute, attaque, mort) : vaches, taureaux, chevaux, ânes, alpagas dans les fermes ; cerfs et biches, renards, **loups** (ils attaquent en meute) dans la nature. Modèles « Ultimate Animated Animals » de **Quaternius**, licence **CC0** (domaine public).
