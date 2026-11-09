@@ -1,7 +1,7 @@
 # Publishes the site to the gh-pages branch:
 #   main             -> site root           https://<user>.github.io/<repo>/
 #   any other branch -> preview/<branch>/   https://<user>.github.io/<repo>/preview/<branch>/
-# Deleting a branch removes its preview. GitHub Pages must use "Deploy from a branch" with gh-pages / (root).
+# Only the 5 most recently published previews are kept. Deleting a branch removes its preview. GitHub Pages must use "Deploy from a branch" with gh-pages / (root).
 name: Pages (main + branch previews)
 
 on:
@@ -45,6 +45,14 @@ jobs:
           else
             rm -rf "site/preview/$slug" && mkdir -p "site/preview/$slug"
             rsync -a --exclude .git --exclude .github src/ "site/preview/$slug/"
+            # keep only the 5 most recent previews so GitHub Pages stays small and deploys quickly
+            order=site/preview/.order
+            { echo "$slug"; [ -f "$order" ] && grep -vx "$slug" "$order" || true; } | head -n 5 > "$order.new"
+            mv "$order.new" "$order"
+            for d in site/preview/*/; do
+              d=${d%/}; n=${d##*/}
+              grep -qx "$n" "$order" || rm -rf "$d"
+            done
           fi
           touch site/.nojekyll
           cd site
