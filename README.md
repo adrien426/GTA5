@@ -57,6 +57,14 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Eau, météo, corrections et performances
+
+- **Les véhicules coulent vraiment** : une voiture ou une moto qui entre dans l'eau perd son moteur et s'enfonce (plus de « conduite sur l'eau »). À moto tu tombes à l'eau tout de suite et tu nages.
+- **Nage et plongée** : dans l'eau, **Maj** (ou Ctrl) pour plonger, **ESPACE** pour remonter. Une **jauge d'air** bleue apparaît : environ 28 s sous l'eau, puis tu te noies si tu ne remontes pas. Vue bleutée sous l'eau, bulles, nage à l'horizontale.
+- **Météo dynamique** : grand soleil, nuages, pluie, **orages** (éclairs et tonnerre), brouillard. Pluie visible autour de toi (pas à l'intérieur), ciel et lumière assombris, bruit de pluie, gerbes d'eau derrière les voitures rapides.
+- **Mini-carte dans les autres pays** (terrain, routes, villes) et **ponts** affichés sur la mini-carte.
+- **Corrections** : les forêts pouvaient disparaître d'un coup selon la direction de la caméra ; tout le décor de la carte était dessiné (et ombré) même à 5 km derrière toi. Le décor est maintenant découpé en blocs de 300 m et les forêts en blocs de 500 m, affichés seulement à proximité : environ **3× plus fluide** hors de la ville.
+
 ## Première personne, blessures par zone, armes, FBI, commerces, pays
 
 - **Vue à la première personne** : touche **B** (bouton 👁 sur téléphone), à pied et en voiture. L'arme équipée est visible devant toi, la lunette zoome.
