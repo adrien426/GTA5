@@ -57,6 +57,14 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Escalade et lieux plus réalistes
+
+- **Grimper** : face à un mur, une clôture, un muret, un conteneur ou le toit d'un petit bâtiment (jusqu'à 7 m), appuie sur **ESPACE** (bouton saut sur téléphone) — l'indication « ESPACE : grimper » apparaît. Un mur fin est franchi (tu retombes de l'autre côté, gare à la hauteur), un bloc épais te laisse debout dessus. Le mur de la prison s'escalade… mais les gardiens réagissent.
+- **Échelles de secours** sur le côté de nombreux immeubles (E) pour monter sur les **toits**, où l'on peut marcher, sauter (en parachute !) ou redescendre par l'échelle.
+- **Base militaire** : héliport, drapeau, bunkers en sacs de sable, barbelés sur le grillage, radar qui tourne, citernes, stand de tir, camions militaires, soldats qui patrouillent.
+- **Commissariats** : voitures de patrouille garées devant, antenne, plots, gyrophare bleu.
+- **Prison** : second grillage extérieur avec barbelés, projecteurs qui balaient la cour la nuit (et pendant une évasion), bus pénitentiaire.
+
 ## Physique, armes personnalisées, banques, héros, ponts
 
 - **Chocs** : à moto, un choc violent t'**éjecte** et les dégâts dépendent de la zone touchée (tête, torse, bras, jambe → tu boites). En voiture, un gros choc fait mal, et au-delà de ~110 km/h tu peux passer à travers le pare-brise. Se faire renverser : peu de dégâts à faible vitesse, beaucoup à grande vitesse (et du sang).

@@ -748,7 +748,7 @@ function facadePlane(w,h,style,x,y,z,ry,uOff){
 }
 function bandPlane(w,h,mat,x,y,z,ry){const g=new THREE.PlaneGeometry(w,h);const uv=g.attributes.uv;for(let i=0;i<uv.count;i++)uv.setX(i,uv.getX(i)*Math.max(1,Math.round(w/8)));place(g,x,y,z,ry);addStatic(g,mat);}
 function building(cx,cz,w,d,h,style,y0=0,o={}){
-  if(y0===0&&!o.noDoor&&h>=6&&Math.min(w,d)>=10)bldDoor(cx,cz,w,d);
+  if(y0===0&&!o.noDoor&&h>=6&&Math.min(w,d)>=10){bldDoor(cx,cz,w,d);const bf=bldFront(cx,cz);addLadder(cx,cz,w,d,h,bf[0],bf[1]);}
   const band=y0===0&&h>=9&&!o.noBand;if(band){const m=SHOPM[ri(0,SHOPM.length-1)],bh=4.4;
     bandPlane(w,bh,m,cx,bh/2,cz+d/2,0);bandPlane(w,bh,m,cx,bh/2,cz-d/2,Math.PI);bandPlane(d,bh,m,cx+w/2,bh/2,cz,Math.PI/2);bandPlane(d,bh,m,cx-w/2,bh/2,cz,-Math.PI/2);
     for(const [px,pz,pw,pd] of[[cx,cz+d/2+.12,w+.3,.25],[cx,cz-d/2-.12,w+.3,.25],[cx+w/2+.12,cz,.25,d],[cx-w/2-.12,cz,.25,d]]){const g=boxGeo(pw,.35,pd);place(g,px,4.55,pz);addStatic(g,MAT.stone);}}
@@ -765,7 +765,7 @@ function building(cx,cz,w,d,h,style,y0=0,o={}){
     const g=boxGeo(pw,p,pd);place(g,px,h+p/2,pz);addStatic(g,MAT.stone);}
   if(h>14&&!o.noRoofProps){const n=ri(1,3);for(let i=0;i<n;i++){const bw=rr(2,5),bd=rr(2,5),bh=rr(1.2,3.2);
     const g=boxGeo(bw,bh,bd,2);place(g,cx+rr(-w/2+bw,w/2-bw)*.7,h+bh/2,cz+rr(-d/2+bd,d/2-bd)*.7);addStatic(g,MAT.metal);}}
-  addCollider(cx-w/2,cx+w/2,cz-d/2,cz+d/2,y0,h+.5,{bld:true});
+  addCollider(cx-w/2,cx+w/2,cz-d/2,cz+d/2,y0,h,{bld:true});
   if(y0<1)minimapBld.push({cx,cz,w,d,h,k:'b'});
   if(h>28&&R()<.4&&!o.noRoofProps)billboard(cx,cz,w,d,h);
 }
@@ -2114,7 +2114,7 @@ function wasted(){if(player.dead)return;player.dead=true;if(player.car)exitCar(t
 /* ================= shop actions ================= */
 function shopAction(kind){
   if(P_ACT[kind]){P_ACT[kind]();return;}
-  if(TRAVEL_ACT[kind]){TRAVEL_ACT[kind]();return;}if(INT_ACT[kind]){INT_ACT[kind]();return;}if(HOME_ACT[kind]){HOME_ACT[kind]();return;}if(PC_ACT[kind]){PC_ACT[kind]();return;}
+  if(CLIMB_ACT[kind]){CLIMB_ACT[kind]();return;}if(TRAVEL_ACT[kind]){TRAVEL_ACT[kind]();return;}if(INT_ACT[kind]){INT_ACT[kind]();return;}if(HOME_ACT[kind]){HOME_ACT[kind]();return;}if(PC_ACT[kind]){PC_ACT[kind]();return;}
   const P=player;
   const buy=(cost,fn,msg)=>{if(P.money<cost){toast('Pas assez d\'argent');return;}P.money-=cost;fn();toast(msg);sfx.coin();save();};
   if(kind==='superette')buy(40,()=>P.hp=100,'Santé restaurée');
@@ -2130,7 +2130,7 @@ function shopAction(kind){
   else if(kind==='base'){for(const id of['sniper','minigun','roquette','laser','assaut','pompe'])giveWeapon(id,4);for(const id in P.ammo)P.ammo[id]=Math.max(P.ammo[id],WBY[id].mag*4);toast('Arsenal militaire récupéré !\nLaser, minigun, lance-roquettes…');sfx.win();save();}
   else if(kind==='garage'){const c=P.car;buy(120,()=>{c.repaint(rpick(PAINTS.filter(p=>p!==c.color)));c.health=100;carRepairFx(c);c.burn=0;P.stars=0;for(const o of police)if(o.ai==='police'){o.ai='traffic';snapToGraph(o);}},'Repeinte & réparée · étoiles effacées');}
 }
-const SPOTTXT={food_neo:'Stand de hot-dogs ($15)',food_dorada:()=>`Manger : ${FOODS.dorada.n} ($${FOODS.dorada.p})`,food_nordheim:()=>`Manger : ${FOODS.nordheim.n} ($${FOODS.nordheim.p})`,food_sakura:()=>`Manger : ${FOODS.sakura.n} ($${FOODS.sakura.p})`,billets:'✈ Acheter un billet d\'avion (autres pays)',vol_retour:'✈ Vol retour vers Néo Cité ($600)',cafe_dorada:'Café de la plaza (sauvegarde)',cafe_nordheim:'Kafé (sauvegarde)',cafe_sakura:'Salon de thé (sauvegarde)',immeuble:'Entrer dans l\'immeuble',int_sortie:'Sortir dans la rue',int_ascenseur:'Prendre l\'ascenseur',int_appt_sortie:'Sortir de l\'appartement',int_achat:()=>aptOwned(INT.bi)?'Ton appartement':`Acheter cet appartement — $${(INT.BLD[INT.bi]||{price:0}).price.toLocaleString('fr-FR')}`,int_lit:'Dormir (sauvegarde)',int_tv:'Regarder la télé',int_frigo:'Manger un morceau',int_douche:'Prendre une douche',int_dressing:'Changer de tenue',home_lit:'Dormir (sauvegarde)',home_dressing:'Dressing : changer de tenue',home_coffre:'Coffre-fort (munitions)',home_tv:'Regarder la télé',home_frigo:'Manger un morceau',home_garage:()=>`Garage : changer de voiture (${CT[saveData.myCar||'muscle'].name})`,pc_ordi:'Ordinateur de la police',pc_vestiaire:'Vestiaire : uniforme de police',pc_armes:'Armurerie de la police (vol !)',pc_cafe:'Machine à café',p_dormir:'Dormir (−3 min, le temps passe)',p_creuser:()=>prison.spoon?`Creuser le tunnel (${Math.round(prison.dig*100)} %)`:'Le mur derrière le poster…',p_cantine:'Manger à la cantine',p_cuisine:'Voler un couteau en cuisine',p_buanderie:'Travailler à la buanderie',p_muscu:'Faire de la muscu',p_camion:'Se cacher dans le camion de linge',p_mur:'Lancer une corde de draps par-dessus le mur',p_corruption:()=>prison.bribed>0?'Porte de service ouverte (mur est)':'Soudoyer le gardien',p_telephone:'Appeler un avocat ($3 000)',p_caid:'Parler au Caïd',serrure:'Crocheter la serrure de la cellule',cellule:'Dormir dans ta cellule (−1 min de peine)',coiffeur:'Coiffeur — nouvelle couleur $50',banque:'Banque — consulter ton compte',bijouterie:'Bijouterie — acheter une bague $1 200',armurerie:'Armurerie — acheter des armes',base:'Caisse d\'armes de l\'armée',superette:'Soins — $40',cafe:'Café & sauvegarde — $10',boutique:'Nouvelle tenue — $80',hopital:'Se faire soigner — gratuit',police:'Payer l\'amende',garage:'Réparer & repeindre — $120'};
+const SPOTTXT={echelle:'Monter à l\'échelle (toit)',echelle_bas:'Redescendre par l\'échelle',food_neo:'Stand de hot-dogs ($15)',food_dorada:()=>`Manger : ${FOODS.dorada.n} ($${FOODS.dorada.p})`,food_nordheim:()=>`Manger : ${FOODS.nordheim.n} ($${FOODS.nordheim.p})`,food_sakura:()=>`Manger : ${FOODS.sakura.n} ($${FOODS.sakura.p})`,billets:'✈ Acheter un billet d\'avion (autres pays)',vol_retour:'✈ Vol retour vers Néo Cité ($600)',cafe_dorada:'Café de la plaza (sauvegarde)',cafe_nordheim:'Kafé (sauvegarde)',cafe_sakura:'Salon de thé (sauvegarde)',immeuble:'Entrer dans l\'immeuble',int_sortie:'Sortir dans la rue',int_ascenseur:'Prendre l\'ascenseur',int_appt_sortie:'Sortir de l\'appartement',int_achat:()=>aptOwned(INT.bi)?'Ton appartement':`Acheter cet appartement — $${(INT.BLD[INT.bi]||{price:0}).price.toLocaleString('fr-FR')}`,int_lit:'Dormir (sauvegarde)',int_tv:'Regarder la télé',int_frigo:'Manger un morceau',int_douche:'Prendre une douche',int_dressing:'Changer de tenue',home_lit:'Dormir (sauvegarde)',home_dressing:'Dressing : changer de tenue',home_coffre:'Coffre-fort (munitions)',home_tv:'Regarder la télé',home_frigo:'Manger un morceau',home_garage:()=>`Garage : changer de voiture (${CT[saveData.myCar||'muscle'].name})`,pc_ordi:'Ordinateur de la police',pc_vestiaire:'Vestiaire : uniforme de police',pc_armes:'Armurerie de la police (vol !)',pc_cafe:'Machine à café',p_dormir:'Dormir (−3 min, le temps passe)',p_creuser:()=>prison.spoon?`Creuser le tunnel (${Math.round(prison.dig*100)} %)`:'Le mur derrière le poster…',p_cantine:'Manger à la cantine',p_cuisine:'Voler un couteau en cuisine',p_buanderie:'Travailler à la buanderie',p_muscu:'Faire de la muscu',p_camion:'Se cacher dans le camion de linge',p_mur:'Lancer une corde de draps par-dessus le mur',p_corruption:()=>prison.bribed>0?'Porte de service ouverte (mur est)':'Soudoyer le gardien',p_telephone:'Appeler un avocat ($3 000)',p_caid:'Parler au Caïd',serrure:'Crocheter la serrure de la cellule',cellule:'Dormir dans ta cellule (−1 min de peine)',coiffeur:'Coiffeur — nouvelle couleur $50',banque:'Banque — consulter ton compte',bijouterie:'Bijouterie — acheter une bague $1 200',armurerie:'Armurerie — acheter des armes',base:'Caisse d\'armes de l\'armée',superette:'Soins — $40',cafe:'Café & sauvegarde — $10',boutique:'Nouvelle tenue — $80',hopital:'Se faire soigner — gratuit',police:'Payer l\'amende',garage:'Réparer & repeindre — $120'};
 
 
 /* ================= combat ================= */
@@ -2570,6 +2570,7 @@ function updateFoot(dt,inp){
   if(p.knock>0){p.knock-=dt;m.body.rotation.x=lerp(m.body.rotation.x,-Math.PI/2,1-Math.exp(-8*dt));m.body.position.y=.15;
     p.vx*=Math.exp(-3*dt);p.vz*=Math.exp(-3*dt);p.x+=p.vx*dt;p.z+=p.vz*dt;resolveCircle(p,.35,false);p.y=groundY(p.x,p.z);
     m.group.position.set(p.x,p.y,p.z);if(p.knock<=0)m.body.rotation.x=0;return;}
+  if(p.climb){climbStep(p,dt);return;}
   const fx=Math.sin(cam.yaw),fz=Math.cos(cam.yaw),rx=-fz,rz=fx;
   let dx=fx*inp.y+rx*inp.x,dz=fz*inp.y+rz*inp.x;const mag=Math.min(1,Math.hypot(inp.x,inp.y));
   const sprint=inp.sprint&&p.stamina>.02&&mag>.2;
@@ -2586,10 +2587,11 @@ function updateFoot(dt,inp){
         if(sp>4.5&&c.ai!=='parked'){hurtPlayer(sp<7?sp*1.2:sp*2.6,true);p.vx=c.vx*.9+ex/d*3;p.vz=c.vz*.9+ez/d*3;p.vy=Math.min(9,2+sp*.25);if(typeof bloodHit==='function'&&sp>9)bloodHit(p.x,p.y+.9,p.z,c.vx/sp,c.vz/sp,sp>16);if(c===player.car)continue;return;}
         p.x+=ex/d*(rr2-d);p.z+=ez/d*(rr2-d);}}}
   const g=groundY(p.x,p.z);
-  if(pressed.jump&&p.ground){p.vy=6.6;p.ground=false;pressed.jump=false;}
+  if(pressed.jump&&p.ground){pressed.jump=false;if(tryClimb(p))return;p.vy=6.6;p.ground=false;}
   chuteFall(p,dt,inp);
   // stand on car roofs
   let floor=g;for(const c of cars){if(!c.on)continue;const ex=p.x-c.x,ez=p.z-c.z;if(ex*ex+ez*ez<5){const along=Math.abs(ex*Math.sin(c.h)+ez*Math.cos(c.h)),lat=Math.abs(-ex*Math.cos(c.h)+ez*Math.sin(c.h));if(along<c.T.len/2&&lat<c.T.w/2){const top=c.y+c.T.roofY;if(p.y>=top-.4)floor=Math.max(floor,top);}}}
+  for(const c of queryColl(p.x-.25,p.x+.25,p.z-.25,p.z+.25)){if(c.carOnly||c.maxy<0)continue;if(p.x<c.minx-.2||p.x>c.maxx+.2||p.z<c.minz-.2||p.z>c.maxz+.2)continue;if(c.maxy<=p.y+.35&&c.maxy>floor)floor=c.maxy;}
   if(p.y<=floor){if(!p.ground)chuteLand(p,floor);p.y=floor;p.vy=0;p.ground=true;}else if(p.y>floor+.05)p.ground=false;
   m.group.position.set(p.x,p.y,p.z);m.group.rotation.y=p.h;animPerson(m,Math.hypot(p.vx,p.vz),dt,!p.ground);
   if(p.aim)m.armR.rotation.x=-Math.PI/2;if(p.atkT>0)m.legR.rotation.x=-1.4*Math.sin(Math.PI*clamp((.95-p.atkT)/.6,0,1));
@@ -2723,7 +2725,7 @@ function loop(now){
   placeWeapon();gangWeapons();
   updateRockets(dt);policeFire(dt,P);updateHeli(dt,P);
   updateWater(dt,P);updateSeaLife(dt,P);updateMilHeli(dt,P);
-  updateBubble(dt);updateRemarks(dt,P);updateArm(dt,P);updateAnimals(dt,P);updateGta3(dt,P);updateCountries(dt,P);updateGfx(dt);updatePets(dt,P);updateBirds(dt);updateFires(dt,P);audUpdate(dt,P);updateBlood(dt,P);updateWounds(dt,P);updateGav(dt,P);updateFBI(dt,P);updateDogs(dt,P);updatePrison(dt,P);updateWake(dt);
+  updateBubble(dt);updateRemarks(dt,P);updateArm(dt,P);updateAnimals(dt,P);updateRealism(dt,P);updateGta3(dt,P);updateCountries(dt,P);updateGfx(dt);updatePets(dt,P);updateBirds(dt);updateFires(dt,P);audUpdate(dt,P);updateBlood(dt,P);updateWounds(dt,P);updateGav(dt,P);updateFBI(dt,P);updateDogs(dt,P);updatePrison(dt,P);updateWake(dt);
   updateAutoAim();updateLockMark();updateWaypoint(dt,P);updateStory(dt,P);
   updateGrenades(dt);updatePickups(dt,P);updateRobbery(dt);updateBusiness();updateChatter(dt,P);if(typeof updateGangs==='function')updateGangs(dt,P);
   if(inBase(P.x,P.z)&&!player.dead){if(player.stars<4){player.stars=4;toast('ZONE MILITAIRE INTERDITE');sfx.fail();}seenT=0;}
@@ -4760,6 +4762,76 @@ function updateGta3(dt,P){updateDrops(dt,P);updateBoosts(dt);if(pressed.spec)spe
   updateGta3.pt=(updateGta3.pt||12)-dt;if(updateGta3.pt<=0){updateGta3.pt=12;const gs=peds.filter(q=>q.pguard&&q.state!=='down');const g=rpick(gs);if(g&&prison.escaping<=0)g.post={x:rnd(PRISON.x0+15,PRISON.x1-15),z:rnd(PRISON.z0+15,PRISON.z1-25)};}}
 function decorateOnce(w,g){if(saveData.wmods&&saveData.wmods[w.id])decorateWeapon(w,g);return g;}
 
+/* ================= climbing : walls, fences, containers, roofs (jump against it) + fire-escape ladders ================= */
+const CLIMB={max:7};
+function collAhead(p,dist){const fx=Math.sin(p.h),fz=Math.cos(p.h),x=p.x+fx*dist,z=p.z+fz*dist;let best=null;
+  for(const c of queryColl(x-.15,x+.15,z-.15,z+.15)){if(c.carOnly||c.maxy<0)continue;if(x<c.minx-.12||x>c.maxx+.12||z<c.minz-.12||z>c.maxz+.12)continue;if(c.maxy<=p.y+.55||c.miny>p.y+1.2)continue;if(!best||c.maxy<best.maxy)best=c;}return best;}
+function tryClimb(p){if(p.car||p.swim)return false;const c=collAhead(p,.75);if(!c)return false;const top=c.maxy,dh=top-p.y;if(dh<.5)return false;
+  if(dh>CLIMB.max){toast(c.bld?'Trop haut pour grimper : cherche une échelle de secours (sur le côté des immeubles)':'Trop haut pour grimper');return false;}
+  const fx=Math.sin(p.h),fz=Math.cos(p.h);// thickness of the obstacle along the facing direction
+  let t=.75;while(t<4&&(()=>{const x=p.x+fx*t,z=p.z+fz*t;return x>c.minx&&x<c.maxx&&z>c.minz&&z<c.maxz;})())t+=.1;const thick=t-.75;
+  p.ground=false;const over=thick<1.3&&!c.bld,tx=p.x+fx*(over?t+.6:Math.min(t-.3,1.5)),tz=p.z+fz*(over?t+.6:Math.min(t-.3,1.5));
+  p.climb={t:0,up:Math.max(.35,dh*.42),fwd:.4,x0:p.x,z0:p.z,y0:p.y,top:top+.05,tx,tz,over};p.vx=p.vz=0;sfx.swish();return true;}
+function climbStep(p,dt){const C=p.climb;C.t+=dt;const m=p.m;
+  if(C.t<C.up){const k=C.t/C.up;p.y=C.y0+(C.top-C.y0)*(1-Math.pow(1-k,2));if(Math.random()<dt*4)sfx.thud&&0;}
+  else{const k=Math.min(1,(C.t-C.up)/C.fwd);p.x=lerp(C.x0,C.tx,k);p.z=lerp(C.z0,C.tz,k);p.y=C.top;
+    if(k>=1){p.climb=null;if(C.over){p.ground=false;p.vy=0;}else{p.ground=true;p.vy=0;}CHUTE.peak=p.y;}}
+  m.group.position.set(p.x,p.y,p.z);m.group.rotation.y=p.h;}
+// ladders on the side of buildings
+const LADDERS=[];
+function addLadder(cx,cz,w,d,h,fx,fz){if(h<8||Math.random()>.35)return;const side=fx?[0,1]:[1,0];// a side face (not the entrance)
+  const sx=side[0]*(Math.random()<.5?1:-1),sz=side[1]*(Math.random()<.5?1:-1);const ox=cx+sx*(w/2+.25),oz=cz+sz*(d/2+.25),ry=Math.atan2(sx,sz),fr=F(ox,oz,ry),top=h+.5;
+  for(const s of[-.35,.35])fbox(fr,MAT.metal,s,top/2,0,.06,top,.06,{collide:false});for(let y=.4;y<top;y+=.4)fbox(fr,MAT.metal,0,y,0,.7,.04,.04,{collide:false});
+  fbox(fr,MAT.metal,0,top+.5,.1,.9,1,.06,{collide:false});
+  const L={x:ox+sx*.6,z:oz+sz*.6,top,rx:ox-sx*1.4,rz:oz-sz*1.4,h:ry+Math.PI};LADDERS.push(L);spots.push({x:L.x,z:L.z,kind:'echelle',r:1.1,lad:L},{x:L.rx,z:L.rz,kind:'echelle_bas',r:1.3,lad:L});}
+function nearLadder(kind){let s=null,bd=3;for(const q of spots)if(q.kind===kind){const d=Math.hypot(q.x-player.x,q.z-player.z);if(d<bd){bd=d;s=q;}}return s;}
+const CLIMB_ACT={
+  echelle(){const s=nearLadder('echelle');if(!s)return;const L=s.lad,p=player;p.h=L.h;cam.yaw=L.h;p.climb={t:0,up:L.top/2.6,fwd:.6,x0:L.x,z0:L.z,y0:groundY(L.x,L.z),top:L.top,tx:L.rx,tz:L.rz,over:false};p.x=L.x;p.z=L.z;sfx.swish();},
+  echelle_bas(){const s=nearLadder('echelle_bas');if(!s||player.y<s.lad.top-1){return;}const L=s.lad,p=player;p.h=L.h+Math.PI;p.x=L.x;p.z=L.z;p.y=groundY(L.x,L.z)+.05;p.vy=0;p.ground=true;CHUTE.peak=p.y;toast('Tu redescends par l\'échelle');},
+};
+/* ================= more realistic military base, police stations and prison ================= */
+const SEARCH=[];
+function genRealism(){const {x0,x1,z0,z1}=BASE,cx=(x0+x1)/2,cz=(z0+z1)/2,fr=F(0,0,0),olive=lam('#4b5320'),sand=lam('#b39b6a');
+  // helipad
+  {const g=new THREE.CircleGeometry(12,32);g.rotateX(-Math.PI/2);place(g,x1-40,.03,z1-30);addStatic(g,lam('#3b3d42'));const r=new THREE.RingGeometry(10.5,11.3,32);r.rotateX(-Math.PI/2);place(r,x1-40,.04,z1-30);addStatic(r,MAT.white);
+   for(const [w,d,x,z] of[[1,7,-2.5,0],[1,7,2.5,0],[4,1,0,0]]){const b=boxGeo(w,.02,d);place(b,x1-40+x,.05,z1-30+z);addStatic(b,MAT.white);}}
+  // flag
+  fcyl(fr,MAT.metal,cx-30,7,cz,.12,14,8,{});{const c=document.createElement('canvas');c.width=96;c.height=64;const g=c.getContext('2d');g.fillStyle='#2e4a2e';g.fillRect(0,0,96,64);g.fillStyle='#f2c230';g.beginPath();for(let i=0;i<5;i++){const a=i*Math.PI*.8-Math.PI/2;g.lineTo(48+Math.cos(a)*20,32+Math.sin(a)*20);}g.fill();
+    const f=new THREE.Mesh(new THREE.PlaneGeometry(3,2),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),side:THREE.DoubleSide}));f.position.set(cx-28.5,13,cz);scene.add(f);SEARCH.push({flag:f});}
+  // sandbag bunkers + barbed wire on the fence
+  for(const [bx,bz] of[[x0+12,-20],[x0+12,20],[cx,z0+12],[cx,z1-12]]){for(let k=0;k<3;k++)for(let i=-2;i<=2;i++){const b=boxGeo(.9,.38,.5);place(b,bx+i*.85,.2+k*.38,bz+((k%2)?.2:0),Math.abs(bz)>50?0:Math.PI/2);addStatic(b,sand);}}
+  {const wire=lam('#9aa0a6');for(const [ax,az,bx2,bz2] of[[x0,z0,x1,z0],[x0,z1,x1,z1],[x1,z0,x1,z1],[x0,z0,x0,-9],[x0,9,x0,z1]]){const L=Math.hypot(bx2-ax,bz2-az);for(let t=0;t<L;t+=1.2){const x=lerp(ax,bx2,t/L),z=lerp(az,bz2,t/L);const tor=new THREE.TorusGeometry(.32,.025,4,10);tor.rotateY(Math.atan2(bx2-ax,bz2-az));place(tor,x,3.75,z);addStatic(tor,wire);}}}
+  // radar (rotating), fuel tanks, shooting range, trucks
+  {const g=new THREE.Group();g.position.set(x0+150,0,z0+30);const mast=new THREE.Mesh(new THREE.CylinderGeometry(.3,.4,10,8),MAT.metal);mast.position.y=5;g.add(mast);
+   const dish=new THREE.Mesh(new THREE.SphereGeometry(3,16,8,0,Math.PI*2,0,Math.PI/3),new THREE.MeshLambertMaterial({color:'#e8e8e8',side:THREE.DoubleSide}));dish.rotation.x=Math.PI/2.4;dish.position.set(0,10.5,0);const hold=new THREE.Group();hold.add(dish);g.add(hold);scene.add(g);SEARCH.push({radar:hold});}
+  for(let i=0;i<3;i++)fcyl(fr,lam('#c9ced4'),x0+130+i*9,3,z1-15,3.5,6,16,{});
+  for(let i=0;i<6;i++){const tx=x1-20,tz=z0+50+i*8;fbox(fr,lam('#f2f2f2'),tx,1.2,tz,.1,1.6,1,{collide:false});fbox(fr,lam('#c0392b'),tx-.06,1.3,tz,.02,.5,.5,{collide:false});}
+  fbox(fr,sand,x1-60,.6,z0+70,1,1.2,50,{});
+  for(let i=0;i<3;i++){const c=new Car('camion','#4b5320');c.place(x0+60+i*8,cz+30,0);c.ai='parked';parked.push(c);}
+  // soldiers patrolling between posts
+  for(let i=0;i<6;i++){const p=new Ped();p.soldier=true;p.armed=true;p.kind='soldat';const x=rnd(x0+20,x1-20),z=rnd(z0+20,z1-20);p.post={x,z};p.patrol={x0:x0+15,x1:x1-15,z0:z0+15,z1:z1-15};p.x=x;p.z=z;p.y=0;p.state='idle';peds.push(p);persona(p);p.persona='calme';}
+  // police stations : parked patrol cars, antenna, flag, bollards
+  for(const st of POLST){const f=st.fr;for(const s of[-1,1]){const [px,pz]=fw(f,s*6.5,13);const c=new Car('police');c.place(px,pz,f.ry+Math.PI/2);c.ai='parked';parked.push(c);}
+    const [ax,az]=fw(f,7,-5);const a=new THREE.CylinderGeometry(.08,.12,9,6);place(a,ax,(POLH(f)||6)+4.5,az);addStatic(a,MAT.metal);
+    for(let k=-4;k<=4;k+=2){const [bx,bz]=fw(f,k*1.4,10.3);const b=new THREE.CylinderGeometry(.15,.15,.9,8);place(b,bx,.45,bz);addStatic(b,MAT.metal);}
+    const [lx,lz]=fw(f,-9,8.6);const lamp=new THREE.Mesh(new THREE.BoxGeometry(.5,.35,.5),new THREE.MeshBasicMaterial({color:0x3b82f6}));lamp.position.set(lx,3.2,lz);scene.add(lamp);}
+  // prison : outer fence with razor wire, searchlights on the towers, prison bus
+  {const {x0:px0,x1:px1,z0:pz0,z1:pz1}=PRISON,m=8,wire=lam('#9aa0a6');const fence=(ax,az,bx2,bz2)=>{const L=Math.hypot(bx2-ax,bz2-az);for(let t=0;t<=L;t+=4){const x=lerp(ax,bx2,t/L),z=lerp(az,bz2,t/L);fcyl(fr,MAT.metal,x,2,z,.06,4,6,{collide:false});}
+      for(let t=0;t<L;t+=1.1){const x=lerp(ax,bx2,t/L),z=lerp(az,bz2,t/L);const tor=new THREE.TorusGeometry(.35,.025,4,10);tor.rotateY(Math.atan2(bx2-ax,bz2-az));place(tor,x,4.3,z);addStatic(tor,wire);}
+      for(const y of[1,2,3]){const b=boxGeo(Math.abs(bx2-ax)||.05,.04,Math.abs(bz2-az)||.05);place(b,(ax+bx2)/2,y,(az+bz2)/2);addStatic(b,wire);}};
+    fence(px0-m,pz0-m,-706,pz0-m);fence(-694,pz0-m,px1+m,pz0-m);fence(px0-m,pz1+m,px1+m,pz1+m);fence(px0-m,pz0-m,px0-m,pz1+m);fence(px1+m,pz0-m,px1+m,pz1+m);
+    for(const [tx,tz] of[[px0+3,pz0+3],[px1-3,pz0+3],[px0+3,pz1-3],[px1-3,pz1-3]]){const cone=new THREE.Mesh(new THREE.ConeGeometry(6,40,16,1,true),new THREE.MeshBasicMaterial({color:0xfff6d0,transparent:true,opacity:.12,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.DoubleSide}));
+      cone.geometry.translate(0,-20,0);const g=new THREE.Group();g.position.set(tx,11,tz);g.add(cone);cone.rotation.x=.9;scene.add(g);SEARCH.push({light:g,cone,ph:rnd(0,6)});}
+    const bus=new Car('bus','#e8e8e6');bus.place(-730,1060,Math.PI/2);bus.ai='parked';parked.push(bus);}
+}
+function POLH(f){return 6;}
+function updateRealism(dt,P){if((frame&3)===0){let el=document.getElementById('climbHint');if(!el){el=document.createElement('div');el.id='climbHint';el.style.cssText='position:fixed;left:50%;bottom:calc(185px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:6;pointer-events:none;background:rgba(0,0,0,.55);color:#fff;font:800 15px system-ui;padding:6px 12px;border-radius:9px;display:none';document.body.appendChild(el);}
+  let show=false;if(!player.car&&player.ground&&!player.climb&&!player.dead){const c=collAhead(player,.8);if(c){const dh=c.maxy-player.y;show=dh>.6&&dh<=CLIMB.max;}}el.style.display=show?'block':'none';if(show)el.textContent=IS_TOUCH?'Saut : grimper':'ESPACE : grimper';}
+for(const s of SEARCH){if(s.radar)s.radar.rotation.y+=dt*.8;if(s.flag)s.flag.rotation.y=Math.sin(gameT*1.3)*.25;
+    if(s.light){const night=dayT>19.5||dayT<6.2;s.light.visible=night||prison.escaping>0;s.light.rotation.y=gameT*.4+s.ph;}}
+  // patrolling soldiers pick a new point from time to time
+  if((frame&31)===0)for(const p of peds)if(p.patrol&&!p.mood&&Math.hypot(p.post.x-p.x,p.post.z-p.z)<1.2&&Math.random()<.4){const R=p.patrol;p.post={x:rnd(R.x0,R.x1),z:rnd(R.z0,R.z1)};}}
+
 /* ================= multiplayer (WebRTC peer-to-peer, Trystero + Nostr relays, no server) ================= */
 const MP={on:false,joining:false,room:null,self:null,peers:new Map(),sendT:0,code:'public',name:'',hitCD:0};
 const MP_APP='neo-cite-gta-2026',MP_LIB='https://cdn.jsdelivr.net/npm/trystero@0.21.8/+esm';
@@ -4907,6 +4979,7 @@ genInterior();
 genHome();
 loadAnimalModels();
 genCountries();
+genRealism();
 initGfx();
 flushStatic();
 initVehicles();
