@@ -1160,7 +1160,7 @@ const CT={
 };
 const PAINTS=['#c0392b','#2c3e50','#ecf0f1','#2980b9','#16a085','#7f8c8d','#111418','#8e44ad','#d35400','#f1c40f','#27ae60','#bdc3c7','#6d1a1a',
   '#1f3a5f','#5a5e63','#e8e8e6','#7a1f1f','#0f4c3a','#c9b27c','#232527','#a4a9ad','#3d5a80','#b5651d','#f4f1ea','#4a0e0e','#2e4a2e'];
-const paintCache={};function paint(c){return paintCache[c]||(paintCache[c]=new THREE.MeshPhongMaterial({color:c,shininess:110,specular:0x777777}));}
+const paintCache={};function paint(c){if(paintCache[c])return paintCache[c];const m=paintCache[c]=new THREE.MeshPhongMaterial({color:c,shininess:110,specular:0x777777});if(typeof GFX!=='undefined'&&GFX.rt)envOn(m,.2);return m;}
 const CARM={glass:new THREE.MeshPhongMaterial({color:0x6f8fa6,transparent:true,opacity:.42,shininess:150,specular:0xffffff,depthWrite:false}),
   head:new THREE.MeshLambertMaterial({color:0xfffbea,emissive:0xfff2c0,emissiveIntensity:.15}),
   tail:new THREE.MeshLambertMaterial({color:0x8a1010,emissive:0xff2020,emissiveIntensity:.25}),
@@ -1462,7 +1462,7 @@ function knockPed(p,vx,vz){p.state='down';p.t=0;p.vx=vx;p.vz=vz;p.vy=Math.min(7,
 function updatePed(p,dt,P){
   const m=p.m;let speed=0;
   if(p.gang&&p.state==='flee')p.state='idle';
-  if(!p.gang&&p.state!=='down'&&p.state!=='flee'&&(p.cop||p.soldier||p.pguard||p.mood||p.inmate)){const sp=guardAct(p,dt,P);if(sp!==null){speed=sp;p.curSpeed=speed;m.group.position.set(p.x,p.y,p.z);m.group.rotation.y=p.h;animPerson(m,speed,dt,false);return;}}
+  if(!p.gang&&p.state!=='down'&&p.state!=='flee'&&(p.cop||p.soldier||p.pguard||p.mood||p.inmate||p.wander)){const sp=guardAct(p,dt,P);if(sp!==null){speed=sp;p.curSpeed=speed;m.group.position.set(p.x,p.y,p.z);m.group.rotation.y=p.h;animPerson(m,speed,dt,false);return;}}
   if(p.gang&&p.state!=='down'){speed=gangPed(p,dt,P);p.curSpeed=speed;m.group.position.set(p.x,p.y,p.z);m.group.rotation.y=p.h;animPerson(m,speed,dt,false);return;}
   if(p.state==='down'){
     p.t+=dt;p.x+=p.vx*dt;p.z+=p.vz*dt;p.vy-=20*dt;p.y+=p.vy*dt;const g=groundY(p.x,p.z);if(p.y<g){p.y=g;p.vy=0;p.vx*=.8;p.vz*=.8;}
@@ -2111,7 +2111,7 @@ function wasted(){if(player.dead)return;player.dead=true;if(player.car)exitCar(t
 /* ================= shop actions ================= */
 function shopAction(kind){
   if(P_ACT[kind]){P_ACT[kind]();return;}
-  if(INT_ACT[kind]){INT_ACT[kind]();return;}if(HOME_ACT[kind]){HOME_ACT[kind]();return;}if(PC_ACT[kind]){PC_ACT[kind]();return;}
+  if(TRAVEL_ACT[kind]){TRAVEL_ACT[kind]();return;}if(INT_ACT[kind]){INT_ACT[kind]();return;}if(HOME_ACT[kind]){HOME_ACT[kind]();return;}if(PC_ACT[kind]){PC_ACT[kind]();return;}
   const P=player;
   const buy=(cost,fn,msg)=>{if(P.money<cost){toast('Pas assez d\'argent');return;}P.money-=cost;fn();toast(msg);sfx.coin();save();};
   if(kind==='superette')buy(40,()=>P.hp=100,'Santé restaurée');
@@ -2127,7 +2127,7 @@ function shopAction(kind){
   else if(kind==='base'){for(const id of['sniper','minigun','roquette','laser','assaut','pompe'])giveWeapon(id,4);for(const id in P.ammo)P.ammo[id]=Math.max(P.ammo[id],WBY[id].mag*4);toast('Arsenal militaire récupéré !\nLaser, minigun, lance-roquettes…');sfx.win();save();}
   else if(kind==='garage'){const c=P.car;buy(120,()=>{c.repaint(rpick(PAINTS.filter(p=>p!==c.color)));c.health=100;carRepairFx(c);c.burn=0;P.stars=0;for(const o of police)if(o.ai==='police'){o.ai='traffic';snapToGraph(o);}},'Repeinte & réparée · étoiles effacées');}
 }
-const SPOTTXT={immeuble:'Entrer dans l\'immeuble',int_sortie:'Sortir dans la rue',int_ascenseur:'Prendre l\'ascenseur',int_appt_sortie:'Sortir de l\'appartement',int_achat:()=>aptOwned(INT.bi)?'Ton appartement':`Acheter cet appartement — $${(INT.BLD[INT.bi]||{price:0}).price.toLocaleString('fr-FR')}`,int_lit:'Dormir (sauvegarde)',int_tv:'Regarder la télé',int_frigo:'Manger un morceau',int_douche:'Prendre une douche',int_dressing:'Changer de tenue',home_lit:'Dormir (sauvegarde)',home_dressing:'Dressing : changer de tenue',home_coffre:'Coffre-fort (munitions)',home_tv:'Regarder la télé',home_frigo:'Manger un morceau',home_garage:()=>`Garage : changer de voiture (${CT[saveData.myCar||'muscle'].name})`,pc_ordi:'Ordinateur de la police',pc_vestiaire:'Vestiaire : uniforme de police',pc_armes:'Armurerie de la police (vol !)',pc_cafe:'Machine à café',p_dormir:'Dormir (−3 min, le temps passe)',p_creuser:()=>prison.spoon?`Creuser le tunnel (${Math.round(prison.dig*100)} %)`:'Le mur derrière le poster…',p_cantine:'Manger à la cantine',p_cuisine:'Voler un couteau en cuisine',p_buanderie:'Travailler à la buanderie',p_muscu:'Faire de la muscu',p_camion:'Se cacher dans le camion de linge',p_mur:'Lancer une corde de draps par-dessus le mur',p_corruption:()=>prison.bribed>0?'Porte de service ouverte (mur est)':'Soudoyer le gardien',p_telephone:'Appeler un avocat ($3 000)',p_caid:'Parler au Caïd',serrure:'Crocheter la serrure de la cellule',cellule:'Dormir dans ta cellule (−1 min de peine)',coiffeur:'Coiffeur — nouvelle couleur $50',banque:'Banque — consulter ton compte',bijouterie:'Bijouterie — acheter une bague $1 200',armurerie:'Armurerie — acheter des armes',base:'Caisse d\'armes de l\'armée',superette:'Soins — $40',cafe:'Café & sauvegarde — $10',boutique:'Nouvelle tenue — $80',hopital:'Se faire soigner — gratuit',police:'Payer l\'amende',garage:'Réparer & repeindre — $120'};
+const SPOTTXT={billets:'✈ Acheter un billet d\'avion (autres pays)',vol_retour:'✈ Vol retour vers Néo Cité ($600)',cafe_dorada:'Café de la plaza (sauvegarde)',cafe_nordheim:'Kafé (sauvegarde)',cafe_sakura:'Salon de thé (sauvegarde)',immeuble:'Entrer dans l\'immeuble',int_sortie:'Sortir dans la rue',int_ascenseur:'Prendre l\'ascenseur',int_appt_sortie:'Sortir de l\'appartement',int_achat:()=>aptOwned(INT.bi)?'Ton appartement':`Acheter cet appartement — $${(INT.BLD[INT.bi]||{price:0}).price.toLocaleString('fr-FR')}`,int_lit:'Dormir (sauvegarde)',int_tv:'Regarder la télé',int_frigo:'Manger un morceau',int_douche:'Prendre une douche',int_dressing:'Changer de tenue',home_lit:'Dormir (sauvegarde)',home_dressing:'Dressing : changer de tenue',home_coffre:'Coffre-fort (munitions)',home_tv:'Regarder la télé',home_frigo:'Manger un morceau',home_garage:()=>`Garage : changer de voiture (${CT[saveData.myCar||'muscle'].name})`,pc_ordi:'Ordinateur de la police',pc_vestiaire:'Vestiaire : uniforme de police',pc_armes:'Armurerie de la police (vol !)',pc_cafe:'Machine à café',p_dormir:'Dormir (−3 min, le temps passe)',p_creuser:()=>prison.spoon?`Creuser le tunnel (${Math.round(prison.dig*100)} %)`:'Le mur derrière le poster…',p_cantine:'Manger à la cantine',p_cuisine:'Voler un couteau en cuisine',p_buanderie:'Travailler à la buanderie',p_muscu:'Faire de la muscu',p_camion:'Se cacher dans le camion de linge',p_mur:'Lancer une corde de draps par-dessus le mur',p_corruption:()=>prison.bribed>0?'Porte de service ouverte (mur est)':'Soudoyer le gardien',p_telephone:'Appeler un avocat ($3 000)',p_caid:'Parler au Caïd',serrure:'Crocheter la serrure de la cellule',cellule:'Dormir dans ta cellule (−1 min de peine)',coiffeur:'Coiffeur — nouvelle couleur $50',banque:'Banque — consulter ton compte',bijouterie:'Bijouterie — acheter une bague $1 200',armurerie:'Armurerie — acheter des armes',base:'Caisse d\'armes de l\'armée',superette:'Soins — $40',cafe:'Café & sauvegarde — $10',boutique:'Nouvelle tenue — $80',hopital:'Se faire soigner — gratuit',police:'Payer l\'amende',garage:'Réparer & repeindre — $120'};
 
 
 /* ================= combat ================= */
@@ -2176,6 +2176,7 @@ const WEAPONS=[
  {id:'scie',name:'Fusil à canon scié',mag:2,rate:.5,dmg:8,pellets:10,spread:.12,reload:1.6,range:18,icon:'shotgun',price:500,len:.55},
  {id:'arbalete',name:'Arbalète',mag:1,rate:1,dmg:55,silent:true,spread:0,reload:1.2,range:120,icon:'sniper',price:900,len:.8},
  {id:'flamme',name:'Lance-flammes',mag:100,rate:.05,dmg:3,flame:true,reload:2.5,auto:true,icon:'minigun',price:3800,len:.9},
+ {id:'chasse',name:'Fusil de chasse',mag:4,rate:1.2,dmg:60,spread:0,reload:2.5,scope:true,range:250,icon:'sniper',price:1200,len:1.1},
  {id:'lancegr',name:'Lance-grenades',mag:6,rate:.8,dmg:0,gl:true,reload:2.6,icon:'rocket',price:4500,len:.75},
  {id:'sniper',name:'Fusil de précision',mag:5,rate:1.1,dmg:70,spread:0,reload:2.4,scope:true,range:300,icon:'sniper',price:2000,len:1.2},
  {id:'minigun',name:'Minigun',mag:200,rate:.045,dmg:6,spread:.03,reload:3,auto:true,icon:'minigun',price:6000,len:1,army:true},
@@ -2250,6 +2251,7 @@ function castShot(range=90,spread=0){
   for(const p of peds){if(p.off||p.gdead)continue;const down=p.state==='down',ox=p.x-o.x,oz=p.z-o.z,hl=d.x*d.x+d.z*d.z;if(hl<1e-6)continue;const t=(ox*d.x+oz*d.z)/hl;if(t<1.5||t>ht)continue;
     const qx=o.x+d.x*t-p.x,qz=o.z+d.z*t-p.z;if(qx*qx+qz*qz>(down?.5:.16))continue;const y=o.y+d.y*t-p.y;if(y<-.1||y>(down?.7:1.85))continue;ht=t;hit={ref:p,kind:'ped',part:down?'torse':y<.88?'jambe':y<1.43?'torse':'tete'};}
   for(const g of dogs)if(g.state!=='off'&&!g.dead)sph(g.x,g.y+.55,g.z,.42,g,'dog');
+  for(const d of AM.pets)if(!d.dead&&d.m.g.visible)sph(d.x,d.y+.3,d.z,.32,d,'pet');
   for(const a of NAT.animals)if(!a.dead&&a.m.g.visible)sph(a.x,a.y+a.S.leg+a.S.H*.5,a.z,Math.max(.25,a.S.H*.75),a,'animal');
   mpHitTest(o,d,ht,sph);
   for(const c of cars){if(!c.on||!c.group.visible||c===player.car)continue;const cc=carCircles(c,_cc);for(let k=0;k<3;k++)sph(cc[k*2],c.y+.85,cc[k*2+1],1.05,c,'car');}
@@ -2259,7 +2261,7 @@ function castShot(range=90,spread=0){
 function muzzle(){const w=W(),g=weaponMesh(w);g.updateMatrixWorld();return _v3.set(0,0,g.userData.len).applyMatrix4(g.matrixWorld).clone();}
 function applyHit(r,w){
   const P=playerPos();if(!r.hit)return;player.crossHit=.2;
-  if(r.hit.kind==='mp'){mpDamage(r.hit.ref,w.dmg*perkDmg(),false);return;}if(r.hit.kind==='dog'){dogHit(r.hit.ref,w.dmg*perkDmg());return;}if(r.hit.kind==='animal'){animalHit(r.hit.ref,w.dmg*perkDmg()*3,r.d);return;}if(r.hit.ref.ai==='remote')return;
+  if(r.hit.kind==='mp'){mpDamage(r.hit.ref,w.dmg*perkDmg(),false);return;}if(r.hit.kind==='dog'){dogHit(r.hit.ref,w.dmg*perkDmg());return;}if(r.hit.kind==='pet'){petHit(r.hit.ref,w.dmg,r.d);return;}if(r.hit.kind==='animal'){animalHit(r.hit.ref,w.dmg*perkDmg()*3,r.d);return;}if(r.hit.ref.ai==='remote')return;
   if(w.taser){if(r.hit.kind==='ped'){const p=r.hit.ref;if(p.state!=='down')knockPed(p,r.d.x*1.5,r.d.z*1.5);p.t=-4;for(let k=0;k<12;k++)emit(p.x,p.y+1,p.z,'#8fd3ff',.12,.3,rnd(-2,2),rnd(0,2),rnd(-2,2),.5,true);npcSay&&npcSay(p,'Aaargh !');}beamFx(muzzle(),r.end);return;}
   if(r.hit.kind==='ped'){const p=r.hit.ref;if(!p.gdead){if(p.state!=='down')pedLoot(p);woundPed(p,r.hit.part||'torse',w,r.d);}if(shotWantedCD<=0){addWanted(nearPolice(P,90)?2:1);shotWantedCD=3;}}
   else{const c=r.hit.ref;c.health-=w.dmg*perkDmg();{const ti=tyreHit(c,r.o,r.d);if(ti>=0)popTyre(c,ti);else metalSpark(r.end,r.d);}carShotFx(c,r.end,r.o);if(w.laser&&!c.burn&&c.health<45)c.burn=1.5;if(c.health<=0&&!c.burn&&!c.dead)c.burn=2.5;
@@ -2713,7 +2715,7 @@ function loop(now){
   placeWeapon();gangWeapons();
   updateRockets(dt);policeFire(dt,P);updateHeli(dt,P);
   updateWater(dt,P);updateSeaLife(dt,P);updateMilHeli(dt,P);
-  updateBubble(dt);updateRemarks(dt,P);updateArm(dt,P);updateAnimals(dt,P);updateBirds(dt);updateFires(dt,P);audUpdate(dt,P);updateBlood(dt,P);updateWounds(dt,P);updateGav(dt,P);updateFBI(dt,P);updateDogs(dt,P);updatePrison(dt,P);updateWake(dt);
+  updateBubble(dt);updateRemarks(dt,P);updateArm(dt,P);updateAnimals(dt,P);updateCountries(dt,P);updateGfx(dt);updatePets(dt,P);updateBirds(dt);updateFires(dt,P);audUpdate(dt,P);updateBlood(dt,P);updateWounds(dt,P);updateGav(dt,P);updateFBI(dt,P);updateDogs(dt,P);updatePrison(dt,P);updateWake(dt);
   updateAutoAim();updateLockMark();updateWaypoint(dt,P);updateStory(dt,P);
   updateGrenades(dt);updatePickups(dt,P);updateRobbery(dt);updateBusiness();updateChatter(dt,P);if(typeof updateGangs==='function')updateGangs(dt,P);
   if(inBase(P.x,P.z)&&!player.dead){if(player.stars<4){player.stars=4;toast('ZONE MILITAIRE INTERDITE');sfx.fail();}seenT=0;}
@@ -2847,7 +2849,7 @@ function updateBusiness(){const h=Math.floor(dayT);if(h===lastHour)return;const 
   tot=Math.round(tot*(playerChar==='femme'?1.25:1));player.money+=tot;toast(`Revenus de tes commerces : +$${tot}`);}
 
 // ---- vehicles to buy (AutoNéo)
-const SHOPCARS=[['tracteur',8000],['ambulance',20000],['pompiers',35000],['voilier',26000],['scooter',1800],['chopper',16000],['suv',22000],['pickup',15000],['muscle',38000],['cabrio',42000],['limo',65000],['camion',30000],['bus',28000],['jetski',9000],['helimini',60000],['helipol',110000],['jet',250000],['citadine',3500],['sedan',7000],['taxi',6000],['van',9000],['sport',48000],['supercar',125000],['concept',160000],['moto',4500],['superbike',24000],['bateau',18000],['vedette',32000],['helico',95000],['avion',140000]];
+const SHOPCARS=[['chasseur',900000],['avionligne',2500000],['tracteur',8000],['ambulance',20000],['pompiers',35000],['voilier',26000],['scooter',1800],['chopper',16000],['suv',22000],['pickup',15000],['muscle',38000],['cabrio',42000],['limo',65000],['camion',30000],['bus',28000],['jetski',9000],['helimini',60000],['helipol',110000],['jet',250000],['citadine',3500],['sedan',7000],['taxi',6000],['van',9000],['sport',48000],['supercar',125000],['concept',160000],['moto',4500],['superbike',24000],['bateau',18000],['vedette',32000],['helico',95000],['avion',140000]];
 let myCar=null;
 function deliverCar(type){const P=playerPos();const s=randomRoadSpot(P,8,40)||randomRoadSpot(P,5,120)||randomRoadSpot(P,0,400);if(!s){toast('Pas de place pour livrer, réessaie');return;}
   if(!myCar||myCar.dead||myCar.type!==type){myCar=new Car(type,saveData.carCol&&saveData.carCol[type]||rpick(PAINTS));parked.push(myCar);}
@@ -3164,7 +3166,7 @@ const RUNWAY={x0:-360,x1:240,z:398,w:30};
 const PIERS=[[22,-1676,-1726],[72,-1676,-1726],[122,-1676,-1726]];
 function onIsland(x,z){return Math.hypot(x-ISL.x,z-ISL.z)<ISL.r;}
 function onPier(x,z){for(const [px,z0,z1] of PIERS)if(Math.abs(x-px)<4&&z<z0+2&&z>z1)return true;return false;}
-function isWater(x,z){if(inInterior(x,z))return false;if(onIsland(x,z)||onPier(x,z))return false;if(inLake(x,z))return true;return x<LAND.x0-SAND||x>LAND.x1+SAND||z<LAND.z0-SAND||z>LAND.z1+SAND;}
+function isWater(x,z){if(inInterior(x,z)||onCountry(x,z))return false;if(onIsland(x,z)||onPier(x,z))return false;if(inLake(x,z))return true;return x<LAND.x0-SAND||x>LAND.x1+SAND||z<LAND.z0-SAND||z>LAND.z1+SAND;}
 function genWorld(){
   // sea (two layers for depth) and beaches
   const wt=mkC(256,256),wg=wt.getContext('2d');wg.fillStyle='#1d6a96';wg.fillRect(0,0,256,256);
@@ -3249,11 +3251,13 @@ Object.assign(CT,{
   tank:{len:6.6,w:3.4,bh:1.2,ch:1.2,cl:3,cz:0,maxV:13,acc:5,name:'Tank',tank:true,custom:'tank',seat:1.5,roofY:2.4,rz:0,dz:.4,wb:2.4},
   helipol:{len:9,w:2.6,bh:1,ch:1,cl:4,cz:0,maxV:44,acc:13,name:'Hélico de police',fly:'heli',custom:'heli',seat:.85,roofY:3.2,rz:.8,dz:.9,wb:2,dx:-.4},
   helimini:{len:7,w:2,bh:1,ch:1,cl:3.2,cz:0,maxV:34,acc:11,name:'Libellule (mini-hélico)',fly:'heli',custom:'heli2',seat:.75,roofY:2.4,rz:.4,dz:.5,wb:1.5,dx:-.3},
+  avionligne:{len:30,w:7,bh:1,ch:1,cl:12,cz:0,maxV:90,acc:8,name:'Avion de ligne',fly:'plane',custom:'jet',jscale:2.3,seat:3,roofY:6.4,rz:7,dz:8.3,wb:8,snd:'jet'},
+  chasseur:{len:11,w:2.6,bh:1,ch:1,cl:4.4,cz:0,maxV:170,acc:30,name:'Avion de chasse',fly:'plane',custom:'jet',jscale:.85,seat:1.1,roofY:2.4,rz:2.5,dz:3,wb:3,snd:'jet'},
   jet:{len:13,w:3,bh:1,ch:1,cl:5,cz:0,maxV:105,acc:14,name:'Falcon X (jet privé)',fly:'plane',custom:'jet',seat:1.3,roofY:2.8,rz:3,dz:3.6,wb:3.5,snd:'jet'},
   voilier:{len:8,w:2.6,bh:.8,ch:.8,cl:3.4,cz:0,maxV:16,acc:6,name:'Brise (voilier)',boat:true,custom:'sail',seat:.8,roofY:2,rz:-1,dz:-2.5,wb:2},
   jetski:{len:3.1,w:1.2,bh:.5,ch:.5,cl:1.5,cz:0,maxV:34,acc:18,name:'Wave Jet (jet-ski)',boat:true,custom:'jetski',seat:.6,roofY:1.2,rz:0,dz:-.2,wb:1},
 });
-for(const k of['bateau','vedette','avion','helico','tank','helipol','helimini','jet','jetski','voilier'])PROF[k]=PROF.van;
+for(const k of['bateau','vedette','avion','helico','tank','helipol','helimini','jet','jetski','voilier','avionligne','chasseur'])PROF[k]=PROF.van;
 function buildCustomVehicle(car){
   const t=car.T,b=car.body,P=[],Hd=[],Tl=[];
   const add=(g,m,x,y,z,list,sh=true)=>{const me=new THREE.Mesh(g,m);me.position.set(x,y,z);me.castShadow=sh;b.add(me);if(list)list.push(me);return me;};
@@ -3307,6 +3311,7 @@ function buildCustomVehicle(car){
     const tu=new THREE.Group();tu.position.set(0,1.85,-.3);b.add(tu);const tm=new THREE.Mesh(boxGeo(2.1,.75,2.6),pm);tm.castShadow=true;tu.add(tm);P.push(tm);
     const gun=new THREE.Mesh(new THREE.CylinderGeometry(.11,.14,4.2,10).rotateX(Math.PI/2),MAT.dark);gun.position.set(0,.1,3.2);tu.add(gun);car.turret=tu;
     add(boxGeo(.2,.12,.08),CARM.head,-1,1.2,3.15,Hd,false);add(boxGeo(.2,.12,.08),CARM.tail,1,1.3,-3.12,Tl,false);}
+  if(t.jscale)car.body.scale.setScalar(t.jscale);
   car.paintMesh=multiMat(P);car.headM=multiMat(Hd);car.tailM=multiMat(Tl);car.paintMesh.material=pm;
   car.wheels=[0,1,2,3].map(()=>{const w=new THREE.Group();w.rotation.order='YXZ';car.group.add(w);return w;});
 }
@@ -3336,7 +3341,7 @@ function initWorldVehicles(){
   put('bateau',LAND.x0-SAND-8,120,-Math.PI/2);put('vedette',LAND.x0-SAND-8,-160,-Math.PI/2);
   put('avion',-290,357,Math.PI/2,'#f4f6f8');put('avion',-250,357,Math.PI/2,'#e5484d');put('helico',-110,360,0,'#1f3a5f');
   put('helico',BASE.x1-45,BASE.z1-30,0,'#4b5320');put('tank',BASE.x0+70,-40,Math.PI/2,'#4b5320');put('tank',BASE.x0+70,-20,Math.PI/2,'#4b5320');
-  put('helimini',-200,330,Math.PI/2,'#e5484d');for(const [px,pz0] of PIERS)put('voilier',px-3.5,pz0-58,Math.PI,'#f4f6f8');
+  put('helimini',-200,330,Math.PI/2,'#e5484d');put('avionligne',-120,300,Math.PI/2,'#f4f6f8');put('chasseur',BASE.x0+110,-60,Math.PI/2,'#6b7480');for(const [px,pz0] of PIERS)put('voilier',px-3.5,pz0-58,Math.PI,'#f4f6f8');
   {const L=landmarks.hopital||{x:30,z:30};put('ambulance',L.x+8,L.z+14,0);}put('pompiers',-40,-HALF-20,Math.PI/2);
   for(const f of FARMS)put('tracteur',f.x-f.w/2+30,f.z-f.d/2+30,0);put('jet',-330,357,Math.PI/2,'#f4f6f8');
   {const L=landmarks.police||{x:0,z:0};put('helipol',L.x+20,L.z+20,0,'#1e3a8a');}
@@ -3613,6 +3618,7 @@ function initGuards(){
 function guardAct(p,dt,P){// returns speed, or null to use the normal ped logic
   if(p.fbi)return p.off?0:fbiAct(p,dt,P);
   if(p.inmate&&!p.mood)return inmateAct(p,dt,P);
+  if(p.wander&&!p.mood)return wanderAct(p,dt,P);
   if(p.soldier||p.pguard){const inZone=p.pguard?prison.escaping>0:(inBase(P.x,P.z)||Math.hypot(P.x-ISL.x,P.z-ISL.z)<ISL.r+40),d=Math.hypot(p.x-P.x,p.z-P.z);
     if((inZone||(!p.pguard&&player.stars>=4))&&d<(p.pguard?90:70)&&!player.dead){if(!p.mood||p.mood.k!=='shoot'){p.mood={k:'shoot',t:30};if(Math.random()<.5)npcSay(p,p.pguard?'Évasion ! Arrêtez-le !':'Intrus ! Ouvrez le feu !');}return civAct(p,dt,P)||0;}
     if(p.mood)return civAct(p,dt,P)||0;p.aiming=false;const dx=p.post.x-p.x,dz=p.post.z-p.z,dp=Math.hypot(dx,dz);if(dp>1){p.h=Math.atan2(dx,dz);p.x+=dx/dp*1.6*dt;p.z+=dz/dp*1.6*dt;p.y=groundY(p.x,p.z);return 1.6;}return 0;}
@@ -3919,7 +3925,7 @@ function updateDogs(dt,P){
   if(player.stars>=2&&want)for(const c of police){if(c.ai!=='police'||c.dogOut)continue;if(Math.hypot(c.x-P.x,c.z-P.z)<24&&c.speed<5&&Math.random()<.5){c.dogOut=true;releaseDog(c.x+Math.cos(c.h)*1.6,c.z-Math.sin(c.h)*1.6);}else if(Math.hypot(c.x-P.x,c.z-P.z)<24)c.dogOut=true;}
   if(!player.stars)for(const c of police)c.dogOut=false;
   for(const d of dogs){if(d.state==='off')continue;const m=d.m;d.t+=dt;
-    if(d.dead){m.body.rotation.z=Math.min(Math.PI/2,m.body.rotation.z+dt*6);m.body.position.y=Math.max(.2,m.body.position.y-dt*2);
+    if(d.dead){rigAnim(m,dt,0,true);m.body.rotation.z=Math.min(Math.PI/2,m.body.rotation.z+dt*6);m.body.position.y=Math.max(.2,m.body.position.y-dt*2);
       if(d.t>20&&Math.hypot(d.x-P.x,d.z-P.z)>60){m.body.rotation.z=0;m.body.position.y=.55;d.dead=false;d.hp=40;if(d.handler&&!d.handler.off){d.state='heel';d.x=d.handler.x;d.z=d.handler.z;}else{d.state='off';m.g.visible=false;}}continue;}
     const dp=Math.hypot(d.x-P.x,d.z-P.z);let tx=d.x,tz=d.z,sp=0;
     if(d.handler&&(d.handler.state==='down'||d.handler.off)&&d.state==='heel'){d.state='off';m.g.visible=false;continue;}
@@ -3936,7 +3942,7 @@ function updateDogs(dt,P){
     d.y=groundY(d.x,d.z);d.ph+=dt*(sp>0?sp*1.9:2);const amp=sp>0?Math.min(.9,.25+sp*.08):0;
     m.legs[0].rotation.x=m.legs[3].rotation.x=Math.sin(d.ph)*amp;m.legs[1].rotation.x=m.legs[2].rotation.x=-Math.sin(d.ph)*amp;
     m.body.position.y=.55+Math.abs(Math.sin(d.ph))*amp*.06;m.tail.rotation.y=Math.sin(gameT*(d.state==='heel'?9:4))*.5;m.head.rotation.x*=.85;
-    m.g.position.set(d.x,d.y,d.z);m.g.rotation.y=d.h;m.g.visible=dp<160;
+    m.g.position.set(d.x,d.y,d.z);m.g.rotation.y=d.h;m.g.visible=dp<160;rigAnim(m,dt,sp,false,d.state==='chase'&&dp<1.7,false);
     d.barkT-=dt;if(d.barkT<=0){d.barkT=d.state==='chase'?rnd(.8,1.8):rnd(6,14);if(dp<45&&sfx.bark)sfx.bark(Math.max(.15,1-dp/45));}}
 }
 
@@ -4293,13 +4299,17 @@ function genNature(){
 }
 /* ---- animals : cows, horses, sheep on the farms ; deer, boars, rabbits, foxes in the wild ---- */
 const SPECIES={
-  vache:{L:1.9,H:.85,W:.7,leg:.75,col:'#f1f1ee',spot:'#1c1c1c',head:'#f1f1ee',spd:1.4,flee:0,hp:120,n:'Vache',horns:1},
-  cheval:{L:1.8,H:.75,W:.5,leg:.95,col:'#7a4a28',head:'#6b3f22',spd:2,flee:8,run:9,hp:100,n:'Cheval',mane:'#2a1a10',neck:1},
+  taureau:{L:2,H:.9,W:.75,leg:.75,col:'#3a2a20',head:'#3a2a20',spd:1.3,flee:0,hp:160,n:'Taureau',charge:1,mdl:'Bull'},
+  ane:{L:1.5,H:.7,W:.45,leg:.7,col:'#8a8078',head:'#8a8078',spd:1.2,flee:5,run:6,hp:80,n:'Âne',mdl:'Donkey'},
+  alpaga:{L:1.3,H:.8,W:.5,leg:.7,col:'#e9e1d0',head:'#e9e1d0',spd:1.1,flee:7,run:6,hp:60,n:'Alpaga',mdl:'Alpaca'},
+  loup:{L:1.2,H:.45,W:.3,leg:.45,col:'#6b6b6b',head:'#6b6b6b',spd:1.5,flee:0,hp:70,n:'Loup',charge:1,pack:1,mdl:'Wolf'},
+  vache:{L:1.9,H:.85,W:.7,leg:.75,col:'#f1f1ee',spot:'#1c1c1c',head:'#f1f1ee',spd:1.4,flee:0,hp:120,n:'Vache',horns:1,mdl:'Cow'},
+  cheval:{L:1.8,H:.75,W:.5,leg:.95,col:'#7a4a28',head:'#6b3f22',spd:2,flee:8,run:9,hp:100,n:'Cheval',mane:'#2a1a10',neck:1,mdl:'Horse'},
   mouton:{L:1.1,H:.6,W:.55,leg:.45,col:'#ece6da',head:'#2a2622',spd:1,flee:6,run:4.5,hp:50,n:'Mouton'},
-  cerf:{L:1.4,H:.6,W:.42,leg:.85,col:'#8a5a32',head:'#7a4f2a',spd:1.6,flee:22,run:11,hp:70,n:'Cerf',antler:1,neck:1},
+  cerf:{L:1.4,H:.6,W:.42,leg:.85,col:'#8a5a32',head:'#7a4f2a',spd:1.6,flee:22,run:11,hp:70,n:'Cerf',antler:1,neck:1,mdl:'Deer'},
   sanglier:{L:1.2,H:.55,W:.45,leg:.4,col:'#3b2f26',head:'#2f251d',spd:1.3,flee:0,hp:90,n:'Sanglier',charge:1},
   lapin:{L:.38,H:.24,W:.2,leg:.12,col:'#9a8a78',head:'#9a8a78',spd:1.2,flee:9,run:7,hp:10,n:'Lapin',ears:1},
-  renard:{L:.8,H:.3,W:.25,leg:.3,col:'#c4622a',head:'#c4622a',spd:1.5,flee:14,run:9,hp:30,n:'Renard'},
+  renard:{L:.8,H:.3,W:.25,leg:.3,col:'#c4622a',head:'#c4622a',spd:1.5,flee:14,run:9,hp:30,n:'Renard',mdl:'Fox'},
 };
 function makeAnimal(k){const S=SPECIES[k],g=new THREE.Group(),m=lam(S.col),hm=lam(S.head),dark=lam('#1b1714');const body=new THREE.Group();body.position.y=S.leg+S.H/2;g.add(body);
   const box=(w,h,d,x,y,z,mat,par=body)=>{const b=new THREE.Mesh(boxGeo(w,h,d),mat);b.position.set(x,y,z);b.castShadow=true;par.add(b);return b;};
@@ -4316,18 +4326,20 @@ function makeAnimal(k){const S=SPECIES[k],g=new THREE.Group(),m=lam(S.col),hm=la
   g.visible=false;scene.add(g);return {g,body,head,legs,tail};}
 function genAnimals(){const add=(k,x,z,zone)=>{const S=SPECIES[k],m=makeAnimal(k);NAT.animals.push({k,S,m,x,z,y:terrainH(x,z),h:rnd(0,6),hp:S.hp,state:'graze',t:rnd(0,5),tx:x,tz:z,zone,ph:rnd(0,6),dead:false});};
   for(const f of FARMS){const P=f.pasture;for(let i=0;i<6;i++)add('vache',P.x+rnd(-P.w/2,P.w/2),P.z+rnd(-P.d/2,P.d/2),P);for(let i=0;i<3;i++)add('cheval',P.x+rnd(-P.w/2,P.w/2),P.z+rnd(-P.d/2,P.d/2),P);
-    const Z={x:f.x+rnd(-40,40),z:f.z+30,w:80,d:60};for(let i=0;i<7;i++)add('mouton',Z.x+rnd(-30,30),Z.z+rnd(-20,20),Z);}
+    add('taureau',P.x+rnd(-P.w/3,P.w/3),P.z+rnd(-P.d/3,P.d/3),P);for(let i=0;i<2;i++)add('ane',P.x+rnd(-P.w/2,P.w/2),P.z+rnd(-P.d/2,P.d/2),P);
+    const Z={x:f.x+rnd(-40,40),z:f.z+30,w:80,d:60};for(let i=0;i<6;i++)add('alpaga',Z.x+rnd(-30,30),Z.z+rnd(-20,20),Z);}
   const wild=(k,n)=>{for(let i=0;i<n;i++){for(let tries=0;tries<40;tries++){const x=rnd(LAND.x0+100,LAND.x1-100),z=rnd(LAND.z0+100,LAND.z1-100);if(flatK(x,z)<.8||isDesert(x,z)||terrainH(x,z)>90||inLake(x,z))continue;
-    const Z={x,z,w:160,d:160};const g=k==='lapin'?3:k==='cerf'?4:1;for(let j=0;j<g&&i<n;j++,i++)add(k,x+rnd(-10,10),z+rnd(-10,10),Z);i--;break;}}};
-  wild('cerf',IS_TOUCH?14:28);wild('sanglier',IS_TOUCH?6:12);wild('lapin',IS_TOUCH?14:30);wild('renard',IS_TOUCH?5:10);}
+    const Z={x,z,w:160,d:160};const g=k==='lapin'?3:k==='cerf'?4:k==='loup'?4:1;for(let j=0;j<g&&i<n;j++,i++)add(k,x+rnd(-10,10),z+rnd(-10,10),Z);i--;break;}}};
+  wild('cerf',IS_TOUCH?14:28);wild('loup',IS_TOUCH?4:8);wild('renard',IS_TOUCH?6:12);}
 function animalHit(a,dmg,d){if(a.dead)return;a.hp-=dmg;bloodHit(a.x,a.y+a.S.leg+a.S.H*.5,a.z,d?d.x:0,d?d.z:0,dmg>30);if(a.hp<=0){a.dead=true;a.t=0;sfx.thud();setTimeout(()=>{if(a.dead)bloodPool({x:a.x,y:a.y,z:a.z},rnd(.5,1)*Math.min(1.5,a.S.L));},700);}
   else{a.state=a.S.charge?'charge':'flee';a.t=0;}}
 function updateAnimals(dt,P){
   for(const a of NAT.animals){const dP=Math.hypot(a.x-P.x,a.z-P.z),m=a.m;m.g.visible=dP<170;if(dP>220)continue;const S=a.S;
     if(a.dead){a.t+=dt;m.body.rotation.z=Math.min(Math.PI/2,m.body.rotation.z+dt*5);m.body.position.y=Math.max(S.H*.35,m.body.position.y-dt*2);
-      if(a.t>90&&dP>120){a.dead=false;a.hp=S.hp;a.state='graze';m.body.rotation.z=0;m.body.position.y=S.leg+S.H/2;}m.g.position.set(a.x,a.y,a.z);continue;}
+      if(a.t>90&&dP>120){a.dead=false;a.hp=S.hp;a.state='graze';m.body.rotation.z=0;m.body.position.y=S.leg+S.H/2;}m.g.position.set(a.x,a.y,a.z);rigAnim(m,dt,0,true);continue;}
     a.t-=dt;let sp=0;
     if(S.flee&&dP<S.flee&&!player.car&&a.state!=='flee'){a.state='flee';a.t=rnd(4,7);}
+    if(S.pack&&a.state!=='charge'&&dP<28&&!player.car&&!player.dead){a.state='charge';a.t=0;if(Math.random()<.5)sfx.bark&&sfx.bark(.8);}
     if(a.state==='flee'){const ang=Math.atan2(a.x-P.x,a.z-P.z);a.h+=wrapA(ang-a.h)*Math.min(1,dt*5);sp=S.run||S.spd*3;if(a.t<=0)a.state='graze';}
     else if(a.state==='charge'){a.h+=wrapA(Math.atan2(P.x-a.x,P.z-a.z)-a.h)*Math.min(1,dt*5);sp=7;if(dP<1.4&&!player.car){a.biteT=(a.biteT||0)-dt;if(a.biteT<=0){a.biteT=1;hurtPlayer(9,Math.random()<.4);sfx.thud();}}if(dP>40)a.state='graze';}
     else if(a.state==='walk'){const dx=a.tx-a.x,dz=a.tz-a.z,d=Math.hypot(dx,dz);if(d<1||a.t<=0){a.state='graze';a.t=rnd(3,10);}else{a.h+=wrapA(Math.atan2(dx,dz)-a.h)*Math.min(1,dt*3);sp=S.spd;}}
@@ -4335,7 +4347,7 @@ function updateAnimals(dt,P){
     if(a.state!=='graze')m.head.rotation.x=lerp(m.head.rotation.x,0,dt*4);
     if(sp){const nx=a.x+Math.sin(a.h)*sp*dt,nz=a.z+Math.cos(a.h)*sp*dt;if(!inLake(nx,nz)&&!isWater(nx,nz)){a.x=nx;a.z=nz;}else{a.h+=Math.PI*.6;}const o={x:a.x,z:a.z};resolveCircle(o,S.W*.6,false);a.x=o.x;a.z=o.z;a.y=groundY(a.x,a.z);}
     a.ph+=dt*(sp?sp*2.6/Math.max(.4,S.leg):0);const amp=sp?Math.min(.8,.25+sp*.06):0;m.legs[0].rotation.x=m.legs[3].rotation.x=Math.sin(a.ph)*amp;m.legs[1].rotation.x=m.legs[2].rotation.x=-Math.sin(a.ph)*amp;
-    m.tail.rotation.y=Math.sin(gameT*3+a.ph)*.3;m.g.position.set(a.x,a.y,a.z);m.g.rotation.y=a.h;}}
+    m.tail.rotation.y=Math.sin(gameT*3+a.ph)*.3;m.g.position.set(a.x,a.y,a.z);m.g.rotation.y=a.h;rigAnim(m,dt,sp,false,a.state==='charge'&&dP<2.2,a.state==='graze'&&(a.t%9)<5);}}
 /* ---- birds : seagull flocks over the coasts, pigeons over the city (instanced wings) ---- */
 function genBirds(){const n=IS_TOUCH?40:90;const wg=new THREE.PlaneGeometry(.55,.22);wg.translate(.27,0,0);wg.rotateX(-Math.PI/2);
   const mat=new THREE.MeshLambertMaterial({color:'#e9ecef',side:THREE.DoubleSide});NAT.wingL=new THREE.InstancedMesh(wg,mat,n);NAT.wingR=new THREE.InstancedMesh(wg,mat,n);
@@ -4476,6 +4488,122 @@ function flameShot(mz){const r=castShot(11,.05);const e=r.end;for(let i=0;i<6;i+
   if(r.hit){const q=r.hit.ref;if(r.hit.kind==='ped'&&!q.gdead){if(q.php==null)q.php=100;q.php-=7;if(q.php<=0){q.gdead=true;q.state='down';q.t=0;q.vx=q.vz=q.vy=0;}else if(q.state!=='down'){q.state='flee';q.t=0;q.fx=q.x-player.x;q.fz=q.z-player.z;sfx.scream(q);}if(shotWantedCD<=0){addWanted(1);shotWantedCD=3;}}
     else if(r.hit.kind==='car'){q.health-=3;if(q.health<40&&!q.burn)q.burn=2;}else if(r.hit.kind==='animal')animalHit(q,4,r.d);}
   else if(Math.random()<.06&&r.t<11)fireAt(e.x,e.z);scarePeds(30);}
+
+/* ================= real animated animals (Quaternius "Ultimate Animated Animals", CC0) : farm, wild, police dogs, pet dogs ================= */
+const AM={size:{Alpaca:1.55,Bull:1.6,Cow:1.45,Deer:1.25,Donkey:1.3,Fox:.5,Horse:1.7,Husky:.66,ShibaInu:.48,Stag:1.5,Wolf:.85},proto:{},ready:false,pets:[]};
+function loadAnimalModels(){if(!THREE.GLTFLoader||!THREE.SkeletonUtils||location.protocol==='file:')return;const ld=gltfLoader();
+  Promise.all(Object.keys(AM.size).map(k=>new Promise(res=>ld.load('assets/models/a_'+k+'.glb',g=>{try{const s=g.scene;s.updateMatrixWorld(true);
+    const mn=new THREE.Vector3(1e9,1e9,1e9),mx=new THREE.Vector3(-1e9,-1e9,-1e9),v=new THREE.Vector3();let head=null,root=null;
+    s.traverse(o=>{if(o.isBone){o.getWorldPosition(v);mn.min(v);mx.max(v);if(!head&&/head/i.test(o.name))head=v.clone();if(!root)root=v.clone();}});
+    const h=Math.max(1e-3,mx.y-mn.y),sc=AM.size[k]*.92/h;let rot=0;if(head&&root){const dx=head.x-root.x,dz=head.z-root.z;rot=Math.atan2(-dx,dz);rot=Math.round(rot/(Math.PI/2))*(Math.PI/2);}
+    AM.proto[k]={scene:s,clips:g.animations,sc,rot,minY:mn.y};}catch(e){}res();},undefined,()=>res())))).then(()=>{AM.ready=Object.keys(AM.proto).length>0;if(AM.ready)upgradeAnimals();});}
+function animalRig(k){const P=AM.proto[k];if(!P)return null;const root=THREE.SkeletonUtils.clone(P.scene);root.traverse(o=>{if(o.isMesh){o.castShadow=true;o.frustumCulled=false;}});
+  const inner=new THREE.Group();inner.scale.setScalar(P.sc);inner.rotation.y=P.rot;inner.position.y=-P.minY*P.sc;inner.add(root);const g=new THREE.Group();g.add(inner);g.visible=false;scene.add(g);
+  const mixer=new THREE.AnimationMixer(root),acts={};for(const c of P.clips){const a=mixer.clipAction(c);if(/Death|Jump|HitReact/.test(c.name)){a.setLoop(THREE.LoopOnce,1);a.clampWhenFinished=true;}acts[c.name]=a;}
+  const D=()=>new THREE.Object3D();return {g,model:true,mixer,acts,cur:null,body:D(),head:D(),tail:D(),legs:[D(),D(),D(),D()],k};}
+function rigPlay(m,name,ts){const a=m.acts[name];if(!a)return;a.timeScale=ts;if(m.cur===a)return;if(m.cur)m.cur.fadeOut(.3);a.reset().setEffectiveWeight(1).fadeIn(.3).play();m.cur=a;}
+function rigAnim(m,dt,sp,dead,attack,eat){if(!m||!m.model||!m.g.visible)return;let n;
+  if(dead)n='Death';else if(attack)n=m.acts.Attack?'Attack':'Attack_Headbutt';else if(sp>3)n='Gallop';else if(sp>.15)n='Walk';else n=eat?'Eating':'Idle';
+  const ts=n==='Gallop'?clamp(sp/7,.7,1.6):n==='Walk'?clamp(sp/1.4,.6,1.6):1;rigPlay(m,n,ts);m.mixer.update(dt);}
+// replace the box animals and the police dogs by the real models
+function upgradeAnimals(){
+  for(const a of NAT.animals){const mdl=a.S.mdl==='Deer'?(Math.random()<.4?'Stag':'Deer'):a.S.mdl;if(!mdl||!AM.proto[mdl])continue;const r=animalRig(mdl);if(!r)continue;scene.remove(a.m.g);a.m=r;}
+  for(const d of dogs){const r=animalRig('Husky');if(!r)continue;scene.remove(d.m.g);r.g.visible=d.m.g.visible;d.m=r;}
+  initPets();}
+// pet dogs walking with passers-by in town
+function initPets(){if(!AM.proto.ShibaInu)return;const own=peds.filter(p=>!p.gang&&!p.cop&&!p.soldier&&!p.pguard&&!p.post&&!p.inmate&&!p.fbi).slice(0,IS_TOUCH?5:10);
+  for(const o of own){const r=animalRig(Math.random()<.7?'ShibaInu':'Husky');if(!r)continue;AM.pets.push({m:r,owner:o,x:o.x+1,z:o.z,y:o.y,h:0,dead:false,t:0,barkT:rnd(4,12)});}}
+function updatePets(dt,P){for(const d of AM.pets){const o=d.owner,m=d.m,dp=Math.hypot(d.x-P.x,d.z-P.z);
+  if(d.dead){d.t+=dt;rigAnim(m,dt,0,true);if(d.t>40&&dp>90){d.dead=false;d.x=o.x;d.z=o.z;}m.g.visible=dp<120;continue;}
+  const dox=o.x-d.x,doz=o.z-d.z,dd=Math.hypot(dox,doz);if(dd>14){d.x=o.x+rnd(-1,1);d.z=o.z+rnd(-1,1);}
+  const tx=o.x+Math.cos(o.h)*.8,tz=o.z-Math.sin(o.h)*.8,dt2=Math.hypot(tx-d.x,tz-d.z);let sp=0;
+  if(o.state==='flee')sp=Math.min(6,dt2*2.5);else if(dt2>.5)sp=Math.min(o.curSpeed>2?5:1.5,dt2*1.8);
+  if(sp>0){const a=Math.atan2(tx-d.x,tz-d.z);d.h+=wrapA(a-d.h)*Math.min(1,dt*7);d.x+=Math.sin(d.h)*sp*dt;d.z+=Math.cos(d.h)*sp*dt;}else d.h+=wrapA(o.h-d.h)*Math.min(1,dt*2);
+  d.y=groundY(d.x,d.z);m.g.position.set(d.x,d.y,d.z);m.g.rotation.y=d.h;m.g.visible=dp<110&&!o.off;rigAnim(m,dt,sp,false,false,false);
+  d.barkT-=dt;if(d.barkT<=0){d.barkT=rnd(6,16);if(dp<25&&sfx.bark)sfx.bark(Math.max(.2,1-dp/25)*.7);}}}
+function petHit(d,dmg,dir){if(d.dead)return;d.dead=true;d.t=0;bloodHit(d.x,d.y+.3,d.z,dir?dir.x:0,dir?dir.z:0,false);setTimeout(()=>bloodPool({x:d.x,y:d.y,z:d.z},.5),700);sfx.bark&&sfx.bark(.5);
+  if(d.owner&&d.owner.state!=='down'){npcSay(d.owner,rpick(['Mon chien !! Espèce de monstre !','NON ! Pas mon chien !','Au secours, il a tué mon chien !']));d.owner.state='flee';d.owner.t=0;d.owner.fx=d.owner.x-player.x;d.owner.fz=d.owner.z-player.z;}
+  if(shotWantedCD<=0){addWanted(1);shotWantedCD=3;}}
+
+/* ================= other countries : islands far away, reached by plane ticket (or by your own plane / boat) ================= */
+const COUNTRIES=[
+  {id:'dorada',n:'ISLA DORADA',flag:['#c60b1e','#ffc400','#c60b1e'],x:-4700,z:600,r:420,theme:'tropical',price:600,lang:'es',hello:['¡Hola amigo!','¡Buenos días!','¿Qué tal?','¡Bienvenido a Isla Dorada!'],names:['Carlos','Lucía','Mateo','Sofía','Diego','Valentina']},
+  {id:'nordheim',n:'NORDHEIM',flag:['#006aa7','#fecc00','#006aa7'],x:600,z:-4600,r:420,theme:'snow',price:800,lang:'no',hello:['Hei hei!','God dag!','Velkommen til Nordheim!','Kaldt i dag, ikke sant?'],names:['Erik','Ingrid','Lars','Astrid','Bjørn','Freya']},
+  {id:'sakura',n:'SAKURA-SHI',flag:['#ffffff','#bc002d','#ffffff'],x:4700,z:-1500,r:420,theme:'asia',price:1000,lang:'ja',hello:['Konnichiwa !','Irasshaimase !','Yōkoso, Sakura-shi e !','Ohayō gozaimasu !'],names:['Haruto','Yui','Sota','Hina','Ren','Aoi']},
+];
+function onCountry(x,z){for(const c of COUNTRIES)if(Math.hypot(x-c.x,z-c.z)<c.r)return c;return null;}
+function genCountries(){for(const C of COUNTRIES)genCountry(C);
+  // ticket desk at the airport of Néo Cité
+  const fr=F(-175,340,0);fbox(fr,lam('#1e3a8a'),0,1.3,0,4,2.6,1.2,{});fbox(fr,MAT.white,0,2.9,0,4.4,.6,1.4,{collide:false});
+  const c=document.createElement('canvas');c.width=256;c.height=64;const g=c.getContext('2d');g.fillStyle='#1e3a8a';g.fillRect(0,0,256,64);g.fillStyle='#fff';g.font='bold 30px Arial';g.textAlign='center';g.fillText('✈ VOYAGES',128,42);
+  const t=new THREE.CanvasTexture(c);const m=new THREE.Mesh(new THREE.PlaneGeometry(4,1),new THREE.MeshBasicMaterial({map:t}));m.position.set(-175,2.9,340.72);scene.add(m);
+  spots.push({x:-175,z:341.8,kind:'billets',r:1.6});}
+function genCountry(C){const {x,z,r}=C,fr=F(x,z,0),snow=C.theme==='snow';
+  // island body : cliff + beach + ground
+  {const isl=new THREE.Mesh(new THREE.CylinderGeometry(r+28,r+60,8,64),lam('#c9ad72'));isl.position.set(x,-4.05,z);scene.add(isl);
+   const top=new THREE.Mesh(new THREE.CircleGeometry(r,64),lam(snow?'#f1f4f7':C.theme==='asia'?'#5f8a4a':'#6f9a45'));top.rotation.x=-Math.PI/2;top.position.set(x,-.02,z);top.receiveShadow=true;scene.add(top);}
+  // roads : a cross + ring
+  const asph=lam('#34373b');for(const [w,d] of[[2*r-60,12],[12,2*r-60]]){const g=new THREE.PlaneGeometry(w,d);g.rotateX(-Math.PI/2);place(g,x,.02,z);addStatic(g,asph);}
+  {const g=new THREE.RingGeometry(r*.55-6,r*.55+6,64);g.rotateX(-Math.PI/2);place(g,x,.025,z);addStatic(g,asph);}
+  // central square with a flag
+  {const g=new THREE.PlaneGeometry(70,70);g.rotateX(-Math.PI/2);place(g,x,.03,z);addStatic(g,lam(snow?'#d9dde2':'#cfc6b5'));}
+  fcyl(fr,MAT.metal,12,6,12,.12,12,8,{});{const fc=document.createElement('canvas');fc.width=96;fc.height=64;const fg=fc.getContext('2d');C.flag.forEach((col,i)=>{fg.fillStyle=col;fg.fillRect(0,i*64/3,96,64/3+1);});
+    if(C.id==='sakura'){fg.fillStyle='#fff';fg.fillRect(0,0,96,64);fg.fillStyle='#bc002d';fg.beginPath();fg.arc(48,32,16,0,7);fg.fill();}
+    if(C.id==='nordheim'){fg.fillStyle='#006aa7';fg.fillRect(0,0,96,64);fg.fillStyle='#fecc00';fg.fillRect(28,0,12,64);fg.fillRect(0,26,96,12);}
+    const ft=new THREE.CanvasTexture(fc);const fl=new THREE.Mesh(new THREE.PlaneGeometry(3,2),new THREE.MeshBasicMaterial({map:ft,side:THREE.DoubleSide}));fl.position.set(x+13.6,11,z+12);scene.add(fl);C.flagM=fl;}
+  // sign
+  {const c=document.createElement('canvas');c.width=512;c.height=96;const g=c.getContext('2d');g.fillStyle='#111';g.fillRect(0,0,512,96);g.fillStyle='#f2c230';g.font='bold 56px Arial';g.textAlign='center';g.fillText(C.n,256,66);
+   const t=new THREE.CanvasTexture(c);const m=new THREE.Mesh(new THREE.PlaneGeometry(14,2.6),new THREE.MeshBasicMaterial({map:t,side:THREE.DoubleSide}));m.position.set(x,8,z-36);scene.add(m);fcyl(fr,MAT.metal,-6.5,3.4,-36,.15,6.8,8,{});fcyl(fr,MAT.metal,6.5,3.4,-36,.15,6.8,8,{});}
+  // buildings by theme
+  const pal=C.theme==='tropical'?['#f2c6a0','#f7e3a1','#a8d8c8','#f4a6a6','#ffffff','#e8b56a']:snow?['#9b2b22','#c0392b','#e8d9b0','#3a5f7d','#f2f2f2']:['#e8e2d6','#3b3b3b','#9b2b22','#d9cfc0','#5a6b7a'];
+  for(let i=0;i<46;i++){const a=i/46*Math.PI*2+rnd(-.05,.05),rr=rnd(60,r*.5);const bx=x+Math.cos(a)*rr,bz=z+Math.sin(a)*rr;if(Math.abs(bx-x)<10||Math.abs(bz-z)<10)continue;
+    if(C.theme==='tropical'||snow||Math.random()<.5){const w=rnd(8,14),d=rnd(8,12),h=snow?rnd(4,6):rnd(4,9);fbox(fr,lam(rpick(pal)),bx-x,h/2,bz-z,w,h,d,{bld:true});
+      if(snow||C.theme==='asia'){const rf=new THREE.CylinderGeometry(.01,Math.max(w,d)*.75,3,4,1);rf.rotateY(Math.PI/4);rf.scale(w/Math.max(w,d),1,d/Math.max(w,d));place(rf,bx,h+1.5,bz);addStatic(rf,lam(snow?'#2b2b2b':'#2a3a4a'));
+        if(snow){const sn=new THREE.CylinderGeometry(.01,Math.max(w,d)*.73,1,4,1);sn.rotateY(Math.PI/4);sn.scale(w/Math.max(w,d),1,d/Math.max(w,d));place(sn,bx,h+2.5,bz);addStatic(sn,lam('#f4f7fa'));}}
+      else{fbox(fr,lam('#b5651d'),bx-x,h+.15,bz-z,w+.4,.3,d+.4,{collide:false});}
+      for(let k=0;k<3;k++)fbox(fr,lam('#2a3440'),bx-x+(k-1)*w*.3,h*.55,bz-z+d/2+.02,1.2,1.4,.04,{collide:false});}
+    else building(bx,bz,rnd(14,22),rnd(14,22),rnd(14,40),ri(0,FAC.length-1),0,{noDoor:true});}
+  // landmarks
+  if(C.theme==='asia'){fbox(fr,lam('#c0392b'),-8,4,40,1,8,1,{});fbox(fr,lam('#c0392b'),8,4,40,1,8,1,{});fbox(fr,lam('#c0392b'),0,8.3,40,20,.9,1.4,{});fbox(fr,lam('#1b1b1b'),0,9,40,22,.5,1.6,{collide:false});
+    for(let k=0;k<5;k++){const w=14-k*2.2;fbox(fr,lam('#8a2a22'),-120,k*4.5+2,-90,w*.7,3.5,w*.7,{});const rf=new THREE.CylinderGeometry(w*.35,w*.75,1.2,4,1);rf.rotateY(Math.PI/4);place(rf,x-120,k*4.5+4.3,z-90);addStatic(rf,lam('#2a3a4a'));}}
+  if(C.theme==='tropical'){fcyl(fr,lam('#d9d4c8'),0,.5,0,6,1,24,{});fcyl(fr,lam('#5fb4e8'),0,1.02,0,5.4,.05,24,{collide:false});fcyl(fr,lam('#d9d4c8'),0,2,0,.8,3,12,{});}
+  if(snow){for(let k=0;k<3;k++){const g=new THREE.ConeGeometry(rnd(40,70),rnd(60,110),7);place(g,x+rnd(-1,1)*r*.6,30,z-r*.8+k*20);addStatic(g,lam('#e9eef3'));}}
+  // trees
+  const M=new THREE.Matrix4(),q=new THREE.Quaternion(),sv=new THREE.Vector3(),pv=new THREE.Vector3(),n=260;
+  const trunk=new THREE.InstancedMesh(new THREE.CylinderGeometry(.16,.25,C.theme==='tropical'?7:3,6),lam('#7a5a3a'),n);
+  const crown=new THREE.InstancedMesh(C.theme==='tropical'?new THREE.ConeGeometry(3,1.2,7,1,true):snow?new THREE.ConeGeometry(1.9,5.5,7):new THREE.IcosahedronGeometry(2.4,0),new THREE.MeshLambertMaterial({color:C.theme==='tropical'?'#3f8a3a':snow?'#e8eef2':'#f4a6c0',side:THREE.DoubleSide}),n);
+  let k=0;for(let i=0;i<2000&&k<n;i++){const a=rnd(0,6.28),rr=rnd(r*.25,r-8);const tx=x+Math.cos(a)*rr,tz=z+Math.sin(a)*rr;if(Math.abs(tx-x)<9||Math.abs(tz-z)<9||Math.abs(rr-r*.55)<9)continue;
+    const sc=rnd(.8,1.4),hh=C.theme==='tropical'?7:3;M.compose(pv.set(tx,hh/2*sc,tz),q.identity(),sv.set(sc,sc,sc));trunk.setMatrixAt(k,M);
+    M.compose(pv.set(tx,(C.theme==='tropical'?7.2:snow?5.2:4.6)*sc,tz),q.setFromAxisAngle(_up,rnd(0,6)),sv.set(sc,sc,sc));crown.setMatrixAt(k,M);k++;}
+  trunk.count=crown.count=k;for(const im of[trunk,crown]){im.castShadow=true;scene.add(im);}
+  // airstrip + travel desk + cars + people
+  {const g=new THREE.PlaneGeometry(26,240);g.rotateX(-Math.PI/2);place(g,x+r-60,.03,z);addStatic(g,lam('#2e3135'));}
+  fbox(fr,lam('#1e3a8a'),r-90,1.3,-20,4,2.6,1.2,{});spots.push({x:x+r-90,z:z-18.6,kind:'vol_retour',r:1.6,c:C.id});C.arrive={x:x+r-90,z:z-12};
+  spots.push({x:x+6,z:z+8,kind:'cafe_'+C.id,r:1.4});fbox(fr,MAT.wood,6,.55,9.5,3,1.1,.8,{});
+  for(let i=0;i<5;i++){const c=new Car(rpick(['sedan','citadine','suv','scooter','pickup','cabrio']));c.place(x+rnd(-r*.4,r*.4),z+(i%2?20:-20),i%2?Math.PI/2:-Math.PI/2);c.x=x+(i-2)*30;c.z=z+(i%2?18:-18);c.y=0;c.sync();c.ai='parked';parked.push(c);}
+  for(let i=0;i<10;i++){const p=new Ped();p.wander={x,z,r:r*.6};p.kind=rpick(['adam','pull','blond','femme']);const lk=randLook();if(snow){lk.shirt=rpick(['#2c3e50','#7a1f1f','#1f3a5f','#3a3a3a']);}setLook(p.m,lk);
+    const px=x+rnd(-60,60),pz=z+rnd(-60,60);p.post={x:px,z:pz};p.x=px;p.z=pz;p.y=0;p.state='idle';peds.push(p);persona(p);p.pname=rpick(C.names);p.country=C.id;}}
+function wanderAct(p,dt,P){const W=p.wander,dx=p.post.x-p.x,dz=p.post.z-p.z,d=Math.hypot(dx,dz);
+  if(Math.hypot(P.x-p.x,P.z-p.z)<4&&!player.car){p.h+=wrapA(Math.atan2(P.x-p.x,P.z-p.z)-p.h)*Math.min(1,dt*4);p.helloT=(p.helloT||0)-dt;if(p.helloT<=0){p.helloT=20;const C=COUNTRIES.find(c=>c.id===p.country);if(C)npcSay(p,rpick(C.hello));}return 0;}
+  if(d<.6){p.wait=(p.wait||rnd(2,8))-dt;if(p.wait<=0){p.wait=0;const a=rnd(0,6.28),rr=rnd(10,W.r);p.post={x:W.x+Math.cos(a)*rr,z:W.z+Math.sin(a)*rr};}return 0;}
+  p.h+=wrapA(Math.atan2(dx,dz)-p.h)*Math.min(1,dt*5);const s=1.3;p.x+=dx/d*s*dt;p.z+=dz/d*s*dt;resolveCircle(p,.3,false);p.y=0;return s;}
+function updateCountries(dt,P){for(const C of COUNTRIES)if(C.flagM)C.flagM.rotation.y=Math.sin(gameT*1.5)*.25;
+  const c=onCountry(P.x,P.z);if(c&&c!==COUNTRIES.cur){COUNTRIES.cur=c;toast(`Bienvenue à ${c.n} !`);}else if(!c&&COUNTRIES.cur){COUNTRIES.cur=null;}}
+function travelTo(dest){const C=COUNTRIES.find(c=>c.id===dest);let x,z,label;if(C){x=C.arrive.x;z=C.arrive.z;label=C.n;}else{x=-175;z=346;label='NÉO CITÉ';}
+  if(player.car)exitCar(true);showFade('✈ VOL EN COURS',`Destination : ${label}…`,()=>{player.x=x;player.z=z;player.y=.2;player.vx=player.vz=0;player.h=Math.PI;cam.yaw=Math.PI;dayT=(dayT+3)%24;$('fade').classList.remove('on');});fadeT=2.6;sfx.ding();}
+function openTravel(){const b=$('choiceBox');b.hidden=false;b.innerHTML='<b>✈ Billets d\'avion</b>'+COUNTRIES.map(C=>`<button data-trip="${C.id}"><strong>${C.n} — $${C.price}</strong><small>${C.theme==='tropical'?'Plages, palmiers et maisons colorées':C.theme==='snow'?'Neige, sapins et maisons de bois rouges':'Cerisiers en fleurs, temples et grandes tours'}</small></button>`).join('')+'<button data-trip="none"><strong>Annuler</strong></button>';if(document.pointerLockElement)document.exitPointerLock();}
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('#choiceBox button[data-trip]');if(!b)return;$('choiceBox').hidden=true;const id=b.dataset.trip;if(id==='none'){lockPtr();return;}
+  const C=COUNTRIES.find(c=>c.id===id);if(!payOr(C.price)){lockPtr();return;}travelTo(id);lockPtr();});
+const TRAVEL_ACT={billets(){if(player.stars>0){toast('Impossible d\'embarquer : tu es recherché par la police');return;}openTravel();},vol_retour(){if(!payOr(600))return;travelTo('home');}};
+for(const C of COUNTRIES)TRAVEL_ACT['cafe_'+C.id]=()=>{player.hp=100;player.stamina=1;save();toast(C.id==='dorada'?'Un café con leche… partie sauvegardée':C.id==='nordheim'?'Un kaffe bien chaud… partie sauvegardée':'Un thé matcha… partie sauvegardée');};
+
+/* ================= sky reflections on car paint, glass and metal (cube map of the sky, refreshed as the sun moves) ================= */
+var GFX={rt:null,cam:null,t:0};
+function initGfx(){try{const rt=new THREE.WebGLCubeRenderTarget(IS_TOUCH?64:128,{format:THREE.RGBFormat,generateMipmaps:true,minFilter:THREE.LinearMipmapLinearFilter});
+  GFX.rt=rt;GFX.cam=new THREE.CubeCamera(1,2000,rt);for(const c of GFX.cam.children)c.layers.set(1);sky.layers.enable(1);scene.add(GFX.cam);
+  for(const k in paintCache)envOn(paintCache[k],.2);envOn(CARM.glass,.55);envOn(GLASS,.4);envOn(MAT.metal,.35);}catch(e){GFX.rt=null;}}
+function envOn(m,r){if(!GFX.rt||!m||!m.isMeshPhongMaterial&&!m.isMeshLambertMaterial)return;m.envMap=GFX.rt.texture;m.combine=THREE.MixOperation;m.reflectivity=r;m.needsUpdate=true;}
+function updateGfx(dt){if(!GFX.rt)return;GFX.t-=dt;if(GFX.t>0)return;GFX.t=6;GFX.cam.position.copy(camera.position);GFX.cam.update(renderer,scene);}
 
 /* ================= multiplayer (WebRTC peer-to-peer, Trystero + Nostr relays, no server) ================= */
 const MP={on:false,joining:false,room:null,self:null,peers:new Map(),sendT:0,code:'public',name:'',hitCD:0};
@@ -4622,6 +4750,9 @@ genPrison();
 genNature();
 genInterior();
 genHome();
+loadAnimalModels();
+genCountries();
+initGfx();
 flushStatic();
 initVehicles();
 initGangs();

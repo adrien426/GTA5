@@ -57,6 +57,14 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Animaux réalistes, autres pays, reflets
+
+- **Vrais animaux animés** (marche, galop, broute, attaque, mort) : vaches, taureaux, chevaux, ânes, alpagas dans les fermes ; cerfs et biches, renards, **loups** (ils attaquent en meute) dans la nature. Modèles « Ultimate Animated Animals » de **Quaternius**, licence **CC0** (domaine public).
+- **Chiens** : les chiens policiers sont de vrais chiens animés, et des passants promènent leur chien en ville (Shiba, Husky). Tirer sur un chien : son maître hurle et la police arrive.
+- **Autres pays** : au guichet **✈ VOYAGES** de l'aéroport, achète un billet pour **ISLA DORADA** (plages, palmiers, maisons colorées), **NORDHEIM** (neige, sapins, maisons de bois) ou **SAKURA-SHI** (cerisiers, temples, tours). Chaque pays a sa piste, ses habitants qui saluent dans leur langue, ses voitures et un café pour sauvegarder. Vol retour depuis la piste ($600). Impossible d'embarquer si tu es recherché.
+- **Avions** : avion de ligne (aéroport) et avion de chasse (base militaire). **Fusil de chasse** à lunette.
+- **Graphismes** : reflets du ciel sur la carrosserie, les vitres et le métal (mis à jour avec le soleil).
+
 ## Intérieurs, maison et monde agrandi
 
 - **Entrer dans les immeubles** : la plupart des immeubles ont une porte d'entrée (E). Hall avec boîtes aux lettres et concierge, ascenseur, puis **appartement meublé** (salon avec télé, cuisine, chambre, salle de bain, vue sur la ville). Chaque appartement est **à vendre** : une fois acheté, tu peux y dormir et sauvegarder.
