@@ -1132,17 +1132,26 @@ function animPerson(p,speed,dt,air){
 
 /* ================= vehicles ================= */
 const CT={
-  sedan:{len:4.4,w:2.0,bh:.62,ch:.58,cl:2.1,cz:-.2,maxV:36,acc:13,name:'Berline'},
-  sport:{len:4.3,w:2.0,bh:.5,ch:.46,cl:1.8,cz:-.35,maxV:48,acc:21,name:'Sportive'},
-  van:{len:5.0,w:2.15,bh:.82,ch:.92,cl:3.3,cz:-.65,maxV:27,acc:9,name:'Fourgon'},
-  taxi:{len:4.4,w:2.0,bh:.62,ch:.58,cl:2.1,cz:-.2,maxV:36,acc:13,name:'Taxi'},
+  sedan:{len:4.4,w:2.0,bh:.62,ch:.58,cl:2.1,cz:-.2,maxV:36,acc:13,name:'Nordia V5 (break)'},
+  sport:{len:4.3,w:2.0,bh:.5,ch:.46,cl:1.8,cz:-.35,maxV:48,acc:21,name:'Akira NX (coupé)'},
+  van:{len:5.0,w:2.15,bh:.82,ch:.92,cl:3.3,cz:-.65,maxV:27,acc:9,name:'Cargo Néo (fourgon)'},
+  taxi:{len:4.4,w:2.0,bh:.62,ch:.58,cl:2.1,cz:-.2,maxV:36,acc:13,name:'Taxi Kobi'},
   jeep:{len:4.4,w:2.0,bh:.7,ch:.6,cl:2,cz:0,maxV:38,acc:15,name:'Jeep militaire'},
   police:{len:4.5,w:2.0,bh:.62,ch:.58,cl:2.1,cz:-.2,maxV:42,acc:18,name:'Patrouille'},
-  citadine:{len:3.7,w:1.85,bh:.6,ch:.55,cl:1.8,cz:-.1,maxV:33,acc:12,name:'Citadine'},
-  supercar:{len:4.5,w:2.0,bh:.5,ch:.46,cl:1.8,cz:-.35,maxV:55,acc:25,name:'Supercar'},
-  concept:{len:4.4,w:2.0,bh:.5,ch:.46,cl:1.8,cz:-.35,maxV:52,acc:23,name:'Concept'},
-  moto:{len:2,w:.8,bh:.5,ch:.5,cl:1.2,cz:0,maxV:40,acc:17,name:'Moto',moto:true},
-  superbike:{len:2.1,w:.8,bh:.5,ch:.5,cl:1.2,cz:0,maxV:57,acc:27,name:'Superbike',moto:true},
+  citadine:{len:3.7,w:1.85,bh:.6,ch:.55,cl:1.8,cz:-.1,maxV:33,acc:12,name:'Kobi Pica (citadine)'},
+  supercar:{len:4.5,w:2.0,bh:.5,ch:.46,cl:1.8,cz:-.35,maxV:55,acc:25,name:'Rosso F8 (supercar)'},
+  concept:{len:4.4,w:2.0,bh:.5,ch:.46,cl:1.8,cz:-.35,maxV:52,acc:23,name:'Aero Concept'},
+  moto:{len:2,w:.8,bh:.5,ch:.5,cl:1.2,cz:0,maxV:40,acc:17,name:'Sonik 150 (moto)',moto:true,snd:'moto'},
+  superbike:{len:2.1,w:.8,bh:.5,ch:.5,cl:1.2,cz:0,maxV:57,acc:27,name:'Kaze H2R (superbike)',moto:true,snd:'superbike'},
+  scooter:{len:1.75,w:.7,bh:.5,ch:.5,cl:1.1,cz:0,maxV:24,acc:12,name:'Vespina 125 (scooter)',moto:true,snd:'scooter'},
+  chopper:{len:2.45,w:.85,bh:.5,ch:.5,cl:1.3,cz:0,maxV:44,acc:17,name:'Iron Chopper (moto)',moto:true,snd:'vtwin'},
+  suv:{len:4.8,w:2.05,bh:.75,ch:.75,cl:2.3,cz:-.2,maxV:40,acc:15,name:'Atlas Terra (SUV)'},
+  pickup:{len:5.3,w:2.05,bh:.75,ch:.7,cl:2.4,cz:-.3,maxV:38,acc:14,name:'Brava Ranch (pick-up)',snd:'v8'},
+  muscle:{len:4.9,w:2.0,bh:.55,ch:.5,cl:2,cz:-.3,maxV:50,acc:22,name:'Furia GT (muscle car)',snd:'v8'},
+  cabrio:{len:4.3,w:1.95,bh:.5,ch:.46,cl:1.8,cz:-.3,maxV:46,acc:19,name:'Riviera (cabriolet)',snd:'sport'},
+  limo:{len:6.4,w:2.0,bh:.62,ch:.58,cl:2.6,cz:-.2,maxV:36,acc:11,name:'Regal (limousine)'},
+  bus:{len:9.5,w:2.5,bh:1,ch:1.2,cl:4.4,cz:0,maxV:24,acc:7,name:'Néo Bus',snd:'diesel'},
+  camion:{len:8,w:2.4,bh:1,ch:1.2,cl:3.8,cz:0,maxV:27,acc:7,name:'Titan Cargo (camion)',snd:'diesel'},
 };
 const PAINTS=['#c0392b','#2c3e50','#ecf0f1','#2980b9','#16a085','#7f8c8d','#111418','#8e44ad','#d35400','#f1c40f','#27ae60','#bdc3c7','#6d1a1a',
   '#1f3a5f','#5a5e63','#e8e8e6','#7a1f1f','#0f4c3a','#c9b27c','#232527','#a4a9ad','#3d5a80','#b5651d','#f4f1ea','#4a0e0e','#2e4a2e'];
@@ -1165,6 +1174,21 @@ const PROF={
     glass:[[.3,1.09],[.3,1.9],[1.0,1.93],[1.65,1.1]],roof:[[-2.52,1.93],[1.02,1.93],[1.0,2.0],[-2.5,2.0]],
     cargo:[[-2.52,1.05],[-2.52,1.96],[.3,1.96],[.3,1.05]]},
 };
+PROF.suv={L:4.8,w:2.04,wb:1.5,seat:.85,headY:.92,tailY:1.0,body:[[-2.4,.45],[-2.42,1.2],[1.0,1.22],[1.6,1.12],[2.35,1.0],[2.4,.46]],
+  glass:[[-2.2,1.2],[-2.05,1.82],[.55,1.84],[1.05,1.21]],roof:[[-2.18,1.8],[.57,1.82],[.55,1.9],[-2.15,1.88]]};
+PROF.pickup={L:5.3,w:2.04,wb:1.85,seat:.85,headY:.92,tailY:1.0,body:[[-2.65,.45],[-2.67,1.15],[-.6,1.15],[-.6,1.18],[1.2,1.2],[1.75,1.1],[2.6,.98],[2.65,.46]],
+  glass:[[-.55,1.18],[-.5,1.85],[.75,1.86],[1.25,1.19]],roof:[[-.52,1.82],[.77,1.84],[.75,1.92],[-.5,1.9]]};
+PROF.muscle={L:4.9,w:2.0,wb:1.5,seat:.45,headY:.7,tailY:.78,body:[[-2.45,.42],[-2.47,.85],[-2.1,.92],[-1.1,.95],[.4,.93],[2.0,.84],[2.45,.7],[2.47,.43]],
+  glass:[[-1.1,.94],[-.75,1.3],[.05,1.32],[.6,.93]],roof:[[-.78,1.28],[.07,1.3],[.05,1.36],[-.75,1.34]]};
+PROF.cabrio={L:4.3,w:1.95,wb:1.32,seat:.4,headY:.64,tailY:.72,body:[[-2.15,.42],[-2.17,.8],[-1.9,.86],[-.4,.86],[.6,.86],[1.55,.76],[2.12,.62],[2.16,.42]],
+  glass:[[.2,.87],[.02,1.2],[.14,1.21],[.62,.87]],roof:[[.02,1.19],[.14,1.2],[.14,1.23],[.02,1.22]]};
+PROF.limo={L:6.4,w:2.0,wb:2.3,seat:.62,headY:.74,tailY:.82,body:[[-3.2,.42],[-3.22,.78],[-3.05,.93],[-2.4,.99],[1.6,.98],[2.4,.87],[3.15,.75],[3.2,.44]],
+  glass:[[-2.0,.98],[-1.6,1.4],[1.1,1.42],[1.7,.96]],roof:[[-1.62,1.38],[1.12,1.4],[1.1,1.46],[-1.6,1.44]]};
+PROF.bus={L:9.5,w:2.5,wb:3.2,seat:1.2,headY:.9,tailY:1.0,body:[[-4.75,.5],[-4.77,1.2],[4.6,1.2],[4.75,1.0],[4.77,.5]],
+  glass:[[-4.6,1.2],[-4.6,2.5],[4.55,2.55],[4.7,1.21]],roof:[[-4.65,2.5],[4.6,2.52],[4.6,2.9],[-4.65,2.9]]};
+PROF.camion={L:8,w:2.4,wb:2.6,seat:1.25,headY:.9,tailY:1.0,body:[[-4,.5],[-4.02,1.1],[2.3,1.1],[2.4,1.3],[3.9,1.2],[4.0,.5]],
+  glass:[[2.45,1.3],[2.45,2.3],[3.4,2.35],[3.95,1.35]],roof:[[2.4,2.3],[3.42,2.33],[3.4,2.45],[2.4,2.45]],cargo:[[-4.02,1.1],[-4.02,3.3],[2.2,3.3],[2.2,1.1]]};
+PROF.scooter=PROF.sport;PROF.chopper=PROF.sport;
 PROF.taxi=PROF.sedan;PROF.police=PROF.sedan;PROF.citadine=PROF.sedan;PROF.moto=PROF.sport;PROF.superbike=PROF.sport;PROF.supercar=PROF.sport;PROF.concept=PROF.sport;
 PROF.jeep={L:4.4,w:2.0,wb:1.35,seat:.78,headY:.95,tailY:.95,body:[[-2.2,.45],[-2.22,1.18],[.95,1.18],[1.35,1.12],[2.2,1.05],[2.22,.45]],
   glass:[[-1.05,1.17],[-1.05,1.8],[.6,1.82],[.98,1.19]],roof:[[-1.1,1.79],[.62,1.81],[.6,1.88],[-1.08,1.86]]};
@@ -1194,7 +1218,7 @@ function carGeos(type){
 
 /* ================= 3D models (assets/models) ================= */
 const VM={};      // loaded models : key -> {scene,meta,wheels}
-const VTYPE={sedan:['volvo',4.55],police:['volvo',4.65],sport:['nsx',4.45],taxi:['kia',3.95],citadine:['kia',3.7],supercar:['ferrari',4.55],concept:['concept',4.45],moto:['sonic',2.0],superbike:['h2r',2.15]};
+const VTYPE={sedan:['volvo',4.55],police:['volvo',4.65],sport:['nsx',4.45],taxi:['kia',3.95],citadine:['kia',3.7],supercar:['ferrari',4.55],concept:['concept',4.45],moto:['sonic',2.0],superbike:['h2r',2.15],scooter:['sonic',1.75],chopper:['h2r',2.45]};
 const WMOD={pistolet:'deagle',assaut:'ak',smg:'aug',carabine:'m16',minigun:'minigun',laser:'rail'};
 // grip position in each model, as a fraction of its length from the rear and of its height from the bottom
 const WGRIP={deagle:[.24,.3],ak:[.44,.32],aug:[.56,.3],m16:[.42,.32],minigun:[.42,.55],rail:[.4,.3]};
@@ -1682,11 +1706,11 @@ function spawnTraffic(c,P,minD,maxD){
 }
 const traffic=[],police=[],parked=[];
 function initVehicles(){
-  const TT=['sedan','citadine','sedan','sport','van','taxi','citadine','supercar','sedan','concept','van','citadine','taxi'];
+  const TT=['sedan','citadine','suv','sport','van','taxi','pickup','citadine','supercar','sedan','muscle','concept','suv','van','limo','citadine','taxi','cabrio','camion','pickup','bus','suv'];
   const P={x:player.x,z:player.z};
   for(let i=0;i<(IS_TOUCH?18:26);i++){const c=new Car(TT[i%TT.length]);traffic.push(c);if(!spawnTraffic(c,P,20,240))spawnTraffic(c,P,0,600);}
   for(const col of lots)for(const lot of col)if(lot.spots){const sp=lot.spots.slice().sort(()=>Math.random()-.5).slice(0,4);
-    for(const s of sp){const c=new Car(rpick(CT.moto.model&&Math.random()<.2?['moto','superbike']:['sedan','sport','van','citadine','taxi','supercar','concept','sedan','citadine']));c.place(s.x,s.z,s.h);c.ai='parked';parked.push(c);}}
+    for(const s of sp){const c=new Car(rpick(CT.moto.model&&Math.random()<.2?['moto','superbike','scooter','chopper']:['sedan','sport','van','citadine','taxi','supercar','concept','sedan','citadine','suv','pickup','muscle','cabrio','suv','limo']));c.place(s.x,s.z,s.h);c.ai='parked';parked.push(c);}}
   // a few roadside parked cars with key in it near spawn
   for(let i=0;i<12;i++){const s=randomRoadSpot(P,0,500);if(!s)continue;const [rx,rz]=rightOf(s.di,s.dj);const c=new Car(rpick(['sedan','sport','van']));c.place(s.x+rx*2.8,s.z+rz*2.8,s.h);c.ai='parked';parked.push(c);}
   if(CT.moto.model){// motorbikes : one next to the spawn point, a few along the roads
@@ -1825,21 +1849,21 @@ const sfx=(()=>{
   function noise(vol,dur,freq){if(!ac)return;const s=ac.createBufferSource();s.buffer=noiseBuf;const f=ac.createBiquadFilter();f.type='lowpass';f.frequency.value=freq;const g=ac.createGain();g.gain.value=vol;
     g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+dur);s.connect(f);f.connect(g);g.connect(master);s.start();s.stop(ac.currentTime+dur);}
   let lastScream=0;
-  return {init,
+  return {init,ctx(){return ac?{ac,master,noiseBuf}:null;},
     resume(){if(ac&&ac.state==='suspended')ac.resume();},
     suspend(){if(ac&&ac.state==='running')ac.suspend();},
-    engine(on,rpm,thr){if(!ac)return;const t=ac.currentTime;engG.gain.setTargetAtTime(on?.08+thr*.06:0,t,.08);eng.frequency.setTargetAtTime(38+rpm*95,t,.05);engF.frequency.setTargetAtTime(300+rpm*900+thr*500,t,.08);},
+    engine(on,rpm,thr){if(!ac)return;if(typeof AUD!=='undefined'&&AUD.ready){engG.gain.setTargetAtTime(0,ac.currentTime,.05);return;}const t=ac.currentTime;engG.gain.setTargetAtTime(on?.08+thr*.06:0,t,.08);eng.frequency.setTargetAtTime(38+rpm*95,t,.05);engF.frequency.setTargetAtTime(300+rpm*900+thr*500,t,.08);},
     siren(v){if(!ac)return;sirG.gain.setTargetAtTime(v*.07,ac.currentTime,.2);},
     crash(v){noise(.5*v+.1,.5,900);tone(70,.3,'square',.15*v);},
     thud(){noise(.3,.25,500);},
     pop(){noise(.8,.25,2500);tone(90,.15,'square',.25,.5);setTimeout(()=>noise(.18,1.2,5000),120);},
     ping(){tone(rnd(2200,3200),.12,'triangle',.08,.6);noise(.12,.05,6000);},
     bark(v=1){if(!ac)return;tone(420,.08,'sawtooth',.2*v,.55);noise(.22*v,.07,1400);setTimeout(()=>{tone(360,.1,'sawtooth',.18*v,.5);noise(.18*v,.08,1200);},140);},
-    shot(k){if(k==='laser'){tone(1400,.18,'sawtooth',.12,.25);tone(700,.2,'square',.06,.3);return;}const v=k==='far'?.25:k==='heavy'?1:.6;noise(.55*v,.18,4000);noise(.45*v,k==='heavy'?.6:.35,k==='heavy'?400:700);tone(k==='heavy'?70:110,.14,'square',.14*v,.5);},
+    shot(k){if(k!=='laser'&&typeof audShotTail==='function')audShotTail(k);if(k==='laser'){tone(1400,.18,'sawtooth',.12,.25);tone(700,.2,'square',.06,.3);return;}const v=k==='far'?.25:k==='heavy'?1:.6;noise(.55*v,.18,4000);noise(.45*v,k==='heavy'?.6:.35,k==='heavy'?400:700);tone(k==='heavy'?70:110,.14,'square',.14*v,.5);},
     swish(){noise(.12,.15,2500);},
     rotor(v){if(!ac)return;const now=ac.currentTime;if(v>.02&&now-(this._r||0)>.11){this._r=now;noise(.25*v,.09,300);}},
     click(){tone(1800,.03,'square',.08);},
-    boom(v=1){noise(1*v,1.2,500);tone(50,1,'sine',.6*v,.5);},
+    boom(v=1){if(typeof AUD!=='undefined'&&AUD.ready)audBurst(1.1*v,2.2,320,'lowpass',1.5);noise(1*v,1.2,500);tone(50,1,'sine',.6*v,.5);},
     ding(){tone(880,.15,'sine',.25);setTimeout(()=>tone(1320,.25,'sine',.25),90);},
     coin(){tone(1200,.08,'square',.12);setTimeout(()=>tone(1800,.18,'square',.12),70);},
     win(){[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,.3,'triangle',.25),i*110));},
@@ -2657,7 +2681,7 @@ function loop(now){
   placeWeapon();gangWeapons();
   updateRockets(dt);policeFire(dt,P);updateHeli(dt,P);
   updateWater(dt,P);updateSeaLife(dt,P);updateMilHeli(dt,P);
-  updateBubble(dt);updateRemarks(dt,P);updateArm(dt,P);updateBlood(dt,P);updateWounds(dt,P);updateGav(dt,P);updateFBI(dt,P);updateDogs(dt,P);updatePrison(dt,P);updateWake(dt);
+  updateBubble(dt);updateRemarks(dt,P);updateArm(dt,P);audUpdate(dt,P);updateBlood(dt,P);updateWounds(dt,P);updateGav(dt,P);updateFBI(dt,P);updateDogs(dt,P);updatePrison(dt,P);updateWake(dt);
   updateAutoAim();updateLockMark();updateWaypoint(dt,P);updateStory(dt,P);
   updateGrenades(dt);updatePickups(dt,P);updateRobbery(dt);updateBusiness();updateChatter(dt,P);if(typeof updateGangs==='function')updateGangs(dt,P);
   if(inBase(P.x,P.z)&&!player.dead){if(player.stars<4){player.stars=4;toast('ZONE MILITAIRE INTERDITE');sfx.fail();}seenT=0;}
@@ -2790,7 +2814,7 @@ function updateBusiness(){const h=Math.floor(dayT);if(h===lastHour)return;const 
   tot=Math.round(tot*(playerChar==='femme'?1.25:1));player.money+=tot;toast(`Revenus de tes commerces : +$${tot}`);}
 
 // ---- vehicles to buy (AutoNéo)
-const SHOPCARS=[['citadine',3500],['sedan',7000],['taxi',6000],['van',9000],['sport',48000],['supercar',125000],['concept',160000],['moto',4500],['superbike',24000],['bateau',18000],['vedette',32000],['helico',95000],['avion',140000]];
+const SHOPCARS=[['scooter',1800],['chopper',16000],['suv',22000],['pickup',15000],['muscle',38000],['cabrio',42000],['limo',65000],['camion',30000],['bus',28000],['jetski',9000],['helimini',60000],['helipol',110000],['jet',250000],['citadine',3500],['sedan',7000],['taxi',6000],['van',9000],['sport',48000],['supercar',125000],['concept',160000],['moto',4500],['superbike',24000],['bateau',18000],['vedette',32000],['helico',95000],['avion',140000]];
 let myCar=null;
 function deliverCar(type){const P=playerPos();const s=randomRoadSpot(P,8,40)||randomRoadSpot(P,5,120)||randomRoadSpot(P,0,400);if(!s){toast('Pas de place pour livrer, réessaie');return;}
   if(!myCar||myCar.dead||myCar.type!==type){myCar=new Car(type,saveData.carCol&&saveData.carCol[type]||rpick(PAINTS));parked.push(myCar);}
@@ -3187,8 +3211,12 @@ Object.assign(CT,{
   avion:{len:9,w:2.6,bh:1,ch:1,cl:4,cz:0,maxV:72,acc:10,name:'Avion',fly:'plane',custom:'plane',seat:1.15,roofY:2.4,rz:1.2,dz:1.4,wb:3},
   helico:{len:9,w:2.6,bh:1,ch:1,cl:4,cz:0,maxV:40,acc:12,name:'Hélicoptère',fly:'heli',custom:'heli',seat:.85,roofY:3.2,rz:.8,dz:.9,wb:2,dx:-.4},
   tank:{len:6.6,w:3.4,bh:1.2,ch:1.2,cl:3,cz:0,maxV:13,acc:5,name:'Tank',tank:true,custom:'tank',seat:1.5,roofY:2.4,rz:0,dz:.4,wb:2.4},
+  helipol:{len:9,w:2.6,bh:1,ch:1,cl:4,cz:0,maxV:44,acc:13,name:'Hélico de police',fly:'heli',custom:'heli',seat:.85,roofY:3.2,rz:.8,dz:.9,wb:2,dx:-.4},
+  helimini:{len:7,w:2,bh:1,ch:1,cl:3.2,cz:0,maxV:34,acc:11,name:'Libellule (mini-hélico)',fly:'heli',custom:'heli2',seat:.75,roofY:2.4,rz:.4,dz:.5,wb:1.5,dx:-.3},
+  jet:{len:13,w:3,bh:1,ch:1,cl:5,cz:0,maxV:105,acc:14,name:'Falcon X (jet privé)',fly:'plane',custom:'jet',seat:1.3,roofY:2.8,rz:3,dz:3.6,wb:3.5,snd:'jet'},
+  jetski:{len:3.1,w:1.2,bh:.5,ch:.5,cl:1.5,cz:0,maxV:34,acc:18,name:'Wave Jet (jet-ski)',boat:true,custom:'jetski',seat:.6,roofY:1.2,rz:0,dz:-.2,wb:1},
 });
-for(const k of['bateau','vedette','avion','helico','tank'])PROF[k]=PROF.van;
+for(const k of['bateau','vedette','avion','helico','tank','helipol','helimini','jet','jetski'])PROF[k]=PROF.van;
 function buildCustomVehicle(car){
   const t=car.T,b=car.body,P=[],Hd=[],Tl=[];
   const add=(g,m,x,y,z,list,sh=true)=>{const me=new THREE.Mesh(g,m);me.position.set(x,y,z);me.castShadow=sh;b.add(me);if(list)list.push(me);return me;};
@@ -3212,6 +3240,26 @@ function buildCustomVehicle(car){
       for(const n of['rotor','tail']){const pp=v.meta.parts[n],o=v.scene.getObjectByName(n).clone(),h=new THREE.Group();o.position.sub(_vp.fromArray(pp.pos));h.position.fromArray(pp.pos);h.add(o);root.add(h);if(n==='rotor')car.rotor=h;else car.tailR=h;}}
     else{add(new THREE.SphereGeometry(1,14,10),pm,0,1.4,0,P).scale.set(1.2,1.1,2.2);const r=new THREE.Group();r.position.y=2.6;r.add(new THREE.Mesh(boxGeo(.2,.05,10),MAT.dark));b.add(r);car.rotor=r;}
     add(boxGeo(.1,.1,.1),CARM.head,0,1,2.4,Hd,false);add(boxGeo(.1,.1,.1),CARM.tail,0,1.8,-6,Tl,false);}
+  else if(t.custom==='heli2'){
+    add(new THREE.SphereGeometry(1,16,12),pm,0,1.25,.5,P).scale.set(.95,.95,1.15);add(new THREE.SphereGeometry(.9,16,12),CARM.glass,0,1.45,.95,null,false).scale.set(.9,.75,.9);
+    add(new THREE.CylinderGeometry(.16,.1,3.6,8).rotateX(Math.PI/2),pm,0,1.45,-2.2,P);add(boxGeo(.08,.8,.5),pm,0,1.8,-3.9,P);
+    for(const s of[-1,1]){add(new THREE.CylinderGeometry(.05,.05,2.6,6).rotateX(Math.PI/2),MAT.dark,s*.75,.12,.4);for(const z of[-.3,1.1])add(boxGeo(.05,.5,.05),MAT.dark,s*.7,.4,z);}
+    const r=new THREE.Group();r.position.set(0,2.35,.3);r.add(new THREE.Mesh(boxGeo(.16,.04,7),MAT.dark));r.add(new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.35,8),MAT.dark));b.add(r);car.rotor=r;
+    const tr=new THREE.Group();tr.position.set(.12,1.75,-3.95);tr.add(new THREE.Mesh(boxGeo(.03,1.1,.08),MAT.dark));b.add(tr);car.tailR=tr;
+    add(boxGeo(.1,.1,.1),CARM.head,0,.9,1.6,Hd,false);add(boxGeo(.1,.1,.1),CARM.tail,0,1.8,-4,Tl,false);}
+  else if(t.custom==='jet'){
+    add(new THREE.CylinderGeometry(.95,.7,11,16).rotateX(Math.PI/2),pm,0,1.9,0,P);add(new THREE.SphereGeometry(.95,16,10),pm,0,1.9,5.5,P).scale.set(1,1,1.6);
+    add(new THREE.SphereGeometry(.7,12,8),CARM.glass,0,2.35,5.4,null,false).scale.set(.9,.55,1.2);
+    for(let z=-3;z<=3;z+=1.1)for(const s of[-1,1])add(new THREE.CircleGeometry(.16,10),CARM.glass,s*.96,2.1,z,null,false).rotation.y=s*Math.PI/2;
+    for(const s of[-1,1]){const w=add(boxGeo(6,.16,2.2),pm,s*3.6,1.55,.2,P);w.rotation.y=s*.42;add(boxGeo(.5,.5,.1),pm,s*6.4,1.8,-.9,P);
+      add(new THREE.CylinderGeometry(.42,.38,2.4,12).rotateX(Math.PI/2),MAT.white,s*1.4,2.4,-3.7);add(new THREE.CylinderGeometry(.34,.34,.1,12).rotateX(Math.PI/2),MAT.dark,s*1.4,2.4,-2.48);}
+    add(boxGeo(.14,2.2,1.8),pm,0,3.3,-4.9,P).rotation.x=-.4;add(boxGeo(4,.12,1.1),pm,0,4.3,-5.5,P);
+    for(const [x,z] of[[-1.5,.2],[1.5,.2],[0,4.5]]){add(new THREE.CylinderGeometry(.04,.04,1,5),MAT.dark,x,.75,z);add(new THREE.CylinderGeometry(.26,.26,.18,10).rotateZ(Math.PI/2),MAT.dark,x,.26,z);}
+    add(boxGeo(.14,.1,.1),CARM.head,0,1.6,6.8,Hd,false);add(boxGeo(.14,.1,.1),CARM.tail,0,4.3,-6,Tl,false);}
+  else if(t.custom==='jetski'){
+    add(extrudeX(polyShape([[-1.5,.1],[-1.55,.55],[.6,.62],[1.5,.4],[1.2,.0],[-1.3,-.05]]),1.1,.08),pm,0,-.25,0,P);
+    add(boxGeo(.55,.25,1.1),MAT.dark,0,.48,-.35);add(boxGeo(.7,.12,.3),MAT.metal,0,.75,.55);add(boxGeo(.08,.35,.08),MAT.metal,0,.55,.55);
+    add(boxGeo(.1,.08,.08),CARM.head,0,.4,1.45,Hd,false);add(boxGeo(.1,.08,.08),CARM.tail,0,.5,-1.5,Tl,false);}
   else if(t.custom==='tank'){
     add(boxGeo(3.1,1.0,6.2),pm,0,1.05,0,P);add(boxGeo(2.6,.5,1.4),pm,0,1.3,2.9,P).rotation.x=.45;
     for(const s of[-1,1]){add(boxGeo(.7,1.0,6.6),MAT.dark,s*1.65,.55,0);for(let z=-2.6;z<=2.6;z+=1.3)add(new THREE.CylinderGeometry(.36,.36,.72,10).rotateZ(Math.PI/2),lam('#2a2d22'),s*1.65,.45,z);}
@@ -3247,6 +3295,9 @@ function initWorldVehicles(){
   put('bateau',LAND.x0-SAND-8,120,-Math.PI/2);put('vedette',LAND.x0-SAND-8,-160,-Math.PI/2);
   put('avion',-290,357,Math.PI/2,'#f4f6f8');put('avion',-250,357,Math.PI/2,'#e5484d');put('helico',-110,360,0,'#1f3a5f');
   put('helico',BASE.x1-45,BASE.z1-30,0,'#4b5320');put('tank',BASE.x0+70,-40,Math.PI/2,'#4b5320');put('tank',BASE.x0+70,-20,Math.PI/2,'#4b5320');
+  put('helimini',-200,330,Math.PI/2,'#e5484d');put('jet',-330,357,Math.PI/2,'#f4f6f8');
+  {const L=landmarks.police||{x:0,z:0};put('helipol',L.x+20,L.z+20,0,'#1e3a8a');}
+  for(const [px,pz0] of PIERS)put('jetski',px+3.5,pz0-50,Math.PI,rpick(['#e5484d','#f2c230','#3fa9f5']));put('jetski',LAND.x0-SAND-6,40,-Math.PI/2,'#f2c230');
   put('helico',landmarks.hopital?landmarks.hopital.x+18:30,landmarks.hopital?landmarks.hopital.z:30,0,'#f4f6f8');
 }
 // the military helicopter : attacks at 5 stars
@@ -4031,6 +4082,77 @@ function tyrePhysics(c,dt){const f=c.flat;if(!f)return;const n=flatCount(c);if(!
 // sparks + metal "ping" where the bullet hits the bodywork
 function metalSpark(pt,d){for(let k=0;k<6;k++)emit(pt.x,pt.y,pt.z,Math.random()<.5?'#ffd27f':'#fff1c4',rnd(.04,.08),rnd(.12,.28),-d.x*rnd(1,4)+rnd(-2,2),rnd(0,3),-d.z*rnd(1,4)+rnd(-2,2),.2,true,6);
   emit(pt.x,pt.y,pt.z,'#9a9a9a',.25,.5,0,.6,0,2);sfx.ping&&sfx.ping();}
+
+/* ================= realistic sound : engines with gears per vehicle type, rotors, jets, tyre screech, gunshot echo, footsteps, ambience ================= */
+const AUD={ready:false,gear:0,shift:0,lastV:0,stepD:0,birdT:3,sirenT:20};
+const ENG={// base frequency (Hz at idle), gears, character
+  car:{f:34,g:5,dist:6,sub:.6,ham:.25,lp:900},sport:{f:44,g:6,dist:10,sub:.4,ham:.15,lp:1700},v8:{f:28,g:5,dist:14,sub:.9,ham:.55,lp:800},
+  diesel:{f:20,g:6,dist:5,sub:1,ham:.6,lp:520,clat:1},moto:{f:62,g:5,dist:9,sub:.3,ham:.45,lp:1900},superbike:{f:78,g:6,dist:12,sub:.2,ham:.2,lp:3000},
+  scooter:{f:90,g:1,dist:4,sub:.1,ham:.35,lp:2600},vtwin:{f:30,g:5,dist:12,sub:.8,ham:.85,lp:900},boat:{f:48,g:1,dist:7,sub:.5,ham:.4,lp:1100},tank:{f:18,g:4,dist:6,sub:1,ham:.5,lp:420,clat:1}};
+function sndKind(t){if(t.snd&&ENG[t.snd])return t.snd;if(t.tank)return 'tank';if(t.boat)return 'boat';if(t.moto)return t.maxV>50?'superbike':'moto';if(t.maxV>=45)return 'sport';if(t.len>6)return 'diesel';return 'car';}
+function audInit(){if(AUD.ready)return;const C=sfx.ctx&&sfx.ctx();if(!C||!C.ac)return;const {ac,master,noiseBuf}=C;AUD.ac=ac;AUD.master=master;
+  const nloop=()=>{const s=ac.createBufferSource();const b=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;s.buffer=b;s.loop=true;s.start();return s;};
+  // engine : 3 oscillators -> waveshaper -> lowpass, plus filtered noise, with a firing-rate tremolo
+  const o1=ac.createOscillator(),o2=ac.createOscillator(),o3=ac.createOscillator();o1.type='sawtooth';o2.type='square';o3.type='sawtooth';
+  const g1=ac.createGain(),g2=ac.createGain(),g3=ac.createGain();g1.gain.value=.5;g2.gain.value=.4;g3.gain.value=.15;
+  const ws=ac.createWaveShaper();AUD.ws=ws;setDist(6);const lp=ac.createBiquadFilter();lp.type='lowpass';lp.Q.value=2;
+  const trem=ac.createGain(),lfo=ac.createOscillator(),lfoG=ac.createGain();lfo.type='square';lfoG.gain.value=.3;lfo.connect(lfoG);lfoG.connect(trem.gain);trem.gain.value=.7;
+  const out=ac.createGain();out.gain.value=0;
+  o1.connect(g1);o2.connect(g2);o3.connect(g3);g1.connect(ws);g2.connect(ws);g3.connect(ws);ws.connect(lp);lp.connect(trem);trem.connect(out);out.connect(master);
+  const nz=nloop(),nf=ac.createBiquadFilter();nf.type='bandpass';nf.Q.value=1.2;const ng=ac.createGain();ng.gain.value=0;nz.connect(nf);nf.connect(ng);ng.connect(out);
+  for(const o of[o1,o2,o3,lfo])o.start();Object.assign(AUD,{o1,o2,o3,g2,lp,lfo,lfoG,out,nf,ng});
+  // rotor (helicopter) : low noise chopped by a square LFO + turbine whine
+  const rn=nloop(),rf=ac.createBiquadFilter();rf.type='lowpass';rf.frequency.value=320;const rg=ac.createGain();rg.gain.value=0;const rch=ac.createGain();rch.gain.value=.5;
+  const rl=ac.createOscillator();rl.type='square';rl.frequency.value=11;const rlg=ac.createGain();rlg.gain.value=.5;rl.connect(rlg);rlg.connect(rch.gain);rn.connect(rf);rf.connect(rch);rch.connect(rg);rg.connect(master);rl.start();
+  const tw=ac.createOscillator();tw.type='sine';tw.frequency.value=1100;const twg=ac.createGain();twg.gain.value=0;tw.connect(twg);twg.connect(master);tw.start();
+  Object.assign(AUD,{rg,rl,tw,twg});
+  // jet / wind : highpassed noise
+  const jn=nloop(),jf=ac.createBiquadFilter();jf.type='bandpass';jf.frequency.value=1800;jf.Q.value=.6;const jg=ac.createGain();jg.gain.value=0;jn.connect(jf);jf.connect(jg);jg.connect(master);Object.assign(AUD,{jf,jg});
+  // tyre screech
+  const sn=nloop(),sf=ac.createBiquadFilter();sf.type='bandpass';sf.frequency.value=2600;sf.Q.value=8;const sg=ac.createGain();sg.gain.value=0;sn.connect(sf);sf.connect(sg);sg.connect(master);Object.assign(AUD,{sf,sg});
+  // ambience : distant traffic hum / waves / wind
+  const an=nloop(),af=ac.createBiquadFilter();af.type='lowpass';af.frequency.value=260;const ag=ac.createGain();ag.gain.value=0;an.connect(af);af.connect(ag);ag.connect(master);
+  const wl=ac.createOscillator();wl.frequency.value=.12;const wlg=ac.createGain();wlg.gain.value=0;wl.connect(wlg);wlg.connect(ag.gain);wl.start();Object.assign(AUD,{af,ag,wlg});
+  // reverb for gunshots / explosions (generated impulse)
+  const cv=ac.createConvolver(),len=ac.sampleRate*2.2,ir=ac.createBuffer(2,len,ac.sampleRate);for(let c=0;c<2;c++){const d=ir.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3.2)*(i<200?0:1);}
+  cv.buffer=ir;const rv=ac.createGain();rv.gain.value=.5;cv.connect(rv);rv.connect(master);AUD.cv=cv;AUD.rv=rv;AUD.noiseBuf=noiseBuf;
+  AUD.ready=true;}
+function setDist(k){const n=256,c=new Float32Array(n);for(let i=0;i<n;i++){const x=i*2/n-1;c[i]=(1+k)*x/(1+k*Math.abs(x));}if(AUD.ws)AUD.ws.curve=c;}
+function audBurst(vol,dur,freq,type='lowpass',toRev=.6){const ac=AUD.ac;if(!ac)return;const s=ac.createBufferSource();s.buffer=AUD.noiseBuf;const f=ac.createBiquadFilter();f.type=type;f.frequency.value=freq;const g=ac.createGain();
+  g.gain.setValueAtTime(vol,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+dur);s.connect(f);f.connect(g);g.connect(AUD.master);if(toRev){const r=ac.createGain();r.gain.value=toRev;g.connect(r);r.connect(AUD.cv);}s.start();s.stop(ac.currentTime+dur+.05);}
+function audTone(f0,f1,dur,vol,type='sine'){const ac=AUD.ac;if(!ac)return;const o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f0,ac.currentTime);o.frequency.exponentialRampToValueAtTime(f1,ac.currentTime+dur);
+  g.gain.setValueAtTime(vol,ac.currentTime);g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+dur);o.connect(g);g.connect(AUD.master);o.start();o.stop(ac.currentTime+dur+.02);}
+// echo tail added to every gunshot and explosion (stronger between buildings)
+function audShotTail(k){if(!AUD.ready)return;const P=playerPos(),city=Math.abs(P.x)<HALF+20&&Math.abs(P.z)<HALF+20,v=k==='far'?.25:k==='heavy'?1:.6;
+  audBurst(.5*v,.25,1800,'lowpass',city?1.2:.6);audTone(140,45,.25,.35*v,'sine');}
+function audUpdate(dt,P){audInit();if(!AUD.ready)return;const ac=AUD.ac,t=ac.currentTime,c=player.car;
+  const set=(p,v,k=.08)=>p.setTargetAtTime(v,t,k);
+  // ---- vehicle engine
+  let eOn=0,rotor=0,jet=0,screech=0;
+  if(c&&!c.dead){const T=c.T,sp=Math.abs(c.vf||Math.hypot(c.vx,c.vz)),acc=(sp-AUD.lastV)/Math.max(dt,1e-3);AUD.lastV=sp;AUD.thr=lerp(AUD.thr||0,acc>.6?1:acc<-1?0:.25,1-Math.exp(-dt*8));const thr=AUD.thr;
+    if(T.fly==='heli'){rotor=1;set(AUD.rl.frequency,9+Math.min(1,sp/T.maxV)*3+(c.y>groundY(c.x,c.z)+2?1.5:0));set(AUD.tw.frequency,1050+sp*6);}
+    else if(T.fly==='plane'){if(T.custom==='jet'){jet=.5+Math.min(1,(c.thr||0))*.5;}else{eOn=1;const k=ENG.boat;set(AUD.o1.frequency,60+(c.thr||0)*90);set(AUD.o2.frequency,30+(c.thr||0)*45);set(AUD.o3.frequency,120+(c.thr||0)*180);set(AUD.lp.frequency,900+(c.thr||0)*1400);set(AUD.lfo.frequency,(60+(c.thr||0)*90)/2);set(AUD.out.gain,.11+(c.thr||0)*.06);}}
+    else{const kind=sndKind(T),E=ENG[kind];if(AUD.kind!==kind){AUD.kind=kind;setDist(E.dist);}eOn=1;
+      const r=Math.min(1.05,sp/T.maxV),G=E.g;let gear=Math.min(G-1,Math.floor(r*G*1.02)),within=r*G-gear;if(G===1)within=r;
+      if(gear!==AUD.gear){if(gear>AUD.gear)AUD.shift=.18;AUD.gear=gear;}AUD.shift=Math.max(0,AUD.shift-dt);
+      let rpm=gear===0?.12+within*.88:.38+within*.62;rpm=Math.max(.1,rpm)+thr*.08-(AUD.shift>0?.25:0);if(sp<.5)rpm=.1+thr*.5;
+      const f=E.f*(1+rpm*3.2);set(AUD.o1.frequency,f,.04);set(AUD.o2.frequency,f*.5,.04);set(AUD.o3.frequency,f*2.01,.04);
+      set(AUD.lp.frequency,E.lp*(.45+rpm*.9)+thr*600,.05);set(AUD.lfo.frequency,f*(kind==='vtwin'?.25:.5),.04);set(AUD.lfoG.gain,E.ham*.5);set(AUD.g2.gain,.4*E.sub);
+      set(AUD.out.gain,(.08+thr*.07+rpm*.03)*(AUD.shift>0?.6:1)*(c.health<25?.8:1),.05);set(AUD.nf.frequency,f*3);set(AUD.ng.gain,(E.clat?.35:.12)*(.3+thr));
+      // tyre screech when sliding
+      if(!T.moto&&!T.boat){const fx=Math.sin(c.h),fz=Math.cos(c.h),lat=Math.abs(-c.vx*fz+c.vz*fx);screech=sp>8?Math.min(1,Math.max(0,(lat-3.5)/6)):0;if((keys.Space||touch.jump)&&sp>10)screech=Math.max(screech,.6);if(acc<-14&&sp>8)screech=Math.max(screech,.8);}}}
+  if(!eOn)set(AUD.out.gain,0,.1);set(AUD.rg.gain,rotor*.6,.2);set(AUD.twg.gain,rotor*.025,.2);set(AUD.jg.gain,jet*.18,.3);set(AUD.jf.frequency,1200+jet*1800,.3);
+  set(AUD.sg.gain,screech*.12,.05);set(AUD.sf.frequency,2300+screech*900,.05);
+  // ---- ambience : city hum, sea waves, wind in the mountains or high up
+  const city=Math.abs(P.x)<HALF+40&&Math.abs(P.z)<HALF+40,sea=isWater(P.x+30,P.z)||isWater(P.x-30,P.z)||isWater(P.x,P.z+30)||isWater(P.x,P.z-30),high=(P.y||0)>40||terrainH(P.x,P.z)>60;
+  set(AUD.ag.gain,city?.05:sea?.06:high?.07:.025,.8);set(AUD.af.frequency,sea?600:high?900:260,.8);set(AUD.wlg.gain,sea?.05:high?.03:0,.8);
+  // birds in nature during the day, distant sirens in town
+  AUD.birdT-=dt;if(AUD.birdT<=0){AUD.birdT=rnd(2,7);if(!city&&!c&&dayT>6&&dayT<20&&!sea){const f=rnd(2500,4200);for(let i=0;i<(Math.random()*4|0)+2;i++)setTimeout(()=>audTone(f*rnd(.9,1.1),f*rnd(1.1,1.4),.09,.025),i*130);}}
+  AUD.sirenT-=dt;if(AUD.sirenT<=0){AUD.sirenT=rnd(25,60);if(city&&player.stars===0){for(let i=0;i<6;i++)setTimeout(()=>audTone(i%2?760:620,i%2?620:760,.42,.008,'triangle'),i*420);}}
+  // ---- footsteps
+  if(!c&&!player.dead&&player.ground!==false){const v=Math.hypot(player.vx,player.vz);if(v>.8){AUD.stepD+=v*dt;const L=v>6?1.25:.75;if(AUD.stepD>L){AUD.stepD=0;const g=groundY(player.x,player.z),grass=!city||isDesert(player.x,player.z);
+    audBurst(v>6?.16:.1,.07,grass?900:2600,grass?'lowpass':'bandpass',0);}}else AUD.stepD=0;}
+}
 
 /* ================= multiplayer (WebRTC peer-to-peer, Trystero + Nostr relays, no server) ================= */
 const MP={on:false,joining:false,room:null,self:null,peers:new Map(),sendT:0,code:'public',name:'',hitCD:0};

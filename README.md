@@ -57,6 +57,27 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Prison (4-5 étoiles)
+
+- **Peine** : 15 min (4 étoiles) ou 25 min (5 étoiles). Le pénitencier est indiqué sur la carte (bouton « ⛓ Prison »).
+- **Vie de détenu** : ta cellule (dormir : −3 min et le temps passe), la cantine (manger), la cuisine, la buanderie (travailler : −1 min), la muscu, la cour avec les autres détenus en orange et le Caïd.
+- **6 façons de sortir** :
+  1. **Tunnel** : vole une cuillère à la cantine, puis creuse derrière le poster de ta cellule (attention aux gardiens).
+  2. **Émeute** : vole 2 couteaux en cuisine et donne-les au Caïd ; le portail s'ouvre 90 s.
+  3. **Camion de linge** : cache-toi sous les draps (les chiens peuvent te flairer).
+  4. **Corde de draps** : 3 draps de la buanderie, de nuit (21 h – 5 h), par-dessus le mur ouest.
+  5. **Gardien corrompu** : paie-le au poste de garde (ou au micro) ; la porte de service s'ouvre 70 s.
+  6. **Avocat** : appelle-le au téléphone ($3 000), ta peine est divisée par deux.
+- Si on t'attrape : retour en cellule, porte verrouillée et peine allongée.
+
+## Véhicules
+
+Marques inventées : Nordia V5, Akira NX, Kobi Pica, Rosso F8, Atlas Terra (SUV), Brava Ranch (pick-up), Furia GT (muscle car), Riviera (cabriolet), Regal (limousine), Néo Bus, Titan Cargo (camion), Vespina 125 (scooter), Iron Chopper, Sonik 150, Kaze H2R, Libellule (mini-hélico), hélico de police, Falcon X (jet privé), Wave Jet (jet-ski)… Tous dans la circulation, garés, ou à acheter dans l'appli AutoNéo.
+
+## Son
+
+Moteurs synthétisés selon le type (4 cylindres, V8, diesel, moto, scooter, V-twin) avec passage des vitesses, crissement des pneus, rotor d'hélico, réacteur de jet, écho des coups de feu et des explosions (plus fort en ville), bruits de pas (herbe / béton), ambiance (ville, vagues, vent, oiseaux, sirènes lointaines).
+
 ## Tirer sur les voitures
 
 - **Pneus** : vise une roue pour la crever (bruit d'éclatement, poussière). La roue s'écrase, la voiture penche de ce côté, tire d'un côté, ralentit, et la jante frotte en faisant des étincelles. Pratique pour stopper la police ou une voiture qui fuit.
