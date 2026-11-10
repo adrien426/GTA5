@@ -57,6 +57,13 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Véhicule de départ, textures photo
+
+- **Véhicule de départ au choix** sur l'écran titre (et en pause) : 🏍 moto ou 🏎 voiture de sport (Rosso F8). Le choix est mémorisé ; en cours de partie, le véhicule est livré à côté de toi.
+- **Textures photo** libres de droits (Poly Haven, licence CC0) : asphalte, herbe, trottoirs pavés, béton, et un grain de terrain sur toute l'île et les pays.
+- **Nitro** : la caméra tremble beaucoup moins (léger effet de vitesse à la place).
+- **Escalade** : on ne grimpe plus sur les poteaux, lampadaires et troncs ; franchir un mur (jusqu'à 7,5 m) ne fait plus mal en retombant.
+
 ## Rendu cinéma, pluie au sol, qualité adaptative
 
 Idées inspirées du projet open source (MIT) Threejs-Punk d'Anderson Mancini et Sunag, réécrites pour notre moteur (aucun code ni modèle repris) :
