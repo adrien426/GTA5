@@ -4672,12 +4672,20 @@ function initGfx(){try{const rt=new THREE.WebGLCubeRenderTarget(IS_TOUCH?64:128,
 function envOn(m,r){if(!GFX.rt||!m||!m.isMeshPhongMaterial&&!m.isMeshLambertMaterial)return;m.envMap=GFX.rt.texture;m.combine=THREE.MixOperation;m.reflectivity=r;m.needsUpdate=true;}
 const POST={on:!IS_TOUCH,comp:null,bloom:null,k:0};
 function initPost(){try{if(!THREE.EffectComposer||!THREE.UnrealBloomPass)return;const c=new THREE.EffectComposer(renderer);c.addPass(new THREE.RenderPass(scene,camera));
-  const b=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth/2,innerHeight/2),.8,.55,.8);c.addPass(b);c.addPass(new THREE.ShaderPass(THREE.GammaCorrectionShader));POST.comp=c;POST.bloom=b;postSize();addEventListener('resize',postSize);}catch(e){POST.comp=null;}}
+  const b=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth/2,innerHeight/2),.8,.55,.8);c.addPass(b);// final pass : sRGB output + cinematic grade (edge chromatic aberration, contrast, saturation, vignette, film grain)
+  const grade=new THREE.ShaderPass({uniforms:{tDiffuse:{value:null},uT:{value:0},uK:{value:1}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader:`uniform sampler2D tDiffuse;uniform float uT;uniform float uK;varying vec2 vUv;
+      float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233))+uT)*43758.5453);}
+      void main(){vec2 d=vUv-.5;float r2=dot(d,d);vec2 off=d*r2*.012*uK;
+        vec3 c=vec3(texture2D(tDiffuse,vUv+off).r,texture2D(tDiffuse,vUv).g,texture2D(tDiffuse,vUv-off).b);
+        c=LinearTosRGB(vec4(c,1.)).rgb;float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,1.+.12*uK);c=(c-.5)*(1.+.06*uK)+.5;
+        c*=1.-r2*.55*uK;c+=(hash(vUv*vec2(1920.,1080.))-.5)*.035*uK;gl_FragColor=vec4(c,1.);}`});
+  c.addPass(grade);POST.grade=grade;POST.comp=c;POST.bloom=b;postSize();addEventListener('resize',postSize);}catch(e){POST.comp=null;}}
 function postSize(){if(POST.comp){POST.comp.setPixelRatio(renderer.getPixelRatio());POST.comp.setSize(innerWidth,innerHeight);}}
 function postToggle(){POST.on=!POST.on;toast(POST.on?'Effets lumineux : activés':'Effets lumineux : désactivés (plus fluide)');}
 // bloom only when it matters (night, rain) : by day the scene keeps its antialiasing
 function renderScene(){const wet=(typeof WX!=='undefined'&&WX.cur)?WX.cur.rain:0,want=POST.on&&POST.comp&&(nightF>.3||wet>.35);
-  if(want){POST.bloom.strength=.35+Math.max(nightF,wet*.6)*.75;POST.comp.render();}else renderer.render(scene,camera);}
+  if(want){POST.bloom.strength=.35+Math.max(nightF,wet*.6)*.75;if(POST.grade)POST.grade.uniforms.uT.value=(gameT*7)%100;POST.comp.render();}else renderer.render(scene,camera);}
 function updateWet(){const wet=(typeof WX!=='undefined'&&WX.cur)?WX.cur.rain:0,m=MAT.asphalt;if(Math.abs((m.userData.wet||0)-wet)<.02)return;m.userData.wet=wet;m.shininess=6+wet*110;m.specular.setScalar(.04+wet*.5);
   if(GFX.rt){m.envMap=wet>.2?GFX.rt.texture:null;m.combine=THREE.MixOperation;m.reflectivity=wet*.3;}m.color.setScalar(1-wet*.3);m.needsUpdate=true;}
 function updateNitro(dt){const c=player.car,ok=c&&!c.dead&&!c.T.fly&&!c.T.boat&&!c.T.tank;NITRO.on=!!(ok&&(keys.KeyN||touch.nitro)&&NITRO.g>.02&&Math.hypot(c.vx,c.vz)>3);
@@ -4685,7 +4693,17 @@ function updateNitro(dt){const c=player.car,ok=c&&!c.dead&&!c.T.fly&&!c.T.boat&&
   else NITRO.g=Math.min(1,NITRO.g+dt/25);
   let el=document.getElementById('nitroBar');if(!el){const w=document.createElement('div');w.id='nitroW';w.style.cssText='height:6px;border-radius:3px;background:rgba(0,0,0,.45);margin-top:4px;overflow:hidden';el=document.createElement('i');el.id='nitroBar';el.style.cssText='display:block;height:100%;background:#5fc8ff';w.appendChild(el);const sp=document.getElementById('speedo');if(sp)sp.appendChild(w);}
   el.style.width=(NITRO.g*100).toFixed(0)+'%';}
-function updateGfx(dt){updateWet();updateNitro(dt);if(pressed.gfx)postToggle();if(!GFX.rt)return;GFX.t-=dt;if(GFX.t>0)return;GFX.t=6;GFX.cam.position.copy(camera.position);GFX.cam.update(renderer,scene);}
+const ADPR={last:performance.now(),ema:60,t:0,r:0,told:false};
+function updateAdaptive(){const n=performance.now(),ms=n-ADPR.last;ADPR.last=n;if(ms>500||document.hidden)return;ADPR.ema=lerp(ADPR.ema,1000/Math.max(1,ms),.05);ADPR.t+=ms;if(ADPR.t<3500)return;ADPR.t=0;
+  if(!ADPR.r)ADPR.r=renderer.getPixelRatio();if(ADPR.ema<27&&ADPR.r>.62){ADPR.r=Math.max(.6,ADPR.r-.2);renderer.setPixelRatio(ADPR.r);if(typeof postSize==='function')postSize();
+    if(ADPR.ema<20&&POST.on){POST.on=false;}if(!ADPR.told){ADPR.told=true;toast('Qualité ajustée automatiquement pour rester fluide');}ADPR.ema=40;}}
+const RIP={list:[],i:0};
+function initRipples(){const g=new THREE.RingGeometry(.82,1,20);g.rotateX(-Math.PI/2);for(let k=0;k<(IS_TOUCH?14:30);k++){const m=new THREE.Mesh(g,new THREE.MeshBasicMaterial({color:0xdfeaf2,transparent:true,opacity:0,depthWrite:false}));m.visible=false;m.renderOrder=2;scene.add(m);RIP.list.push({m,t:1});}}
+function updateRipples(dt,P){const wet=(typeof WX!=='undefined'&&WX.cur)?WX.cur.rain:0;if(!RIP.list.length)return;
+  if(wet>.25&&!INT.on&&Math.random()<dt*(8+wet*40)){const r=RIP.list[RIP.i=(RIP.i+1)%RIP.list.length],a=Math.random()*6.28,d=1+Math.random()*13,x=P.x+Math.cos(a)*d,z=P.z+Math.sin(a)*d;
+    if(!isWater(x,z)||true){r.t=0;r.m.position.set(x,groundY(x,z)+.04,z);r.m.visible=true;if(Math.random()<.4)emit(x,groundY(x,z)+.1,z,'#e8f2fa',.07,.25,rnd(-.4,.4),1.6,rnd(-.4,.4),.3);}}
+  for(const r of RIP.list){if(r.t>=1)continue;r.t+=dt*1.7;if(r.t>=1){r.m.visible=false;continue;}const sc=.08+r.t*.55;r.m.scale.set(sc,1,sc);r.m.material.opacity=(1-r.t)*.5;}}
+function updateGfx(dt){updateWet();updateAdaptive();updateRipples(dt,playerPos());updateNitro(dt);if(pressed.gfx)postToggle();if(!GFX.rt)return;GFX.t-=dt;if(GFX.t>0)return;GFX.t=6;GFX.cam.position.copy(camera.position);GFX.cam.update(renderer,scene);}
 
 /* ================= crash physics : thrown off the bike, injuries by body zone, hard hits in cars ================= */
 function crashPlayer(c,imp){if(c!==player.car||player.dead)return;
@@ -5171,6 +5189,7 @@ genFBIHQ();
 genStations();
 initGfx();
 initPost();
+initRipples();
 flushStatic();
 initVehicles();
 initGangs();

@@ -57,6 +57,13 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Rendu cinéma, pluie au sol, qualité adaptative
+
+Idées inspirées du projet open source (MIT) Threejs-Punk d'Anderson Mancini et Sunag, réécrites pour notre moteur (aucun code ni modèle repris) :
+- **Étalonnage cinéma** la nuit et sous la pluie : vignette, grain de film, léger décalage des couleurs sur les bords, contraste et saturation.
+- **Ondes de pluie** : des cercles s'élargissent au sol autour de toi, avec de petites éclaboussures.
+- **Qualité adaptative** : si le jeu passe sous ~27 images/s, la résolution baisse toute seule par paliers (et les effets lumineux se coupent en dernier recours) pour rester fluide, surtout sur téléphone.
+
 ## Téléphone : commandes tactiles refaites
 
 - **Bug corrigé** : sur téléphone, la roue des armes, le téléphone, la carte et la pause s'ouvraient puis se refermaient aussitôt (le relâchement du doigt comptait comme un clic à côté). Ces boutons réagissent maintenant au clic complet.
