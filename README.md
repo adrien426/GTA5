@@ -62,6 +62,7 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - **Roue des armes par catégories** (Tab) : 8 catégories (corps à corps, pistolets, mitraillettes, fusils à pompe, fusils d'assaut, précision, armes lourdes, lancer). Un clic sur une catégorie ouvre la liste de tes armes de ce type ; un clic sur l'arme l'équipe.
 - **Après la mort ou une arrestation** : les gangs, la police, le FBI et les chiens te laissent tranquille, pas de guet-apens pendant 4 min, et tu es **protégé 8 s**.
 - **Chocs en véhicule beaucoup moins mortels** : il faut un choc bien plus violent pour être blessé ou éjecté, les dégâts sont plafonnés, la voiture encaisse deux fois mieux, les balles blessent moins quand tu es au volant. La santé **remonte toute seule jusqu'à 50 %** après 7 s sans dégât.
+- **Nitro** en voiture et à moto : touche **N** (jauge bleue sous le compteur, flammes bleues, se recharge seule).
 - **Effets lumineux** la nuit et sous la pluie : halo (bloom) autour des néons, fenêtres, phares et lampadaires ; **routes mouillées** brillantes qui reflètent le ciel quand il pleut. Touche **G** pour les désactiver si ça rame.
 
 ## Eau, météo, corrections et performances

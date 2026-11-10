@@ -2904,7 +2904,8 @@ function safeBlast(x,z,R){for(const s of safes){if(s.open)continue;if(Math.hypot
 const HEROES={adam:{n:'Adam',role:'Le pilote',perk:'Conduite : +20 % de vitesse et d\'accélération',money:500},
   james:{n:'James',role:'Le fou de la gâchette',perk:'Armes : +40 % de dégâts',money:500},
   femme:{n:'Victoria',role:'La femme d\'affaires',perk:'Riche · tir très précis · revenus des commerces +25 %',money:60000}};
-function perkCar(c){return c&&c===player.car&&playerChar==='adam'?(SPEC.on>0?1.35:1.2):1;}
+const NITRO={g:1,on:false};
+function perkCar(c){return (c&&c===player.car&&playerChar==='adam'?(SPEC.on>0?1.35:1.2):1)*(c===player.car&&NITRO.on?1.45:1);}
 function perkDmg(){return (playerChar==='james'?1.4:1)*(rageOn()?2:1);}
 function perkSpread(){return (playerChar==='femme'?.45:1)*(BOOST.aim>0?.5:1)*(player.armT>0?1.8:1);}
 function heroState(){saveData.heroes=saveData.heroes||{};return saveData.heroes;}
@@ -3892,8 +3893,8 @@ function updateWake(dt){for(const c of cars){if(!c.on||!c.T.boat||c.dead)continu
   const fx=Math.sin(c.h),fz=Math.cos(c.h),rx=-fz,rz=fx,L=c.T.len/2;
   for(const s of[-1,1])emit(c.x-fx*L+rx*s*.9,WL+.15,c.z-fz*L+rz*s*.9,'#f4fbff',.5+sp*.03,.9,rx*s*1.5,.6,rz*s*1.5,2.2);
   emit(c.x+fx*L*.7+rx*rnd(-1,1),WL+.3,c.z+fz*L*.7+rz*rnd(-1,1),'#ffffff',.35+sp*.02,.4,rx*rnd(-3,3),1.5,rz*rnd(-3,3),1.5);}}
-const VEHHELP={boat:'BATEAU : Z/S avancer · Q/D tourner',heli:'HÉLICO : Z/S avancer · Q/D tourner · Espace monter · Maj descendre',plane:'AVION : Z gaz · S freiner · Q/D virer · Espace cabrer (au-delà de 90 km/h) · Maj piquer',tank:'TANK : Z/S avancer · Q/D tourner · clic / F tirer'};
-function vehHelp(c){const t=c.T;const k=t.boat?'boat':t.fly==='heli'?'heli':t.fly==='plane'?'plane':t.tank?'tank':null;if(k)setTimeout(()=>toast(VEHHELP[k]),900);}
+const VEHHELP={car:'N : nitro (jauge bleue sous le compteur) · B : vue intérieure',boat:'BATEAU : Z/S avancer · Q/D tourner',heli:'HÉLICO : Z/S avancer · Q/D tourner · Espace monter · Maj descendre',plane:'AVION : Z gaz · S freiner · Q/D virer · Espace cabrer (au-delà de 90 km/h) · Maj piquer',tank:'TANK : Z/S avancer · Q/D tourner · clic / F tirer'};
+function vehHelp(c){const t=c.T;const k=t.boat?'boat':t.fly==='heli'?'heli':t.fly==='plane'?'plane':t.tank?'tank':'car';if(k==='car'){if(vehHelp.car)return;vehHelp.car=true;}if(k)setTimeout(()=>toast(VEHHELP[k]),900);}
 function vehicleMarkers(list,P){for(const c of vehicleSpots){if(!c.on||c.dead||c===player.car||c.ai!=='parked')continue;const t=c.T;
   list.push({x:c.x,z:c.z,c:t.boat?'#3fa9f5':t.fly?'#f2f2f2':'#8a9a5b',l:t.boat?'⚓':t.fly==='heli'?'H':t.fly==='plane'?'✈':'T',small:true});}}
 function deliverSpecial(type){const t=CT[type],P=playerPos();let x,z,h=0;
@@ -4656,7 +4657,12 @@ function renderScene(){const wet=(typeof WX!=='undefined'&&WX.cur)?WX.cur.rain:0
   if(want){POST.bloom.strength=.35+Math.max(nightF,wet*.6)*.75;POST.comp.render();}else renderer.render(scene,camera);}
 function updateWet(){const wet=(typeof WX!=='undefined'&&WX.cur)?WX.cur.rain:0,m=MAT.asphalt;if(Math.abs((m.userData.wet||0)-wet)<.02)return;m.userData.wet=wet;m.shininess=6+wet*110;m.specular.setScalar(.04+wet*.5);
   if(GFX.rt){m.envMap=wet>.2?GFX.rt.texture:null;m.combine=THREE.MixOperation;m.reflectivity=wet*.3;}m.color.setScalar(1-wet*.3);m.needsUpdate=true;}
-function updateGfx(dt){updateWet();if(pressed.gfx)postToggle();if(!GFX.rt)return;GFX.t-=dt;if(GFX.t>0)return;GFX.t=6;GFX.cam.position.copy(camera.position);GFX.cam.update(renderer,scene);}
+function updateNitro(dt){const c=player.car,ok=c&&!c.dead&&!c.T.fly&&!c.T.boat&&!c.T.tank;NITRO.on=!!(ok&&keys.KeyN&&NITRO.g>.02&&Math.hypot(c.vx,c.vz)>3);
+  if(NITRO.on){NITRO.g=Math.max(0,NITRO.g-dt/5);const fx=Math.sin(c.h),fz=Math.cos(c.h),L=(c.T.len||4)/2;for(const s of[-.4,.4])emit(c.x-fx*L-fz*s,c.y+.4,c.z-fz*L+fx*s,Math.random()<.5?'#5fc8ff':'#ffffff',.35,.25,-c.vx*.2,.3,-c.vz*.2,1.5,true);shake=Math.max(shake,.12);}
+  else NITRO.g=Math.min(1,NITRO.g+dt/25);
+  let el=document.getElementById('nitroBar');if(!el){const w=document.createElement('div');w.id='nitroW';w.style.cssText='height:6px;border-radius:3px;background:rgba(0,0,0,.45);margin-top:4px;overflow:hidden';el=document.createElement('i');el.id='nitroBar';el.style.cssText='display:block;height:100%;background:#5fc8ff';w.appendChild(el);const sp=document.getElementById('speedo');if(sp)sp.appendChild(w);}
+  el.style.width=(NITRO.g*100).toFixed(0)+'%';}
+function updateGfx(dt){updateWet();updateNitro(dt);if(pressed.gfx)postToggle();if(!GFX.rt)return;GFX.t-=dt;if(GFX.t>0)return;GFX.t=6;GFX.cam.position.copy(camera.position);GFX.cam.update(renderer,scene);}
 
 /* ================= crash physics : thrown off the bike, injuries by body zone, hard hits in cars ================= */
 function crashPlayer(c,imp){if(c!==player.car||player.dead)return;
