@@ -57,6 +57,51 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Roue des armes, réapparition, chocs, effets lumineux
+
+- **Roue des armes par catégories** (Tab) : 8 catégories (corps à corps, pistolets, mitraillettes, fusils à pompe, fusils d'assaut, précision, armes lourdes, lancer). Un clic sur une catégorie ouvre la liste de tes armes de ce type ; un clic sur l'arme l'équipe.
+- **Après la mort ou une arrestation** : les gangs, la police, le FBI et les chiens te laissent tranquille, pas de guet-apens pendant 4 min, et tu es **protégé 8 s**.
+- **Chocs en véhicule beaucoup moins mortels** : il faut un choc bien plus violent pour être blessé ou éjecté, les dégâts sont plafonnés, la voiture encaisse deux fois mieux, les balles blessent moins quand tu es au volant. La santé **remonte toute seule jusqu'à 50 %** après 7 s sans dégât.
+- **Effets lumineux** la nuit et sous la pluie : halo (bloom) autour des néons, fenêtres, phares et lampadaires ; **routes mouillées** brillantes qui reflètent le ciel quand il pleut. Touche **G** pour les désactiver si ça rame.
+
+## Eau, météo, corrections et performances
+
+- **Les véhicules coulent vraiment** : une voiture ou une moto qui entre dans l'eau perd son moteur et s'enfonce (plus de « conduite sur l'eau »). À moto tu tombes à l'eau tout de suite et tu nages.
+- **Nage et plongée** : dans l'eau, **Maj** (ou Ctrl) pour plonger, **ESPACE** pour remonter. Une **jauge d'air** bleue apparaît : environ 28 s sous l'eau, puis tu te noies si tu ne remontes pas. Vue bleutée sous l'eau, bulles, nage à l'horizontale.
+- **Météo dynamique** : grand soleil, nuages, pluie, **orages** (éclairs et tonnerre), brouillard. Pluie visible autour de toi (pas à l'intérieur), ciel et lumière assombris, bruit de pluie, gerbes d'eau derrière les voitures rapides.
+- **Mini-carte dans les autres pays** (terrain, routes, villes) et **ponts** affichés sur la mini-carte.
+- **Corrections** : les forêts pouvaient disparaître d'un coup selon la direction de la caméra ; tout le décor de la carte était dessiné (et ombré) même à 5 km derrière toi. Le décor est maintenant découpé en blocs de 300 m et les forêts en blocs de 500 m, affichés seulement à proximité : environ **3× plus fluide** hors de la ville.
+
+## Première personne, blessures par zone, armes, FBI, commerces, pays
+
+- **Vue à la première personne** : touche **B** (bouton 👁 sur téléphone), à pied et en voiture. L'arme équipée est visible devant toi, la lunette zoome.
+- **Blessures par zone** : **tête** ou **cœur** = mort ; **pied** ou **jambe** = la personne ne peut plus courir et boite ; **bras** = elle lâche son arme. Pour toi aussi : pied (plus de course), bras (tu vises moins bien), tête et cœur très dangereux. Les ennemis font plus mal.
+- **15 accessoires d'armes** : silencieux, chargeur grande capacité, chargeur tambour, lunette, viseur holographique, poignée, crosse tactique, frein de bouche, viseur laser, lampe torche, peinture (12 couleurs), munitions perforantes, incendiaires, explosives, balles traçantes.
+- **59 armes** : couteau de combat, couteau papillon, dague, hachette, marteau, matraque, pistolet de combat, revolver lourd, pistolet de détresse, PM compact, PM tactique, fusil à double canon, pompe tactique, carabine spéciale, fusil de bataille, sniper militaire, fusil anti-matériel, grenade fumigène, lacrymogène, mine de proximité… en plus de toutes les précédentes.
+- **QG du FBI** au nord de Néo Cité : tours, grillage, agents fédéraux armés, SUV noirs, hélicoptère ; y entrer = 3 étoiles.
+- **Commerces** : pharmacies (soins + blessures), fast-foods « Néo Burger », 6 stations-service « Néo Fuel » sur les routes (boutique, plein + lavage du véhicule).
+- **5 pays** reliés par 5 ponts : Isla Dorada, Nordheim, Sakura-Shi, **Saharia** (désert, coupoles, palmiers ; couscous) et **Liberty City-sur-Mer** (mégapole de gratte-ciel ; burger XXL).
+
+## Escalade et lieux plus réalistes
+
+- **Grimper** : face à un mur, une clôture, un muret, un conteneur ou le toit d'un petit bâtiment (jusqu'à 7 m), appuie sur **ESPACE** (bouton saut sur téléphone) — l'indication « ESPACE : grimper » apparaît. Un mur fin est franchi (tu retombes de l'autre côté, gare à la hauteur), un bloc épais te laisse debout dessus. Le mur de la prison s'escalade… mais les gardiens réagissent.
+- **Échelles de secours** sur le côté de nombreux immeubles (E) pour monter sur les **toits**, où l'on peut marcher, sauter (en parachute !) ou redescendre par l'échelle.
+- **Base militaire** : héliport, drapeau, bunkers en sacs de sable, barbelés sur le grillage, radar qui tourne, citernes, stand de tir, camions militaires, soldats qui patrouillent.
+- **Commissariats** : voitures de patrouille garées devant, antenne, plots, gyrophare bleu.
+- **Prison** : second grillage extérieur avec barbelés, projecteurs qui balaient la cour la nuit (et pendant une évasion), bus pénitentiaire.
+
+## Physique, armes personnalisées, banques, héros, ponts
+
+- **Chocs** : à moto, un choc violent t'**éjecte** et les dégâts dépendent de la zone touchée (tête, torse, bras, jambe → tu boites). En voiture, un gros choc fait mal, et au-delà de ~110 km/h tu peux passer à travers le pare-brise. Se faire renverser : peu de dégâts à faible vitesse, beaucoup à grande vitesse (et du sang).
+- **Motos plus puissantes** (superbike ~280 km/h), **avions** jusqu'à ~1000 km/h (chasseur), 900 km/h (avion de ligne), 830 km/h (jet).
+- **Personnaliser ses armes** à l'armurerie (bouton ⚙ Modifier) : silencieux, chargeur grande capacité, lunette, poignée, viseur laser, peinture (or, camo, rose…). Visibles sur l'arme.
+- **Ramasser les armes** : les policiers, soldats et gangsters neutralisés lâchent leur arme (anneau jaune) ; passe dessus pour la prendre.
+- **Armes** : pistolet automatique, fusil d'assaut bullpup, fusil de précision semi-auto, mitrailleuse lourde. Explosifs plus chers.
+- **Banques** : beaucoup plus de banques, avec une grande enseigne verte « € BANQUE » et le **€ vert** toujours sur la mini-carte. Nouveaux contrats **Braquage de banque** et **Gros braquage** (téléphone → Missions).
+- **Héros** : chacun a sa personnalité et une **capacité spéciale** (touche **C**, ou bouton ⚡ sur téléphone ; jauge bleue) : Adam ralentit le temps en conduisant, James entre en **rage** (dégâts ×2, encaisse 3× moins), Victoria ralentit le temps en visant.
+- **Ponts** géants (2,2 km, 1,4 km) qui relient Néo Cité aux 3 pays, désormais bien plus grands (2,6 km de large) avec collines, villages, forêts, routes. Chaque pays a sa **nourriture** et son bonus : tapas (endurance et vitesse), soupe de poisson (−40 % de dégâts), ramen (précision). Hot-dogs à Néo Cité.
+- **Prison** : tenue orange pour le détenu, les gardiens font des rondes.
+
 ## Animaux réalistes, autres pays, reflets
 
 - **Vrais animaux animés** (marche, galop, broute, attaque, mort) : vaches, taureaux, chevaux, ânes, alpagas dans les fermes ; cerfs et biches, renards, **loups** (ils attaquent en meute) dans la nature. Modèles « Ultimate Animated Animals » de **Quaternius**, licence **CC0** (domaine public).
