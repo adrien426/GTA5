@@ -57,6 +57,13 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Téléphone : commandes tactiles refaites
+
+- **Bug corrigé** : sur téléphone, la roue des armes, le téléphone, la carte et la pause s'ouvraient puis se refermaient aussitôt (le relâchement du doigt comptait comme un clic à côté). Ces boutons réagissent maintenant au clic complet.
+- Boutons **plus visibles** (fond sombre, bord blanc), plus aucun chevauchement en paysage comme en portrait, rangée du haut : arme, carte, pause, ⚡ capacité, 👁 vue, radio.
+- Nouveaux boutons : **NITRO** en voiture, **PLONGER / REMONTER** dans l'eau. Compteur de vitesse au centre, messages plus petits.
+- Détection des écrans tactiles plus large, et secours : le premier toucher active les commandes si la détection a échoué. Effets lumineux coupés par défaut sur téléphone (fluidité).
+
 ## Roue des armes, réapparition, chocs, effets lumineux
 
 - **Roue des armes par catégories** (Tab) : 8 catégories (corps à corps, pistolets, mitraillettes, fusils à pompe, fusils d'assaut, précision, armes lourdes, lancer). Un clic sur une catégorie ouvre la liste de tes armes de ce type ; un clic sur l'arme l'équipe.
