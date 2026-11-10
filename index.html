@@ -1673,7 +1673,7 @@ function ridePose(h){if(!h.rideB){h.rideB=[];for(const n in RIDE){const b=h.root
 function updateHumans(dt,P){
   if(!HUM.ready)return;
   const ph=HUM.playerH,moto=player.car&&player.car.T.moto?player.car:null,sit=player.car&&!moto&&!player.car.T.custom&&player.car.driver?player.car:null;player.m.group.visible=false;ph.root.visible=!player.car||!!moto||!!sit;
-  const rc=moto||sit;if(rc){if(ph.root.parent!==rc.body){rc.body.add(ph.root);if(moto)ph.root.position.set(0,moto.T.seatY,moto.T.seatZ);else{const t=sit.T;ph.root.position.set(t.dx!=null?t.dx:-.4,(t.seat||.6)-.74,(t.dz||0)-.12);}ph.root.quaternion.identity();}
+  const rc=moto||sit;if(rc){if(ph.root.parent!==rc.body){rc.body.add(ph.root);if(moto)ph.root.position.set(0,moto.T.seatY,moto.T.seatZ);else{const t=sit.T;ph.root.position.set(t.dx!=null?t.dx:-.4,(t.seat||.6)-1.02+(t.sitY||0),(t.dz||0)-.3);}ph.root.quaternion.identity();}
     if(sit)sit.driver.visible=false;setAnim(ph,'idle',0);ph.mixer.update(dt);ridePose(ph);}
   else if(ph.root.parent!==scene)scene.add(ph.root);
   if(!player.car){const swT=player.swim?(player.swimTilt||0):0;ph.root.position.set(player.x,player.y+CHUTE.skyX*.75+swT*.7,player.z);ph.root.rotation.order='YXZ';ph.root.rotation.set(Math.max(CHUTE.skyX,swT),player.h,0);
