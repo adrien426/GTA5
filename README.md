@@ -57,6 +57,13 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Portière, conducteur 3D, voitures
+
+- **Portière manquante** de la supercar corrigée (des panneaux de carrosserie n'étaient visibles que d'un côté).
+- **Ton personnage 3D est au volant** dans les voitures (assis, mains vers le volant), à la place du bonhomme simplifié.
+- **Moins de voitures simplifiées** : le SUV, la muscle car et le cabriolet utilisent maintenant les modèles réalistes ; le pick-up et la limousine simplifiés ne circulent plus.
+- **Peintures** : les couleurs ne virent plus au rose/blanc au soleil.
+
 ## Vrais arbres, piétons en 3D, son adouci
 
 - **Vrais modèles d'arbres** près de toi (chênes, bouleaux, saules, pins, palmiers, cerisiers roses à Sakura-Shi, pins enneigés à Nordheim) : pack « Ultimate Nature » de **Quaternius**, licence **CC0**. Au loin, les arbres restent des formes simples pour la fluidité.

@@ -1223,7 +1223,7 @@ const CT={
 };
 const PAINTS=['#c0392b','#2c3e50','#ecf0f1','#2980b9','#16a085','#7f8c8d','#111418','#8e44ad','#d35400','#f1c40f','#27ae60','#bdc3c7','#6d1a1a',
   '#1f3a5f','#5a5e63','#e8e8e6','#7a1f1f','#0f4c3a','#c9b27c','#232527','#a4a9ad','#3d5a80','#b5651d','#f4f1ea','#4a0e0e','#2e4a2e'];
-const paintCache={};function paint(c){if(paintCache[c])return paintCache[c];const m=paintCache[c]=new THREE.MeshPhongMaterial({color:c,shininess:110,specular:0x777777});if(typeof GFX!=='undefined'&&GFX.rt)envOn(m,.09);return m;}
+const paintCache={};function paint(c){if(paintCache[c])return paintCache[c];const m=paintCache[c]=new THREE.MeshPhongMaterial({color:c,shininess:140,specular:0x2e2e2e,side:THREE.DoubleSide});if(typeof GFX!=='undefined'&&GFX.rt)envOn(m,.03);return m;}
 const CARM={glass:new THREE.MeshPhongMaterial({color:0x6f8fa6,transparent:true,opacity:.42,shininess:150,specular:0xffffff,depthWrite:false}),
   head:new THREE.MeshLambertMaterial({color:0xfffbea,emissive:0xfff2c0,emissiveIntensity:.15}),
   tail:new THREE.MeshLambertMaterial({color:0x8a1010,emissive:0xff2020,emissiveIntensity:.25}),
@@ -1287,7 +1287,7 @@ function carGeos(type){
 
 /* ================= 3D models (assets/models) ================= */
 const VM={};      // loaded models : key -> {scene,meta,wheels}
-const VTYPE={sedan:['volvo',4.55],police:['volvo',4.65],sport:['nsx',4.45],taxi:['kia',3.95],citadine:['kia',3.7],supercar:['ferrari',4.55],concept:['concept',4.45],moto:['sonic',2.0],superbike:['h2r',2.15],scooter:['sonic',1.75],chopper:['h2r',2.45]};
+const VTYPE={sedan:['volvo',4.55],police:['volvo',4.65],sport:['nsx',4.45],taxi:['kia',3.95],citadine:['kia',3.7],supercar:['ferrari',4.55],concept:['concept',4.45],moto:['sonic',2.0],superbike:['h2r',2.15],scooter:['sonic',1.75],chopper:['h2r',2.45],suv:['volvo',4.95],muscle:['nsx',4.75],cabrio:['ferrari',4.35]};
 const WMOD={lourd:'deagle',micro:'aug',combat:'m16',lmg:'ak',pistolet:'deagle',assaut:'ak',smg:'aug',carabine:'m16',minigun:'minigun',laser:'rail'};
 // grip position in each model, as a fraction of its length from the rear and of its height from the bottom
 const WGRIP={deagle:[.24,.3],ak:[.44,.32],aug:[.56,.3],m16:[.42,.32],minigun:[.42,.55],rail:[.4,.3]};
@@ -1672,9 +1672,9 @@ function ridePose(h){if(!h.rideB){h.rideB=[];for(const n in RIDE){const b=h.root
     b.rotateX(e.v[0]);b.rotateY(e.v[1]);b.rotateZ(e.v[2]);e.last.copy(b.quaternion);e.done=true;}}
 function updateHumans(dt,P){
   if(!HUM.ready)return;
-  const ph=HUM.playerH,moto=player.car&&player.car.T.moto?player.car:null;player.m.group.visible=false;ph.root.visible=!player.car||!!moto;
-  if(moto){if(ph.root.parent!==moto.body){moto.body.add(ph.root);ph.root.position.set(0,moto.T.seatY,moto.T.seatZ);ph.root.quaternion.identity();}
-    setAnim(ph,'idle',0);ph.mixer.update(dt);ridePose(ph);}
+  const ph=HUM.playerH,moto=player.car&&player.car.T.moto?player.car:null,sit=player.car&&!moto&&!player.car.T.custom&&player.car.driver?player.car:null;player.m.group.visible=false;ph.root.visible=!player.car||!!moto||!!sit;
+  const rc=moto||sit;if(rc){if(ph.root.parent!==rc.body){rc.body.add(ph.root);if(moto)ph.root.position.set(0,moto.T.seatY,moto.T.seatZ);else{const t=sit.T;ph.root.position.set(t.dx!=null?t.dx:-.4,(t.seat||.6)-1.0+(t.sitY||0),(t.dz||0)+(t.sitZ!=null?t.sitZ:.02));}ph.root.quaternion.identity();}
+    if(sit)sit.driver.visible=false;setAnim(ph,'idle',0);ph.mixer.update(dt);ridePose(ph);}
   else if(ph.root.parent!==scene)scene.add(ph.root);
   if(!player.car){const swT=player.swim?(player.swimTilt||0):0;ph.root.position.set(player.x,player.y+CHUTE.skyX*.75+swT*.7,player.z);ph.root.rotation.order='YXZ';ph.root.rotation.set(Math.max(CHUTE.skyX,swT),player.h,0);
     if(player.knock>0)setAnim(ph,player.knock>1.4?'trip':'getUp',player.knock>1.4?1:2.2);
@@ -1782,11 +1782,11 @@ function spawnTraffic(c,P,minD,maxD){
 }
 const traffic=[],police=[],parked=[];
 function initVehicles(){
-  const TT=['sedan','citadine','suv','sport','van','taxi','pickup','citadine','supercar','sedan','muscle','concept','suv','van','limo','citadine','taxi','cabrio','camion','pickup','bus','suv','ambulance','pompiers'];
+  const TT=['sedan','citadine','suv','sport','van','taxi','concept','citadine','supercar','sedan','muscle','concept','suv','van','sedan','citadine','taxi','cabrio','camion','sport','bus','suv','ambulance','pompiers'];
   const P={x:player.x,z:player.z};
   for(let i=0;i<(IS_TOUCH?18:26);i++){const c=new Car(TT[i%TT.length]);traffic.push(c);if(!spawnTraffic(c,P,20,240))spawnTraffic(c,P,0,600);}
   for(const col of lots)for(const lot of col)if(lot.spots){const sp=lot.spots.slice().sort(()=>Math.random()-.5).slice(0,4);
-    for(const s of sp){const c=new Car(rpick(CT.moto.model&&Math.random()<.2?['moto','superbike','scooter','chopper']:['sedan','sport','van','citadine','taxi','supercar','concept','sedan','citadine','suv','pickup','muscle','cabrio','suv','limo']));c.place(s.x,s.z,s.h);c.ai='parked';parked.push(c);}}
+    for(const s of sp){const c=new Car(rpick(CT.moto.model&&Math.random()<.2?['moto','superbike','scooter','chopper']:['sedan','sport','van','citadine','taxi','supercar','concept','sedan','citadine','suv','concept','muscle','cabrio','suv','sport']));c.place(s.x,s.z,s.h);c.ai='parked';parked.push(c);}}
   // a few roadside parked cars with key in it near spawn
   for(let i=0;i<12;i++){const s=randomRoadSpot(P,0,500);if(!s)continue;const [rx,rz]=rightOf(s.di,s.dj);const c=new Car(rpick(['sedan','sport','van']));c.place(s.x+rx*2.8,s.z+rz*2.8,s.h);c.ai='parked';parked.push(c);}
   if(CT.moto.model){// motorbikes : one next to the spawn point, a few along the roads
@@ -4677,7 +4677,7 @@ for(const C of COUNTRIES)TRAVEL_ACT['cafe_'+C.id]=()=>{player.hp=100;player.stam
 var GFX={rt:null,cam:null,t:0};
 function initGfx(){try{const rt=new THREE.WebGLCubeRenderTarget(IS_TOUCH?64:128,{format:THREE.RGBFormat,generateMipmaps:true,minFilter:THREE.LinearMipmapLinearFilter});
   GFX.rt=rt;GFX.cam=new THREE.CubeCamera(1,2000,rt);for(const c of GFX.cam.children)c.layers.set(1);sky.layers.enable(1);scene.add(GFX.cam);
-  for(const k in paintCache)envOn(paintCache[k],.09);envOn(CARM.glass,.55);envOn(GLASS,.4);envOn(MAT.metal,.35);}catch(e){GFX.rt=null;}}
+  for(const k in paintCache)envOn(paintCache[k],.03);envOn(CARM.glass,.55);envOn(GLASS,.4);envOn(MAT.metal,.35);}catch(e){GFX.rt=null;}}
 function envOn(m,r){if(!GFX.rt||!m||!m.isMeshPhongMaterial&&!m.isMeshLambertMaterial)return;m.envMap=GFX.rt.texture;m.combine=THREE.MixOperation;m.reflectivity=r;m.needsUpdate=true;}
 const POST={on:!IS_TOUCH,comp:null,bloom:null,k:0};
 function initPost(){try{if(!THREE.EffectComposer||!THREE.UnrealBloomPass)return;const c=new THREE.EffectComposer(renderer);c.addPass(new THREE.RenderPass(scene,camera));
