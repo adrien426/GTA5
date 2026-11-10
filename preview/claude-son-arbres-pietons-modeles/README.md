@@ -57,6 +57,50 @@ Synchronisés : position, personnage, animations, arme et visée, véhicule (voi
 - Au pénitencier : dormir dans sa cellule réduit la peine, pas de téléphone ; un trou dans le mur du fond permet de s'évader (4 étoiles, les gardiens tirent).
 - Visée sans point ni cercle rouge (viseur simple, aide à la visée invisible).
 
+## Vrais arbres, piétons en 3D, son adouci
+
+- **Vrais modèles d'arbres** près de toi (chênes, bouleaux, saules, pins, palmiers, cerisiers roses à Sakura-Shi, pins enneigés à Nordheim) : pack « Ultimate Nature » de **Quaternius**, licence **CC0**. Au loin, les arbres restent des formes simples pour la fluidité.
+- **Plus d'arbres sur les routes** : aucun arbre de ville à moins de 8 m d'une route ou d'un pont.
+- **Piétons** : presque deux fois plus de personnages 3D animés affichés (56 au lieu de 30, plus loin), donc beaucoup moins de bonshommes simplifiés.
+- **Son** : le « tac tac » des pas est remplacé par un bruit sourd et discret ; le moteur ne hache plus le son.
+
+## Véhicule de départ, textures photo
+
+- **Véhicule de départ au choix** sur l'écran titre (et en pause) : 🏍 moto ou 🏎 voiture de sport (Rosso F8). Le choix est mémorisé ; en cours de partie, le véhicule est livré à côté de toi.
+- **Textures photo** libres de droits (Poly Haven, licence CC0) : asphalte, herbe, trottoirs pavés, béton, et un grain de terrain sur toute l'île et les pays.
+- **Nitro** : la caméra tremble beaucoup moins (léger effet de vitesse à la place).
+- **Escalade** : on ne grimpe plus sur les poteaux, lampadaires et troncs ; franchir un mur (jusqu'à 7,5 m) ne fait plus mal en retombant.
+
+## Rendu cinéma, pluie au sol, qualité adaptative
+
+Idées inspirées du projet open source (MIT) Threejs-Punk d'Anderson Mancini et Sunag, réécrites pour notre moteur (aucun code ni modèle repris) :
+- **Étalonnage cinéma** la nuit et sous la pluie : vignette, grain de film, léger décalage des couleurs sur les bords, contraste et saturation.
+- **Ondes de pluie** : des cercles s'élargissent au sol autour de toi, avec de petites éclaboussures.
+- **Qualité adaptative** : si le jeu passe sous ~27 images/s, la résolution baisse toute seule par paliers (et les effets lumineux se coupent en dernier recours) pour rester fluide, surtout sur téléphone.
+
+## Téléphone : commandes tactiles refaites
+
+- **Bug corrigé** : sur téléphone, la roue des armes, le téléphone, la carte et la pause s'ouvraient puis se refermaient aussitôt (le relâchement du doigt comptait comme un clic à côté). Ces boutons réagissent maintenant au clic complet.
+- Boutons **plus visibles** (fond sombre, bord blanc), plus aucun chevauchement en paysage comme en portrait, rangée du haut : arme, carte, pause, ⚡ capacité, 👁 vue, radio.
+- Nouveaux boutons : **NITRO** en voiture, **PLONGER / REMONTER** dans l'eau. Compteur de vitesse au centre, messages plus petits.
+- Détection des écrans tactiles plus large, et secours : le premier toucher active les commandes si la détection a échoué. Effets lumineux coupés par défaut sur téléphone (fluidité).
+
+## Roue des armes, réapparition, chocs, effets lumineux
+
+- **Roue des armes par catégories** (Tab) : 8 catégories (corps à corps, pistolets, mitraillettes, fusils à pompe, fusils d'assaut, précision, armes lourdes, lancer). Un clic sur une catégorie ouvre la liste de tes armes de ce type ; un clic sur l'arme l'équipe.
+- **Après la mort ou une arrestation** : les gangs, la police, le FBI et les chiens te laissent tranquille, pas de guet-apens pendant 4 min, et tu es **protégé 8 s**.
+- **Chocs en véhicule beaucoup moins mortels** : il faut un choc bien plus violent pour être blessé ou éjecté, les dégâts sont plafonnés, la voiture encaisse deux fois mieux, les balles blessent moins quand tu es au volant. La santé **remonte toute seule jusqu'à 50 %** après 7 s sans dégât.
+- **Nitro** en voiture et à moto : touche **N** (jauge bleue sous le compteur, flammes bleues, se recharge seule).
+- **Effets lumineux** la nuit et sous la pluie : halo (bloom) autour des néons, fenêtres, phares et lampadaires ; **routes mouillées** brillantes qui reflètent le ciel quand il pleut. Touche **G** pour les désactiver si ça rame.
+
+## Eau, météo, corrections et performances
+
+- **Les véhicules coulent vraiment** : une voiture ou une moto qui entre dans l'eau perd son moteur et s'enfonce (plus de « conduite sur l'eau »). À moto tu tombes à l'eau tout de suite et tu nages.
+- **Nage et plongée** : dans l'eau, **Maj** (ou Ctrl) pour plonger, **ESPACE** pour remonter. Une **jauge d'air** bleue apparaît : environ 28 s sous l'eau, puis tu te noies si tu ne remontes pas. Vue bleutée sous l'eau, bulles, nage à l'horizontale.
+- **Météo dynamique** : grand soleil, nuages, pluie, **orages** (éclairs et tonnerre), brouillard. Pluie visible autour de toi (pas à l'intérieur), ciel et lumière assombris, bruit de pluie, gerbes d'eau derrière les voitures rapides.
+- **Mini-carte dans les autres pays** (terrain, routes, villes) et **ponts** affichés sur la mini-carte.
+- **Corrections** : les forêts pouvaient disparaître d'un coup selon la direction de la caméra ; tout le décor de la carte était dessiné (et ombré) même à 5 km derrière toi. Le décor est maintenant découpé en blocs de 300 m et les forêts en blocs de 500 m, affichés seulement à proximité : environ **3× plus fluide** hors de la ville.
+
 ## Première personne, blessures par zone, armes, FBI, commerces, pays
 
 - **Vue à la première personne** : touche **B** (bouton 👁 sur téléphone), à pied et en voiture. L'arme équipée est visible devant toi, la lunette zoome.
