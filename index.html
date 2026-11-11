@@ -1413,6 +1413,7 @@ class Car{
       const top=t.roofY;this.lR=new THREE.Mesh(boxGeo(.5,.14,.28),CARM.red);this.lR.position.set(-.3,top+.07,t.rz);
       this.lB=new THREE.Mesh(boxGeo(.5,.14,.28),CARM.blue);this.lB.position.set(.3,top+.07,t.rz);this.body.add(this.lR,this.lB);}
     if(type==='taxi'){const s=new THREE.Mesh(boxGeo(.7,.2,.3),CARM.taxiSign);s.position.set(0,t.roofY+.1,t.rz);this.body.add(s);}
+    bigKit(this);
     this.wheels=[];
     for(const [sx,sz] of[[-1,1],[1,1],[-1,-1],[1,-1]]){const w=new THREE.Group();const tyre=new THREE.Mesh(G.wheel,MAT.dark);tyre.castShadow=true;w.add(tyre);w.add(new THREE.Mesh(G.hub,MAT.metal));
       w.position.set(sx*(t.w/2-.14),.36,sz*t.wb);w.rotation.order='YXZ';this.group.add(w);this.wheels.push(w);}
@@ -1437,6 +1438,47 @@ class Car{
   get speed(){return Math.hypot(this.vx,this.vz);}
 }
 function carCircles(c,out){const fx=Math.sin(c.h),fz=Math.cos(c.h),o=c.T.len/2-1.0;out[0]=c.x+fx*o;out[1]=c.z+fz*o;out[2]=c.x;out[3]=c.z;out[4]=c.x-fx*o;out[5]=c.z-fz*o;return out;}
+// extra detail for vans, buses and trucks : bumpers, mirrors, grille, steps, pillars, ribs… merged in 3 meshes per vehicle type
+const BIGK={};
+function bigKit(c){const type=c.type;if(!['van','ambulance','bus','camion','pompiers'].includes(type)||!THREE.BufferGeometryUtils)return;
+  let K=BIGK[type];if(!K){const P=PROF[type],L=P.L,w=P.w,hw=w/2,f=L/2,D=[],Mt=[],Li=[];
+    const B=(a,x,y,z,sx,sy,sz)=>{const g=new THREE.BoxGeometry(sx,sy,sz);g.translate(x,y,z);a.push(g);};
+    const Cy=(a,x,y,z,r,l,ax)=>{const g=new THREE.CylinderGeometry(r,r,l,10);if(ax==='z')g.rotateX(Math.PI/2);else if(ax==='x')g.rotateZ(Math.PI/2);g.translate(x,y,z);a.push(g);};
+    const big=type==='bus'||type==='camion'||type==='pompiers',by=big?.58:.5;
+    B(D,0,by,f+.04,w+.08,.24,.2);B(D,0,by,-f-.04,w+.08,.24,.2);                       // bumpers
+    B(Mt,0,by+.3,f+.02,w*.55,.3,.06);for(let i=0;i<4;i++)B(D,0,by+.2+i*.07,f+.06,w*.5,.025,.02);   // grille
+    for(const sx of[-1,1]){B(Li,sx*(hw-.28),by,f+.15,.3,.12,.03);                        // fog lights
+      for(const sz of[1,-1]){B(D,sx*(hw+.02),.62,sz*P.wb,.06,.5,1.05);B(D,sx*(hw+.02),.9,sz*P.wb,.07,.1,1.25);}  // wheel arches
+      B(D,sx*(hw+.02),by-.14,0,.06,.1,L-2.4);}                                                // side skirt
+    if(type==='van'||type==='ambulance'){
+      for(const sx of[-1,1]){B(D,sx*(hw+.2),1.36,1.5,.2,.26,.1);B(D,sx*(hw+.08),1.3,1.5,.16,.04,.04);           // mirrors
+        B(D,sx*(hw+.012),1.5,.3,.02,.86,.03);B(D,sx*(hw+.012),1.5,-1.0,.02,.86,.03);B(D,sx*(hw+.012),1.06,-.35,.02,.03,1.3);B(Mt,sx*(hw+.03),1.15,.15,.03,.05,.14);  // sliding door + handle
+        B(D,sx*(hw-.2),2.04,-.6,.05,.07,3.2);}
+      for(const z of[-2.0,-1.0,0])B(D,0,2.07,z,w-.3,.04,.06);                                                         // roof rack
+      B(D,0,1.5,-f-.012,.02,.86,.02);B(Mt,.1,1.2,-f-.03,.14,.05,.03);B(D,0,.72,-f-.1,w*.7,.05,.22);}                  // rear doors, step
+    else if(type==='bus'){
+      for(const sx of[-1,1]){B(D,sx*(hw+.24),2.05,4.55,.22,.42,.1);B(D,sx*(hw+.1),2.3,4.55,.2,.04,.04);
+        for(let z=-3.9;z<4.2;z+=1.15)B(D,sx*(hw+.012),1.87,z,.04,1.32,.1);                                            // window pillars
+        B(D,sx*(hw+.012),1.22,0,.04,.07,L-.3);B(D,sx*(hw+.012),2.52,0,.04,.07,L-.3);}
+      for(const z of[3.3,-1.2]){B(D,hw+.02,1.5,z,.05,2.0,1.25);B(Mt,hw+.05,1.5,z,.03,1.9,.04);B(Li,hw+.04,2.56,z,.04,.08,.5);}   // doors (right side)
+      B(Li,0,2.72,f+.01,1.5,.26,.04);B(D,0,2.72,f,w-.2,.34,.04);                                                     // destination sign
+      B(Mt,0,2.98,-1.5,1.5,.2,2.4);B(Mt,0,2.96,2.4,1.1,.14,1.0);                                                     // roof units
+      B(D,0,1.9,-f-.012,w-.5,.9,.02);B(D,0,.95,-f-.02,w-.6,.5,.03);Cy(Mt,-hw+.3,.45,-f-.05,.05,.3,'z');}
+    else{const cab=2.3;
+      for(const sx of[-1,1]){B(D,sx*(hw+.26),1.9,3.5,.22,.5,.1);B(D,sx*(hw+.1),2.18,3.5,.26,.04,.04);B(D,sx*(hw+.1),1.66,3.5,.26,.04,.04);   // mirrors
+        B(D,sx*(hw+.012),1.75,2.5,.02,1.1,.03);B(Mt,sx*(hw+.03),1.45,2.62,.03,.05,.14);B(D,sx*(hw+.05),.75,3.0,.14,.05,.6);B(D,sx*(hw+.05),1.0,3.0,.12,.04,.5);  // door, steps
+        Cy(Mt,sx*(hw-.3),.7,.6,.3,1.3,'z');B(D,sx*(hw-.3),.7,.2,.64,.06,.05);B(D,sx*(hw-.3),.7,1.0,.64,.06,.05);     // tanks
+        B(D,sx*(hw-.1),.55,-P.wb-.62,.5,.5,.04);                                                                         // mud flaps
+        if(type==='camion')for(let z=-3.6;z<2.2;z+=.72)B(Mt,sx*(hw+.012),2.2,z,.03,2.15,.05);}
+      Cy(Mt,-hw+.18,2.3,cab-.12,.07,2.4,'y');Cy(D,-hw+.18,3.55,cab-.12,.09,.25,'y');Cy(Mt,hw-.18,2.3,cab-.12,.07,2.4,'y');   // exhaust stacks
+      B(D,0,2.52,3.0,w-.3,.12,.9);for(const x of[-.7,-.35,0,.35,.7])B(Li,x,2.6,3.42,.12,.06,.05);                           // sun visor + roof lights
+      B(D,0,.82,-f+.05,w-.2,.08,.12);
+      if(type==='camion'){B(D,0,2.2,-f-.012,.03,2.15,.02);for(const x of[-.5,.5])Cy(Mt,x,2.2,-f-.04,.025,2.0,'y');B(Mt,0,1.12,-.9,w+.03,.06,6.1);B(Mt,0,3.28,-.9,w+.03,.06,6.1);}}
+    const mg=a=>a.length?THREE.BufferGeometryUtils.mergeBufferGeometries(a,false):null;K=BIGK[type]={d:mg(D),m:mg(Mt),l:mg(Li)};}
+  if(K.d){const m=new THREE.Mesh(K.d,MAT.dark);m.castShadow=true;c.body.add(m);}
+  if(K.m)c.body.add(new THREE.Mesh(K.m,MAT.metal));
+  if(K.l)c.body.add(new THREE.Mesh(K.l,CARM.head));
+}
 const CR=1.02;
 function carPhysics(c,thr,steer,hb,dt){
   const t=c.T;const wetC=!t.boat&&!t.fly&&isWater(c.x,c.z);if(wetC){thr*=.06;hb=true;}if(c.dead){thr=0;hb=true;}
@@ -1454,7 +1496,7 @@ function carPhysics(c,thr,steer,hb,dt){
   c.steer=lerp(c.steer,steer,1-Math.exp(-10*dt));
   c.h+=c.steer*tr*dt*(vf>=0?1:-1);
   if(t.moto)c.roll=lerp(c.roll,clamp(-c.steer*Math.min(1,sp/10)*.55,-.55,.55),1-Math.exp(-5*dt));
-  else c.roll=lerp(c.roll,clamp(-vl*.025-c.steer*sp*.004,-.12,.12),1-Math.exp(-6*dt));
+  else c.roll=lerp(c.roll,clamp(-vl*.014-c.steer*sp*.0022,-.06,.06),1-Math.exp(-6*dt));
   c.pitch=lerp(c.pitch,clamp(-thr*.03,-.04,.04),1-Math.exp(-5*dt));
   // integrate with substeps & colliders
   const dist=Math.hypot(c.vx,c.vz)*dt,n=Math.max(1,Math.ceil(dist/.35));
@@ -1670,12 +1712,32 @@ const RIDE={LeftUpLeg:[1.45,0,.14],RightUpLeg:[1.45,0,-.14],LeftLeg:[-1.5,0,0],R
 function ridePose(h){if(!h.rideB){h.rideB=[];for(const n in RIDE){const b=h.root.getObjectByName('mixamorig'+n);if(b)h.rideB.push({b,v:RIDE[n],base:new THREE.Quaternion(),last:new THREE.Quaternion(),done:false});}}
   for(const e of h.rideB){const b=e.b;if(e.done&&b.quaternion.equals(e.last))b.quaternion.copy(e.base);else e.base.copy(b.quaternion);
     b.rotateX(e.v[0]);b.rotateY(e.v[1]);b.rotateZ(e.v[2]);e.last.copy(b.quaternion);e.done=true;}}
+// seated in a car : only the upper body is kept, resting on the seat (nothing can poke through the floor)
+function hideLegs(h,on){if(!h.legB){h.legB=[];h.root.traverse(o=>{if(o.isBone&&/(Left|Right)UpLeg$/.test(o.name))h.legB.push(o);});}if(h.legOff===on)return;h.legOff=on;for(const b of h.legB)b.scale.setScalar(on?.001:1);}
+// 3D drivers for the nearest traffic cars : a small pool of characters, posed once (no per-frame cost), upper body on the seat
+const DRV={pool:[],max:IS_TOUCH?3:7,dist:IS_TOUCH?32:48};
+function drvFree(h){const c=h.car;h.car=null;if(h.root.parent)h.root.parent.remove(h.root);if(c){c.npcH=null;c.driver.visible=c.hasDriver&&!c.T.moto&&!(c===player.car&&HUM.playerH.root.parent===c.body);}}
+function drvOk(c){return c.on&&c.hasDriver&&!c.dead&&c!==player.car&&!c.T.moto&&!c.T.custom&&c.group.visible;}
+function updateDrivers(P){
+  for(const h of DRV.pool)if(h.car&&!drvOk(h.car))drvFree(h);
+  if(frame%16!==4)return;
+  const cand=[];for(const c of cars){if(!drvOk(c))continue;const d=Math.hypot(c.x-P.x,c.z-P.z);if(d<DRV.dist)cand.push([d,c]);}
+  cand.sort((a,b)=>a[0]-b[0]);const want=cand.slice(0,DRV.max).map(x=>x[1]);
+  for(const h of DRV.pool)if(h.car&&!want.includes(h.car))drvFree(h);
+  for(const c of want){if(c.npcH)continue;let h=DRV.pool.find(h=>!h.car);
+    if(!h){if(DRV.pool.length>=DRV.max)break;const mx=PED_MIX.filter(k=>HUM.kinds[k]);h=makeHuman(mx.length?mx[DRV.pool.length%mx.length]:'base');if(h.root.parent)h.root.parent.remove(h.root);DRV.pool.push(h);}
+    const t=c.T;c.body.add(h.root);h.root.visible=true;h.root.position.set(t.dx!=null?t.dx:-.4,(t.seat||.6)-.84+(t.sitY||0),(t.dz||0)+(t.sitZ!=null?t.sitZ:.02));h.root.quaternion.identity();
+    try{if(c.dLook)applyLook(h,Object.assign({pants:'#2b2f3a',shoes:'#222'},c.dLook),1);}catch(e){}
+    setAnim(h,'idle',0);h.mixer.update(0);ridePose(h);hideLegs(h,true);h.car=c;c.npcH=h;c.driver.visible=false;break;}
+}
 function updateHumans(dt,P){
   if(!HUM.ready)return;
+  updateDrivers(P);
   const ph=HUM.playerH,moto=player.car&&player.car.T.moto?player.car:null,sit=player.car&&!moto&&!player.car.T.custom&&player.car.driver?player.car:null;player.m.group.visible=false;ph.root.visible=!player.car||!!moto||!!sit;
-  const rc=moto||sit;if(rc){if(ph.root.parent!==rc.body){rc.body.add(ph.root);if(moto)ph.root.position.set(0,moto.T.seatY,moto.T.seatZ);else{const t=sit.T;ph.root.position.set(t.dx!=null?t.dx:-.4,(t.seat||.6)-1.0+(t.sitY||0),(t.dz||0)+(t.sitZ!=null?t.sitZ:.02));}ph.root.quaternion.identity();}
+  const rc=moto||sit;if(rc){if(ph.root.parent!==rc.body){rc.body.add(ph.root);if(moto)ph.root.position.set(0,moto.T.seatY,moto.T.seatZ);else{const t=sit.T;ph.root.position.set(t.dx!=null?t.dx:-.4,(t.seat||.6)-.84+(t.sitY||0),(t.dz||0)+(t.sitZ!=null?t.sitZ:.02));}ph.root.quaternion.identity();}
     if(sit)sit.driver.visible=false;setAnim(ph,'idle',0);ph.mixer.update(dt);ridePose(ph);}
   else if(ph.root.parent!==scene)scene.add(ph.root);
+  hideLegs(ph,!!sit);
   if(!player.car){const swT=player.swim?(player.swimTilt||0):0;ph.root.position.set(player.x,player.y+CHUTE.skyX*.75+swT*.7,player.z);ph.root.rotation.order='YXZ';ph.root.rotation.set(Math.max(CHUTE.skyX,swT),player.h,0);
     if(player.knock>0)setAnim(ph,player.knock>1.4?'trip':'getUp',player.knock>1.4?1:2.2);
     else if(player.atkT>0&&player.weap==='poings')setAnim(ph,'kick',1.4);
@@ -2040,7 +2102,7 @@ function setupTouch(){
 function readInput(){
   let x=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0);
   let y=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0);
-  if(Math.abs(touch.x)>.08||Math.abs(touch.y)>.08){x=touch.x;y=touch.y;}
+  if(Math.abs(touch.x)>.08||Math.abs(touch.y)>.08){x=touch.x;y=touch.y;if(player.car){const ax=Math.abs(x);x=ax<.24?0:Math.sign(x)*Math.pow((ax-.24)/.76,1.4);if(Math.abs(y)>.35)y=Math.sign(y);}}
   return {x,y,sprint:keys.ShiftLeft||keys.ShiftRight||touch.sprint,hb:keys.Space||touch.jump};
 }
 
