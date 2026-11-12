@@ -1639,6 +1639,7 @@ function makeHuman(kind){
   return {root,meshes,mixer,acts,cur:null,owner:null,kind,fixed:K.fixed,H:K.H};
 }
 function applyLook(h,lk,ht=1){
+  if(h.soaked){clearStains(h);h.stainOwner=null;}
   if(h.fixed){h.root.scale.setScalar(1.78*ht/h.H);const T=PED_TINT[h.kind];
     if(T)for(const o of h.meshes){const base=o.userData.baseMat||(o.userData.baseMat=o.material);let col=null;
       if(h!==HUM.playerH||lk.custom)for(const k in T)if(T[k].test(o.name))col=lk[k];
@@ -4325,13 +4326,13 @@ function updateTrauma(dt){const p=player;if(p.dead||!(p.bleed>0))return;
 function roadRash(p,dt){const sp=Math.hypot(p.vx,p.vz);if(sp<4||isWater(p.x,p.z)){p.rashOn=false;return;}
   p.rashD=(p.rashD||0)+sp*dt;p.hp=Math.max(1,p.hp-sp*dt*.55);p.lastHurt=gameT;
   if(p.rashD>.9){p.rashD=0;bloodDecal(p.x+rnd(-.25,.25),p.z+rnd(-.25,.25),rnd(.25,.5));if(Math.random()<.5)emit(p.x,p.y+.2,p.z,'#8a0f0f',.5,.18,rnd(-1,1),1,rnd(-1,1),1);}
-  if(!p.rashOn){p.rashOn=true;addWound(p,rpick(['bras','jambe','torse']),p.vx/sp,p.vz/sp,false);if(sp>9){addWound(p,rpick(['bras','jambe']),p.vx/sp,p.vz/sp,false);addBleed(.35,false);toast('Tu glisses sur le bitume : peau arrachée, tu saignes');}else toast('Égratignures en glissant au sol');}}
+  if(!p.rashOn){p.rashOn=true;for(let i=0;i<3;i++)addWound(p,rpick(['bras','jambe','torse','bras','jambe']),rnd(-1,1),rnd(-1,1),'scr');if(sp>9){addWound(p,rpick(['bras','jambe']),p.vx/sp,p.vz/sp,false);addBleed(.35,false);toast('Tu glisses sur le bitume : peau arrachée, tu saignes');}else toast('Égratignures en glissant au sol');}}
 function fracture(zone){if(zone==='jambe'){player.legT=Math.max(player.legT||0,90);player.fracT=90;toast('JAMBE CASSÉE !\nTu boites longtemps · pharmacie ou hôpital');}else{player.armT=Math.max(player.armT||0,90);player.fracT=90;toast('BRAS CASSÉ !\nTu vises très mal · pharmacie ou hôpital');}sfx.thud();}
 
 /* ================= blood, part 2 : wounds on the bodies, wall splatters, spurts, screen blood ================= */
 const WOUND={mat:null,geo:null,wall:[],wi:0,fx:null,pulse:0};
-const WBONE={tete:['Head'],torse:['Spine2','Spine1','Spine'],jambe:['LeftLeg','RightLeg','LeftUpLeg','RightUpLeg']};
-const WRAD={tete:.1,torse:.13,jambe:.075};
+const WBONE={tete:['Head'],torse:['Spine2','Spine1','Spine'],jambe:['LeftLeg','RightLeg','LeftUpLeg','RightUpLeg'],bras:['LeftForeArm','RightForeArm','LeftArm','RightArm'],pied:['LeftFoot','RightFoot','LeftLeg','RightLeg']};
+const WRAD={tete:.1,torse:.13,jambe:.075,bras:.05,pied:.05};
 function initWounds(){
   WOUND.mat=new THREE.MeshPhongMaterial({color:0x3f0000,shininess:110,specular:0x662222});
   WOUND.geo=new THREE.SphereGeometry(1,10,8);
@@ -4347,25 +4348,27 @@ function initWounds(){
 }
 // stain on the 3D character, stuck to the bone of the part that was hit
 function stainHum(h,w,ref){if(!h||!h.root)return;const names=WBONE[w.part]||WBONE.torse;let b=null;
-  for(const n of(w.part==='jambe'?[names[w.side?1:0],names[w.side?3:2]]:names)){b=h.root.getObjectByName('mixamorig'+n);if(b)break;}if(!b)return;
+  for(const n of(names.length===4?[names[w.side?1:0],names[w.side?3:2]]:names)){b=h.root.getObjectByName('mixamorig'+n);if(b)break;}if(!b)return;
   h.root.updateMatrixWorld(true);const bp=new THREE.Vector3();b.getWorldPosition(bp);const a=ref.h+w.ang,r=WRAD[w.part]||.12;
-  const wp=new THREE.Vector3(bp.x+Math.sin(a)*r,bp.y+(w.part==='tete'?.02:w.part==='jambe'?-.12:.03),bp.z+Math.cos(a)*r);
+  const wp=new THREE.Vector3(bp.x+Math.sin(a)*r,bp.y+(w.part==='tete'?.02:w.part==='jambe'?-.12:w.part==='bras'||w.part==='pied'?0:(w.dy!=null?w.dy:.03)),bp.z+Math.cos(a)*r);
   const m=new THREE.Group();b.add(m);b.worldToLocal(wp);m.position.copy(wp);const ws=new THREE.Vector3();b.getWorldScale(ws);const bq=new THREE.Quaternion();b.getWorldQuaternion(bq);
   m.quaternion.copy(bq.invert().multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(Math.sin(a),0,Math.cos(a)))));m.scale.setScalar(1/ws.x);
-  const s=(w.big?.07:.05)*(1+Math.random()*.3),blob=(x,y,sx,sy,sz)=>{const o=new THREE.Mesh(WOUND.geo,WOUND.mat);o.position.set(x,y,0);o.scale.set(sx,sy,sz);m.add(o);};
-  blob(0,0,s*1.5,s*1.7,s*.05);for(let i=0;i<4;i++)blob(rnd(-1,1)*s*1.3,rnd(-1,1)*s*1.3,s*rnd(.4,.8),s*rnd(.4,.8),s*.045);if(w.part!=='jambe')blob(rnd(-.3,.3)*s,-s*2,s*.3,s*1.5,s*.04);
-  m.userData.wound=true;(h.stains||(h.stains=[])).push(m);}
-function clearStains(h){if(!h)return;unsoak(h);if(!h.stains)return;for(const m of h.stains)if(m.parent)m.parent.remove(m);h.stains=[];}
-const SOAK={mul:new THREE.Color(.62,.05,.05),up:/shirt|hoodie|sweater|suit|tops|jacket|coat|vest|uniform/i,low:/pants|shorts|bottoms|jeans|trouser|skirt|legs/i,mats:new Map()};
-function unsoak(h){if(!h.soaked)return;for(const o of h.soaked)if(o.userData.dry){o.material=o.userData.dry;o.userData.dry=null;}h.soaked=null;}
-function soakHum(h,a){unsoak(h);const ws=a.wounds||[];if(!ws.length||!h.meshes)return;let up=0,low=0;for(const w of ws){if(w.part==='jambe'||w.part==='pied')low+=w.big?1.6:1;else if(w.part!=='tete')up+=w.big?1.6:1;else up+=.5;}
-  const T=h.fixed?PED_TINT[h.kind]:null;h.soaked=[];
-  for(const o of h.meshes){const n=o.name||'',isUp=T&&T.shirt?T.shirt.test(n):SOAK.up.test(n),isLow=T&&T.pants?T.pants.test(n):SOAK.low.test(n),k=isUp?up:isLow?low:0;if(!k||Array.isArray(o.material))continue;
-    const lvl=Math.min(4,Math.ceil(k)),key=o.material.uuid+':'+lvl;let m=SOAK.mats.get(key);if(!m){m=o.material.clone();m.color.multiply(new THREE.Color(1,1,1).lerp(SOAK.mul,Math.min(.9,.34*lvl)));if(m.emissive)m.emissive.setRGB(.02*lvl,0,0);SOAK.mats.set(key,m);}
-    o.userData.dry=o.material;o.material=m;h.soaked.push(o);}}
-function syncStains(a){const h=a===player?HUM.playerH:a.hum;if(!h)return;if(h.stainOwner!==a||(h.stains||[]).length!==(a.wounds||[]).length){clearStains(h);h.stainOwner=a;for(const w of a.wounds||[])stainHum(h,w,a);soakHum(h,a);}}
+  if(m.parent)m.parent.remove(m);const wl=m.position.clone(),rm=(w.scr?.04:w.big?.1:.065)*(w.k||1),inv=new THREE.Matrix4(),P=new THREE.Vector3(),P2=new THREE.Vector3();
+  for(const o of h.meshes){if(!o.isSkinnedMesh||Array.isArray(o.material))continue;const bi=o.skeleton.bones.indexOf(b);if(bi<0)continue;
+    inv.copy(o.skeleton.boneInverses[bi]).invert().premultiply(o.bindMatrixInverse);P.copy(wl).applyMatrix4(inv);P2.copy(wl);P2.x+=rm/ws.x;P2.applyMatrix4(inv);
+    let mt=o.material;if(!mt.userData.uW){const dry=mt;mt=dry.clone();mt.userData={uW:[],n:0};for(let i=0;i<8;i++)mt.userData.uW.push(new THREE.Vector4(0,0,0,0));
+      mt.onBeforeCompile=sh=>{sh.uniforms.uW={value:mt.userData.uW};
+        sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vBindP;').replace('#include <begin_vertex>','#include <begin_vertex>\nvBindP=position;');
+        sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vBindP;\nuniform vec4 uW[8];').replace('#include <color_fragment>',
+          '#include <color_fragment>\n{float wk=0.,hole=0.;for(int i=0;i<8;i++){vec4 w=uW[i];if(w.w>0.){vec3 q=(vBindP-w.xyz)/w.w;float d=length(q)+.16*sin(q.x*7.+q.y*3.)+.13*sin(q.y*9.+q.z*6.)+.08*sin(q.z*17.+q.x*13.);wk=max(wk,1.-smoothstep(.5,1.,d));hole=max(hole,1.-smoothstep(.1,.2,length(q)));}}\ndiffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.5,.04,.04)+vec3(.07,0.,0.),wk*.93);diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.07,0.,0.),hole);}');};
+      mt.customProgramCacheKey=()=>'woundpaint';o.userData.dry=dry;o.material=mt;(h.soaked||(h.soaked=[])).push(o);}
+    const U=mt.userData;if(U.n<8){U.uW[U.n++].set(P.x,P.y,P.z,P.distanceTo(P2)||1);}}
+  (h.stains||(h.stains=[])).push(m);}
+function clearStains(h){if(!h)return;unsoak(h);h.stains=[];}
+function unsoak(h){if(!h.soaked)return;for(const o of h.soaked)if(o.userData.dry){if(o.material.dispose)o.material.dispose();o.material=o.userData.dry;o.userData.dry=null;}h.soaked=null;}
+function syncStains(a){const h=a===player?HUM.playerH:a.hum;if(!h)return;if(h.stainOwner!==a||(h.stains||[]).length!==(a.wounds||[]).length){clearStains(h);h.stainOwner=a;for(const w of a.wounds||[])stainHum(h,w,a);}}
 function addWound(a,part,dx,dz,big){if(!a.wounds)a.wounds=[];if(a.wounds.length>=8)a.wounds.shift();
-  const ang=wrapA(Math.atan2(-dx,-dz)-a.h)+rnd(-.5,.5);a.wounds.push({part,ang,side:Math.random()<.5,big});const h=a===player?HUM.playerH:a.hum;if(h){h.stainOwner=null;syncStains(a);}}
+  const ang=wrapA(Math.atan2(-dx,-dz)-a.h)+rnd(-.5,.5);a.wounds.push({part,ang,side:Math.random()<.5,big,dy:rnd(-.16,.14),k:rnd(.85,1.25),scr:big==='scr'});const h=a===player?HUM.playerH:a.hum;if(h){h.stainOwner=null;syncStains(a);}}
 // splatter on a wall behind the victim
 function wallSplat(x,y,z,dx,dy,dz){const L=3.2,t=rayT(x,y,z,x+dx*L,y+dy*L,z+dz*L);if(t>=1)return;const m=WOUND.wall[WOUND.wi=(WOUND.wi+1)%WOUND.wall.length];
   const d=t*L-.04;m.position.set(x+dx*d,y+dy*d,z+dz*d);m.material=BLOOD.tex[(Math.random()*4)|0];m.rotation.set(0,Math.atan2(dx,dz)+Math.PI,Math.random()*7);const s=rnd(.6,1.3);m.scale.set(s,s,1);m.visible=true;}
