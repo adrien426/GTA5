@@ -1503,7 +1503,8 @@ function carPhysics(c,thr,steer,hb,dt){
   c.h+=c.steer*tr*dt*(vf>=0?1:-1);
   if(t.moto)c.roll=lerp(c.roll,clamp(-c.steer*Math.min(1,sp/10)*.55,-.55,.55),1-Math.exp(-5*dt));
   else c.roll=lerp(c.roll,clamp(-vl*.014-c.steer*sp*.0022,-.06,.06),1-Math.exp(-6*dt));
-  c.pitch=lerp(c.pitch,clamp(-thr*.03,-.04,.04),1-Math.exp(-5*dt));
+  let slopeP=0;if(c===player.car&&!wetC&&!t.fly&&!t.boat){const hl=(t.len||4)*.4,sl=clamp((groundY(c.x+fx*hl,c.z+fz*hl)-groundY(c.x-fx*hl,c.z-fz*hl))/(hl*2),-.45,.45);if(Math.abs(sl)>.02){const g=9.8*.75*sl*dt;c.vx-=fx*g;c.vz-=fz*g;c.vf-=g;}slopeP=-Math.atan(sl);}
+  c.pitch=lerp(c.pitch,clamp(-thr*.03,-.04,.04)+(t.moto?0:slopeP),1-Math.exp(-5*dt));
   // integrate with substeps & colliders
   const dist=Math.hypot(c.vx,c.vz)*dt,n=Math.max(1,Math.ceil(dist/.35));
   const pp={x:0,z:0};let impact=0;
@@ -2230,7 +2231,8 @@ function enterCar(c){
 }
 function exitCar(force){
   const c=player.car;if(!c)return;
-  if(!force&&Math.abs(c.vf)>9&&!c.T.fly){toast('Ralentis pour descendre');return;}
+  const bail=!force&&Math.abs(c.vf)>9&&!c.T.fly&&!c.T.boat?Math.abs(c.vf):0;
+  if(!force&&Math.abs(c.vf)>9&&c.T.boat){toast('Ralentis pour descendre');return;}
   const lx=-Math.cos(c.h),lz=Math.sin(c.h);// left side
   let ok=false;
   for(const s of[1,-1]){const p={x:c.x+lx*s*1.9,z:c.z+lz*s*1.9};resolveCircle(p,.35,false);if(Math.hypot(p.x-c.x,p.z-c.z)>1.4){player.x=p.x;player.z=p.z;ok=true;break;}}
@@ -2239,6 +2241,7 @@ function exitCar(force){
   if(airY){player.ground=false;CHUTE.peak=player.y;if(!player.chutes){player.chutes=1;}toast('Tu sautes ! ESPACE pour ouvrir le parachute');}
   c.setDriver(false);c.ai=c.dead?'wreck':'parked';player.car=null;player.m.group.visible=true;
   if(force&&Math.abs(c.vf)>9){player.knock=1.4;}
+  if(bail){const sp=bail;player.vx=c.vx*.85;player.vz=c.vz*.85;player.vy=2.5;player.ground=false;player.knock=Math.min(4,1.6+sp*.07);const dmg=Math.min(55,(sp-8)*1.7);hurtPlayer(dmg,true);shake=Math.max(shake,.4);sfx.crash(Math.min(1,sp/40));if(typeof bloodHit==='function'&&sp>22)bloodHit(player.x,player.y+.6,player.z,c.vx/sp,c.vz/sp,false);if(!player.dead)toast(sp>25?'Tu sautes en pleine vitesse — ça fait très mal !':'Tu sautes du véhicule en marche');}
 }
 
 /* ================= respawn ================= */
