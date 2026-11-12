@@ -1490,19 +1490,21 @@ function carPhysics(c,thr,steer,hb,dt){
   const fx=Math.sin(c.h),fz=Math.cos(c.h),rx=-fz,rz=fx;
   let vf=c.vx*fx+c.vz*fz,vl=c.vx*rx+c.vz*rz;
   const perf=c.health<25?.55:1;
-  const pk=perkCar(c);if(thr>0){if(vf<-.5)vf+=thr*30*dt;else vf+=thr*t.acc*pk*perf*dt*Math.max(0,1-(vf/(t.maxV*pk))**2);}
-  else if(thr<0){if(vf>.5)vf+=thr*30*dt;else vf=Math.max(-10,vf+thr*7*dt);}
+  const pk=perkCar(c),U=c.up,ua=U?(1+.12*U.moteur)*(1+.07*U.turbo)*(1+.04*U.boite):1,uv=U?(1+.06*U.moteur)*(1+.05*U.turbo):1,ub=U?30*(1+.3*U.freins):30;
+  if(thr>0){if(vf<-.5)vf+=thr*ub*dt;else vf+=thr*t.acc*ua*pk*perf*dt*Math.max(0,1-(vf/(t.maxV*uv*pk))**2);}
+  else if(thr<0){if(vf>.5)vf+=thr*ub*dt;else vf=Math.max(-10,vf+thr*7*dt);}
   else vf-=Math.sign(vf)*Math.min(Math.abs(vf),2.2*dt);
   vf-=vf*.08*dt;
   if(hb)vf-=Math.sign(vf)*Math.min(Math.abs(vf),8*dt);
-  const grip=hb?1.1:(Math.abs(vf)>28?5.5:9);vl*=Math.exp(-grip*dt);
+  const grip=(hb?1.1:(Math.abs(vf)>28?5.5:9))*(U?1+.18*U.pneus:1);vl*=Math.exp(-grip*dt);
   c.vx=fx*vf+rx*vl;c.vz=fz*vf+rz*vl;c.vf=vf;
   const sp=Math.abs(vf);let tr=2.15*Math.min(1,sp/4)/(1+sp/42);if(hb)tr*=1.55;
   c.steer=lerp(c.steer,steer,1-Math.exp(-10*dt));
   c.h+=c.steer*tr*dt*(vf>=0?1:-1);
   if(t.moto)c.roll=lerp(c.roll,clamp(-c.steer*Math.min(1,sp/10)*.55,-.55,.55),1-Math.exp(-5*dt));
   else c.roll=lerp(c.roll,clamp(-vl*.014-c.steer*sp*.0022,-.06,.06),1-Math.exp(-6*dt));
-  c.pitch=lerp(c.pitch,clamp(-thr*.03,-.04,.04),1-Math.exp(-5*dt));
+  let slopeP=0;if(c===player.car&&!wetC&&!t.fly&&!t.boat){const hl=(t.len||4)*.4,sl=clamp((groundY(c.x+fx*hl,c.z+fz*hl)-groundY(c.x-fx*hl,c.z-fz*hl))/(hl*2),-.45,.45);if(Math.abs(sl)>.02){const g=9.8*.75*sl*dt;c.vx-=fx*g;c.vz-=fz*g;c.vf-=g;}slopeP=-Math.atan(sl);}
+  c.pitch=lerp(c.pitch,clamp(-thr*.03,-.04,.04)+(t.moto?0:slopeP),1-Math.exp(-5*dt));
   // integrate with substeps & colliders
   const dist=Math.hypot(c.vx,c.vz)*dt,n=Math.max(1,Math.ceil(dist/.35));
   const pp={x:0,z:0};let impact=0;
@@ -1524,7 +1526,7 @@ function carPhysics(c,thr,steer,hb,dt){
 const _cc=new Array(6);
 function carImpact(c,imp){
   const now=gameT;if(now-c.lastHit<.25)return;c.lastHit=now;
-  c.health-=Math.max(0,imp-7)*(c===player.car?1.3:2.4);if(imp>13)carGlassBreak(c,imp>22);carDirt(c);
+  c.health-=Math.max(0,imp-7)*(c===player.car?1.3:2.4)*(c.up?1-.2*c.up.blindage:1);if(imp>13)carGlassBreak(c,imp>22);carDirt(c);
   if(c===player.car){shake=Math.min(1,imp/22);sfx.crash(Math.min(1,imp/25));crashPlayer(c,imp);}
   if(c.health<=0&&!c.dead&&!c.burn){c.burn=4.5;if(c===player.car)toast('Le moteur prend feu — sors vite !');}
 }
@@ -1637,6 +1639,7 @@ function makeHuman(kind){
   return {root,meshes,mixer,acts,cur:null,owner:null,kind,fixed:K.fixed,H:K.H};
 }
 function applyLook(h,lk,ht=1){
+  if(h.soaked){clearStains(h);h.stainOwner=null;}
   if(h.fixed){h.root.scale.setScalar(1.78*ht/h.H);const T=PED_TINT[h.kind];
     if(T)for(const o of h.meshes){const base=o.userData.baseMat||(o.userData.baseMat=o.material);let col=null;
       if(h!==HUM.playerH||lk.custom)for(const k in T)if(T[k].test(o.name))col=lk[k];
@@ -1705,7 +1708,7 @@ function setPlayerChar(k){
 }
 const START={car:null};
 function startVehicle(){const kind=store.get('startVeh')||'moto';const old=START.car;if(old&&old!==player.car){old.on=false;old.group.visible=false;old.x=old.z=9999;old.ai='off';}
-  const c=kind==='voiture'?new Car('supercar','#6e0808'):new Car('superbike','#2f6b2f');const P=player.car?player.car:player;c.place(P.x+3.2,P.z+2,player.h||0);c.ai='parked';parked.push(c);START.car=c;vehButtons();}
+  const c=kind==='voiture'?new Car('supercar','#6e0808'):new Car('superbike','#2f6b2f');const P=player.car?player.car:player;c.place(P.x+3.2,P.z+2,player.h||0);c.ai='parked';parked.push(c);START.car=c;tuneLoad(c);vehButtons();}
 function vehButtons(){let box=document.getElementById('vehSel');if(!box){const ch=$('chars');if(!ch)return;box=document.createElement('div');box.id='vehSel';box.setAttribute('role','group');box.style.cssText='display:flex;gap:8px;justify-content:center;align-items:center;margin-top:8px;flex-wrap:wrap';ch.parentNode.insertBefore(box,ch.nextSibling);}
   const kind=store.get('startVeh')||'moto';box.innerHTML='<span style="color:#b8c2cc;font:600 14px system-ui">Véhicule de départ :</span>';
   for(const [k,n] of[['moto','🏍 Moto'],['voiture','🏎 Voiture de sport']]){const b=document.createElement('button');b.className='cbtn'+(k===kind?' on':'');b.textContent=n;b.onclick=()=>{store.set('startVeh',k);startVehicle();if(state!=='menu')toast(k==='moto'?'Moto livrée à côté de toi':'Rosso F8 livrée à côté de toi');};box.appendChild(b);}}
@@ -2229,7 +2232,8 @@ function enterCar(c){
 }
 function exitCar(force){
   const c=player.car;if(!c)return;
-  if(!force&&Math.abs(c.vf)>9&&!c.T.fly){toast('Ralentis pour descendre');return;}
+  const bail=!force&&Math.abs(c.vf)>9&&!c.T.fly&&!c.T.boat?Math.abs(c.vf):0;
+  if(!force&&Math.abs(c.vf)>9&&c.T.boat){toast('Ralentis pour descendre');return;}
   const lx=-Math.cos(c.h),lz=Math.sin(c.h);// left side
   let ok=false;
   for(const s of[1,-1]){const p={x:c.x+lx*s*1.9,z:c.z+lz*s*1.9};resolveCircle(p,.35,false);if(Math.hypot(p.x-c.x,p.z-c.z)>1.4){player.x=p.x;player.z=p.z;ok=true;break;}}
@@ -2238,6 +2242,7 @@ function exitCar(force){
   if(airY){player.ground=false;CHUTE.peak=player.y;if(!player.chutes){player.chutes=1;}toast('Tu sautes ! ESPACE pour ouvrir le parachute');}
   c.setDriver(false);c.ai=c.dead?'wreck':'parked';player.car=null;player.m.group.visible=true;
   if(force&&Math.abs(c.vf)>9){player.knock=1.4;}
+  if(bail){const sp=bail;player.vx=c.vx*.85;player.vz=c.vz*.85;player.vy=2.5;player.ground=false;player.knock=Math.min(4,1.6+sp*.07);const dmg=Math.min(55,(sp-8)*1.7);hurtPlayer(dmg,true);shake=Math.max(shake,.4);sfx.crash(Math.min(1,sp/40));if(typeof bloodHit==='function'&&sp>22)bloodHit(player.x,player.y+.6,player.z,c.vx/sp,c.vz/sp,false);if(!player.dead)toast(sp>25?'Tu sautes en pleine vitesse — ça fait très mal !':'Tu sautes du véhicule en marche');}
 }
 
 /* ================= respawn ================= */
@@ -2250,7 +2255,7 @@ function respawnAt(L,cost){
   player.safeT=8;
   if(player.car){player.car.setDriver(false);player.car.ai=player.car.dead?'wreck':'parked';player.car=null;}
   player.m.group.visible=true;player.x=L.x;player.z=L.z;player.y=.2;player.vx=player.vz=0;player.h=L.h;cam.yaw=L.h;player.hp=100;player.knock=0;player.dead=false;
-  player.wounds=[];CHUTE.peak=0;CHUTE.open=false;CHUTE.free=false;if(HUM.playerH)clearStains(HUM.playerH);player.legT=0;player.money=Math.max(0,player.money-cost);player.stars=0;policeETA=0;player.atkT=0;player.aimT=0;player.reload=0;seenT=0;bustT=0;
+  player.wounds=[];CHUTE.peak=0;CHUTE.open=false;CHUTE.free=false;if(HUM.playerH)clearStains(HUM.playerH);player.legT=0;stopBleed();player.armT=0;player.money=Math.max(0,player.money-cost);player.stars=0;policeETA=0;player.atkT=0;player.aimT=0;player.reload=0;seenT=0;bustT=0;
   for(const c of police)if(c.ai==='police'){c.ai='off';c.on=false;c.group.visible=false;c.x=c.z=9999;}
   if(mission){mission=null;missionBeam.visible=false;nextBeam.visible=false;}
   $('fade').classList.remove('on');save();
@@ -2267,7 +2272,7 @@ function shopAction(kind){
   if(kind==='superette')buy(40,()=>P.hp=100,'Santé restaurée');
   else if(kind==='cafe')buy(10,()=>{P.stamina=1;P.hp=Math.min(100,P.hp+25);},'Café avalé · partie sauvegardée');
   else if(kind==='boutique')buy(80,()=>{const lk=randLook();lk.skin=P.m.look.skin;lk.custom=true;setLook(P.m,lk);if(HUM.playerH)applyLook(HUM.playerH,lk);if(P.stars>0)P.stars--;seenT=0;},'Nouvelle tenue'+(P.stars>0?' · -1 étoile':''));
-  else if(kind==='hopital'){P.hp=100;toast('Soigné gratuitement');sfx.ding();}
+  else if(kind==='hopital'){P.hp=100;stopBleed();P.legT=0;P.armT=0;toast('Soigné gratuitement : plaies recousues, fractures plâtrées');sfx.ding();}
   else if(kind==='police'){if(P.stars===0){toast('Rien à te reprocher');return;}buy(100*P.stars,()=>{P.stars=0;for(const c of police)if(c.ai==='police'){c.ai='traffic';snapToGraph(c);}},'Amende payée · étoiles effacées');}
   else if(kind==='armurerie'){openShop();}
   else if(kind==='serrure'){gavPick();}
@@ -2275,9 +2280,10 @@ function shopAction(kind){
   else if(kind==='coiffeur')buy(50,()=>{const lk={...P.m.look,hair:rpick(['#1a1410','#6b4423','#d4b06a','#b8471f','#e8e8e8','#2b4fd6','#d6336c','#111']),custom:true};setLook(P.m,lk);if(HUM.playerH)applyLook(HUM.playerH,lk);},'Nouvelle coupe !');
   else if(kind==='bijouterie')buy(1200,()=>addItem('bague',1),'Bague achetée');
   else if(kind==='base'){for(const id of['sniper','minigun','roquette','laser','assaut','pompe'])giveWeapon(id,4);for(const id in P.ammo)P.ammo[id]=Math.max(P.ammo[id],WBY[id].mag*4);toast('Arsenal militaire récupéré !\nLaser, minigun, lance-roquettes…');sfx.win();save();}
-  else if(kind==='garage'){const c=P.car;buy(120,()=>{c.repaint(rpick(PAINTS.filter(p=>p!==c.color)));c.health=100;carRepairFx(c);c.burn=0;P.stars=0;for(const o of police)if(o.ai==='police'){o.ai='traffic';snapToGraph(o);}},'Repeinte & réparée · étoiles effacées');}
+  else if(kind==='garage'){openTune(P.car);}
+  else if(kind==='garage_fix'){const c=P.car;buy(120,()=>{c.repaint(rpick(PAINTS.filter(p=>p!==c.color)));c.health=100;carRepairFx(c);c.burn=0;P.stars=0;for(const o of police)if(o.ai==='police'){o.ai='traffic';snapToGraph(o);}},'Repeinte & réparée · étoiles effacées');}
 }
-const SPOTTXT={cafe_saharia:'Salon de thé (sauvegarde)',cafe_liberty:'Diner (sauvegarde)',food_saharia:()=>`Manger : ${FOODS.saharia.n} ($${FOODS.saharia.p})`,food_liberty:()=>`Manger : ${FOODS.liberty.n} ($${FOODS.liberty.p})`,pharmacie:'Pharmacie : soins et bandages ($60)',fastfood:'Commander un menu ($12)',station:'Boutique de la station ($8)',pompe_essence:'Faire le plein et laver le véhicule ($60)',echelle:'Monter à l\'échelle (toit)',echelle_bas:'Redescendre par l\'échelle',food_neo:'Stand de hot-dogs ($15)',food_dorada:()=>`Manger : ${FOODS.dorada.n} ($${FOODS.dorada.p})`,food_nordheim:()=>`Manger : ${FOODS.nordheim.n} ($${FOODS.nordheim.p})`,food_sakura:()=>`Manger : ${FOODS.sakura.n} ($${FOODS.sakura.p})`,billets:'✈ Acheter un billet d\'avion (autres pays)',vol_retour:'✈ Vol retour vers Néo Cité ($600)',cafe_dorada:'Café de la plaza (sauvegarde)',cafe_nordheim:'Kafé (sauvegarde)',cafe_sakura:'Salon de thé (sauvegarde)',immeuble:'Entrer dans l\'immeuble',int_sortie:'Sortir dans la rue',int_ascenseur:'Prendre l\'ascenseur',int_appt_sortie:'Sortir de l\'appartement',int_achat:()=>aptOwned(INT.bi)?'Ton appartement':`Acheter cet appartement — $${(INT.BLD[INT.bi]||{price:0}).price.toLocaleString('fr-FR')}`,int_lit:'Dormir (sauvegarde)',int_tv:'Regarder la télé',int_frigo:'Manger un morceau',int_douche:'Prendre une douche',int_dressing:'Changer de tenue',home_lit:'Dormir (sauvegarde)',home_dressing:'Dressing : changer de tenue',home_coffre:'Coffre-fort (munitions)',home_tv:'Regarder la télé',home_frigo:'Manger un morceau',home_garage:()=>`Garage : changer de voiture (${CT[saveData.myCar||'muscle'].name})`,pc_ordi:'Ordinateur de la police',pc_vestiaire:'Vestiaire : uniforme de police',pc_armes:'Armurerie de la police (vol !)',pc_cafe:'Machine à café',p_dormir:'Dormir (−3 min, le temps passe)',p_creuser:()=>prison.spoon?`Creuser le tunnel (${Math.round(prison.dig*100)} %)`:'Le mur derrière le poster…',p_cantine:'Manger à la cantine',p_cuisine:'Voler un couteau en cuisine',p_buanderie:'Travailler à la buanderie',p_muscu:'Faire de la muscu',p_camion:'Se cacher dans le camion de linge',p_mur:'Lancer une corde de draps par-dessus le mur',p_corruption:()=>prison.bribed>0?'Porte de service ouverte (mur est)':'Soudoyer le gardien',p_telephone:'Appeler un avocat ($3 000)',p_caid:'Parler au Caïd',serrure:'Crocheter la serrure de la cellule',cellule:'Dormir dans ta cellule (−1 min de peine)',coiffeur:'Coiffeur — nouvelle couleur $50',banque:'Banque — consulter ton compte',bijouterie:'Bijouterie — acheter une bague $1 200',armurerie:'Armurerie — acheter des armes',base:'Caisse d\'armes de l\'armée',superette:'Soins — $40',cafe:'Café & sauvegarde — $10',boutique:'Nouvelle tenue — $80',hopital:'Se faire soigner — gratuit',police:'Payer l\'amende',garage:'Réparer & repeindre — $120'};
+const SPOTTXT={cafe_saharia:'Salon de thé (sauvegarde)',cafe_liberty:'Diner (sauvegarde)',food_saharia:()=>`Manger : ${FOODS.saharia.n} ($${FOODS.saharia.p})`,food_liberty:()=>`Manger : ${FOODS.liberty.n} ($${FOODS.liberty.p})`,pharmacie:'Pharmacie : soins et bandages ($60)',fastfood:'Commander un menu ($12)',station:'Boutique de la station ($8)',pompe_essence:'Faire le plein et laver le véhicule ($60)',echelle:'Monter à l\'échelle (toit)',echelle_bas:'Redescendre par l\'échelle',food_neo:'Stand de hot-dogs ($15)',food_dorada:()=>`Manger : ${FOODS.dorada.n} ($${FOODS.dorada.p})`,food_nordheim:()=>`Manger : ${FOODS.nordheim.n} ($${FOODS.nordheim.p})`,food_sakura:()=>`Manger : ${FOODS.sakura.n} ($${FOODS.sakura.p})`,billets:'✈ Acheter un billet d\'avion (autres pays)',vol_retour:'✈ Vol retour vers Néo Cité ($600)',cafe_dorada:'Café de la plaza (sauvegarde)',cafe_nordheim:'Kafé (sauvegarde)',cafe_sakura:'Salon de thé (sauvegarde)',immeuble:'Entrer dans l\'immeuble',int_sortie:'Sortir dans la rue',int_ascenseur:'Prendre l\'ascenseur',int_appt_sortie:'Sortir de l\'appartement',int_achat:()=>aptOwned(INT.bi)?'Ton appartement':`Acheter cet appartement — $${(INT.BLD[INT.bi]||{price:0}).price.toLocaleString('fr-FR')}`,int_lit:'Dormir (sauvegarde)',int_tv:'Regarder la télé',int_frigo:'Manger un morceau',int_douche:'Prendre une douche',int_dressing:'Changer de tenue',home_lit:'Dormir (sauvegarde)',home_dressing:'Dressing : changer de tenue',home_coffre:'Coffre-fort (munitions)',home_tv:'Regarder la télé',home_frigo:'Manger un morceau',home_garage:()=>`Garage : changer de voiture (${CT[saveData.myCar||'muscle'].name})`,pc_ordi:'Ordinateur de la police',pc_vestiaire:'Vestiaire : uniforme de police',pc_armes:'Armurerie de la police (vol !)',pc_cafe:'Machine à café',p_dormir:'Dormir (−3 min, le temps passe)',p_creuser:()=>prison.spoon?`Creuser le tunnel (${Math.round(prison.dig*100)} %)`:'Le mur derrière le poster…',p_cantine:'Manger à la cantine',p_cuisine:'Voler un couteau en cuisine',p_buanderie:'Travailler à la buanderie',p_muscu:'Faire de la muscu',p_camion:'Se cacher dans le camion de linge',p_mur:'Lancer une corde de draps par-dessus le mur',p_corruption:()=>prison.bribed>0?'Porte de service ouverte (mur est)':'Soudoyer le gardien',p_telephone:'Appeler un avocat ($3 000)',p_caid:'Parler au Caïd',serrure:'Crocheter la serrure de la cellule',cellule:'Dormir dans ta cellule (−1 min de peine)',coiffeur:'Coiffeur — nouvelle couleur $50',banque:'Banque — consulter ton compte',bijouterie:'Bijouterie — acheter une bague $1 200',armurerie:'Armurerie — acheter des armes',base:'Caisse d\'armes de l\'armée',superette:'Soins — $40',cafe:'Café & sauvegarde — $10',boutique:'Nouvelle tenue — $80',hopital:'Se faire soigner — gratuit',police:'Payer l\'amende',garage:'Garage : réparer, repeindre, améliorer le véhicule'};
 
 
 /* ================= combat ================= */
@@ -2578,7 +2584,25 @@ $('wheel').addEventListener('click',e=>{if(e.target.id==='wheel'&&performance.no
 const shopUI={open:false};
 function wPrice(w){return Math.round(w.price*(shopUI.online?1.15:1));}
 function openShop(online){shopUI.online=!!online;$('shop').querySelector('h3').textContent=online?'ARMURERIE ÉCLAT — EN LIGNE (livraison +15 %)':'ARMURERIE ÉCLAT';shopUI.open=true;renderShop();$('shop').hidden=false;if(document.pointerLockElement)document.exitPointerLock();}
-function closeShop(){shopUI.open=false;$('shop').hidden=true;}
+function closeShop(){shopUI.open=false;shopUI.tune=null;$('shop').hidden=true;}
+/* ---- garage : vehicle tuning (engine, turbo, gearbox, brakes, tyres, armour, nitro), 3 levels each ---- */
+const TUNE=[['moteur','🔧','Moteur','+12 % d\'accélération et +6 % de vitesse max par niveau',[1500,4000,9000]],['turbo','🌀','Turbo','+7 % d\'accélération et +5 % de vitesse max par niveau',[2000,5000,11000]],
+  ['boite','⚙️','Boîte de vitesses','Rapports courts : +4 % d\'accélération par niveau',[800,2000,4500]],['freins','🛑','Freins','Freinage +30 % par niveau',[600,1500,3500]],
+  ['pneus','🛞','Pneus','Adhérence +18 % par niveau : la voiture glisse moins',[700,1800,4000]],['blindage','🛡','Carrosserie renforcée','−20 % de dégâts aux chocs par niveau',[1200,3000,7000]],['nitro','💨','Réservoir de nitro','Nitro +45 % plus long et recharge plus rapide par niveau',[1000,2500,6000]]];
+function newUp(){return {moteur:0,turbo:0,boite:0,freins:0,pneus:0,blindage:0,nitro:0};}
+function tuneOwned(c){return c&&(c===START.car||c===myCar);}
+function tuneLoad(c){const all=store.get('tune')||{};const u=all[c.type];if(u)c.up=Object.assign(newUp(),u);}
+function tuneSave(c){if(!tuneOwned(c))return;const all=store.get('tune')||{};all[c.type]=c.up;store.set('tune',all);}
+function openTune(c){if(!c)return;shopUI.tune=c;shopUI.open=true;$('shop').querySelector('h3').textContent='GARAGE — PRÉPARATION · '+c.T.name;renderTune();$('shop').hidden=false;if(document.pointerLockElement)document.exitPointerLock();}
+function renderTune(){const c=shopUI.tune,U=c.up||newUp(),fly=c.T.fly||c.T.boat;
+  const top=Math.round(c.T.maxV*(1+.06*U.moteur)*(1+.05*U.turbo)*3.6);
+  $('shopList').innerHTML=`<div class="srow"><div><b>Solde : $${player.money.toLocaleString('fr-FR')}</b><small>Vitesse max : ${top} km/h · ${tuneOwned(c)?'ta voiture : les améliorations sont conservées':'véhicule emprunté : améliorations perdues si tu le perds'}</small></div></div>`+
+    `<div class="srow"><span style="font-size:26px;width:44px;text-align:center">🎨</span><div><b>Réparer & repeindre</b><small>Remise à neuf, nouvelle couleur, étoiles effacées</small></div><button data-tune="fix">$120</button></div>`+
+    (fly?'<div class="srow"><div><small>Ce véhicule ne peut pas être préparé ici.</small></div></div>':TUNE.map(([k,ic,n,d,pr])=>{const l=U[k];return `<div class="srow"><span style="font-size:26px;width:44px;text-align:center">${ic}</span><div><b>${n} — niveau ${l}/3 ${'●'.repeat(l)}${'○'.repeat(3-l)}</b><small>${d}</small></div>${l>=3?'<button disabled>Max</button>':`<button data-tune="${k}">$${pr[l].toLocaleString('fr-FR')}</button>`}</div>`;}).join(''));}
+function buyTune(k){const c=shopUI.tune;if(!c||c!==player.car){closeShop();return;}
+  if(k==='fix'){shopAction('garage_fix');renderTune();return;}
+  const T=TUNE.find(t=>t[0]===k);if(!T)return;c.up=c.up||newUp();const l=c.up[k];if(l>=3)return;const pr=T[4][l];if(player.money<pr){toast('Pas assez d\'argent');return;}
+  player.money-=pr;c.up[k]=l+1;sfx.coin();carRepairFx(c);toast(T[2]+' : niveau '+(l+1));tuneSave(c);save();renderTune();}
 function renderShop(){
   $('shopList').innerHTML=`<div class="srow"><div><b>Solde : $${player.money.toLocaleString('fr-FR')}</b><small>Les armes de l'armée ne sont pas en vente</small></div></div>`+`<div class="srow"><span style="font-size:26px;width:44px;text-align:center">🪂</span><div><b>Parachute</b><small>Tu en as ${player.chutes||0} · ESPACE en chute pour l'ouvrir</small></div><button data-chute="1">$${shopUI.online?345:300}</button></div>`+
   WEAPONS.filter(w=>w.id!=='poings').map(w=>{const own=player.owned.has(w.id),ammoCost=Math.max(20,Math.round(w.price*.12));
@@ -2586,6 +2610,7 @@ function renderShop(){
     return `<div class="srow">${w.svg}<div><b>${w.name}</b><small>${w.melee?'Corps à corps':'Chargeur '+w.mag+(own?' · réserve '+(player.ammo[w.id]||0):'')}</small></div>${act}</div>`;}).join('');
 }
 $('shopList').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled)return;
+  if(b.dataset.tune){buyTune(b.dataset.tune);return;}
   if(b.dataset.cust){renderModShop(b.dataset.cust);return;}if(b.dataset.modback){renderShop();return;}if(b.dataset.mod){buyMod(b.dataset.wid,b.dataset.mod);return;}
   if(b.dataset.chute){const pr=shopUI.online?345:300;if(player.money<pr){toast('Pas assez d\'argent');return;}player.money-=pr;player.chutes=(player.chutes||0)+1;sfx.coin();toast('Parachute acheté');renderShop();return;}
   if(b.dataset.buy){const w=WBY[b.dataset.buy];const pr=wPrice(w);if(player.money<pr){toast('Pas assez d\'argent');return;}player.money-=pr;giveWeapon(w.id,3);player.weap=w.id;sfx.coin();toast(w.name+' acheté');save();}
@@ -2742,7 +2767,7 @@ $('play').addEventListener('click',play);
 function updateFoot(dt,inp){
   const p=player,m=p.m;
   if(p.knock>0){p.knock-=dt;m.body.rotation.x=lerp(m.body.rotation.x,-Math.PI/2,1-Math.exp(-8*dt));m.body.position.y=.15;
-    p.vx*=Math.exp(-3*dt);p.vz*=Math.exp(-3*dt);p.x+=p.vx*dt;p.z+=p.vz*dt;resolveCircle(p,.35,false);p.y=groundY(p.x,p.z);
+    p.vx*=Math.exp(-1.9*dt);p.vz*=Math.exp(-1.9*dt);p.x+=p.vx*dt;p.z+=p.vz*dt;resolveCircle(p,.35,false);p.y=groundY(p.x,p.z);if(!p.dead)roadRash(p,dt);
     m.group.position.set(p.x,p.y,p.z);if(p.knock<=0)m.body.rotation.x=0;return;}
   if(p.climb){climbStep(p,dt);return;}
   const fx=Math.sin(cam.yaw),fz=Math.cos(cam.yaw),rx=-fz,rz=fx;
@@ -3056,7 +3081,7 @@ function updateBusiness(){const h=Math.floor(dayT);if(h===lastHour)return;const 
 const SHOPCARS=[['chasseur',900000],['avionligne',2500000],['tracteur',8000],['ambulance',20000],['pompiers',35000],['voilier',26000],['scooter',1800],['chopper',16000],['suv',22000],['pickup',15000],['muscle',38000],['cabrio',42000],['limo',65000],['camion',30000],['bus',28000],['jetski',9000],['helimini',60000],['helipol',110000],['jet',250000],['citadine',3500],['sedan',7000],['taxi',6000],['van',9000],['sport',48000],['supercar',125000],['concept',160000],['moto',4500],['superbike',24000],['bateau',18000],['vedette',32000],['helico',95000],['avion',140000]];
 let myCar=null;
 function deliverCar(type){const P=playerPos();const s=randomRoadSpot(P,8,40)||randomRoadSpot(P,5,120)||randomRoadSpot(P,0,400);if(!s){toast('Pas de place pour livrer, réessaie');return;}
-  if(!myCar||myCar.dead||myCar.type!==type){myCar=new Car(type,saveData.carCol&&saveData.carCol[type]||rpick(PAINTS));parked.push(myCar);}
+  if(!myCar||myCar.dead||myCar.type!==type){myCar=new Car(type,saveData.carCol&&saveData.carCol[type]||rpick(PAINTS));parked.push(myCar);tuneLoad(myCar);}
   const [rx,rz]=rightOf(s.di,s.dj);myCar.place(s.x+rx*2.8,s.z+rz*2.8,s.h);myCar.ai='parked';myCar.on=true;myCar.health=100;myCar.burn=0;myCar.dead=false;myCar.setDriver(false);myCar.group.visible=true;
   nextBeam.visible=true;nextBeam.position.set(myCar.x,0,myCar.z);setTimeout(()=>{if(!mission||mission.type!=='course')nextBeam.visible=false;},15000);
   toast(`Ta ${CT[type].name.toLowerCase()} est livrée tout près (repère jaune)`);}
@@ -4275,17 +4300,39 @@ function updateBlood(dt,P){
     const sp=p.curSpeed||0;p.dripD=(p.dripD||0)+sp*dt+dt*.3;if(p.dripD>.7){p.dripD=0;if(Math.hypot(p.x-P.x,p.z-P.z)<70)bloodDecal(p.x+rnd(-.2,.2),p.z+rnd(-.2,.2),rnd(.18,.35));}
     if(p.bleed<=0&&p.limp)p.limp=.6;}
   // the player bleeds too
-  if(!player.dead&&!player.car){player.legT=Math.max(0,(player.legT||0)-dt);if(player.hp<40||player.legT>0){player.dripD=(player.dripD||0)+Math.hypot(player.vx,player.vz)*dt+dt*.25;if(player.dripD>.8){player.dripD=0;bloodDecal(player.x+rnd(-.2,.2),player.z+rnd(-.2,.2),rnd(.18,.32));}}}
+  if(!player.dead&&!player.car){player.legT=Math.max(0,(player.legT||0)-dt);if(player.hp<40||player.legT>0||player.bleed>.15){player.dripD=(player.dripD||0)+Math.hypot(player.vx,player.vz)*dt+dt*.25;if(player.dripD>.8){player.dripD=0;bloodDecal(player.x+rnd(-.2,.2),player.z+rnd(-.2,.2),rnd(.18,.32));}}}
 }
 // the player is shot by someone : random body part
-function playerShot(dmg){if(player.car){player.car.health-=dmg*.4;return;}const r=Math.random(),part=r<.18?'jambe':r<.24?'pied':r<.31?'tete':r<.36?'coeur':r<.5?'bras':'torse';
-  const m=part==='tete'?2.6:part==='coeur'?3.2:part==='jambe'?.7:part==='pied'?.5:part==='bras'?.6:1;if(part==='bras')player.armT=10;if(part==='pied')player.legT=Math.max(player.legT||0,15);hurtPlayer(dmg*m,false);addWound(player,part,rnd(-1,1),rnd(-1,1),part==='tete');WOUND.pulse=Math.max(WOUND.pulse,part==='tete'?1:.8);bloodHit(player.x,player.y+(part==='tete'?1.6:part==='jambe'?.55:1.15),player.z,rnd(-1,1),rnd(-1,1),part==='tete');
-  if(part==='jambe'){player.legT=12;toast('Touché à la jambe !\nTu boites, impossible de sprinter');}else if(part==='pied')toast('Balle dans le pied !\nTu ne peux plus courir');else if(part==='bras')toast('Touché au bras !\nTu vises moins bien');else if(part==='coeur'&&!player.dead)toast('Balle près du cœur !');else if(part==='tete'&&!player.dead)toast('Touché à la tête !');}
+function playerShot(dmg){if(player.car){player.car.health-=dmg*.4;return;}if(player.dead||player.safeT>0)return;
+  const r=Math.random(),part=r<.17?'jambe':r<.23?'pied':r<.28?'tete':r<.32?'coeur':r<.40?'poumon':r<.54?'bras':'torse',prot=BOOST.armor>0||rageOn();
+  const m={tete:3,coeur:3.4,poumon:1.5,jambe:.7,pied:.5,bras:.6,torse:1}[part],vital=part==='tete'||part==='coeur';
+  if(part==='bras')player.armT=Math.max(player.armT||0,10);if(part==='pied')player.legT=Math.max(player.legT||0,15);if(part==='jambe')player.legT=Math.max(player.legT||0,12);
+  addWound(player,part==='poumon'||part==='coeur'?'torse':part,rnd(-1,1),rnd(-1,1),part==='tete');WOUND.pulse=Math.max(WOUND.pulse,vital?1:.8);
+  bloodHit(player.x,player.y+(part==='tete'?1.6:part==='jambe'?.55:part==='pied'?.15:1.15),player.z,rnd(-1,1),rnd(-1,1),vital);
+  addBleed({tete:1.2,coeur:3,poumon:2.2,jambe:.6,pied:.35,bras:.4,torse:.7}[part],part==='poumon');
+  if(vital&&!prot){toast(part==='tete'?'Balle dans la tête…':'Balle en plein cœur…');hurtPlayer(999,false);return;}
+  hurtPlayer(dmg*m,false);if(player.dead)return;
+  toast({jambe:'Touché à la jambe !\nTu boites, impossible de sprinter · tu saignes',pied:'Balle dans le pied !\nTu ne peux plus courir · tu saignes',bras:'Touché au bras !\nTu vises moins bien · tu saignes',
+    poumon:'POUMON PERFORÉ !\nTu t\'étouffes : hôpital ou pharmacie, vite',coeur:'Balle près du cœur — le gilet t\'a sauvé',tete:'Touché à la tête — le casque t\'a sauvé',torse:'Touché au torse · tu saignes'}[part]);}
+// ---- haemorrhage : wounds drain health until they clot (small ones) or are treated (lung never clots)
+function addBleed(rate,lung){player.bleed=Math.min(5,(player.bleed||0)+rate);if(lung)player.lung=true;player.bleedMsg=0;}
+function stopBleed(){player.bleed=0;player.lung=false;player.fracT=0;}
+function updateTrauma(dt){const p=player;if(p.dead||!(p.bleed>0))return;
+  p.hp=Math.max(0,p.hp-p.bleed*dt);p.lastHurt=gameT;if(!p.lung)p.bleed=Math.max(0,p.bleed-dt*.03);
+  p.bleedMsg=(p.bleedMsg||0)-dt;if(p.bleedMsg<=0&&p.bleed>.5){p.bleedMsg=14;WOUND.pulse=Math.max(WOUND.pulse,.6);toast(p.lung?'Tu craches du sang… il te faut un médecin':'Hémorragie : tu perds du sang\nPharmacie ou hôpital pour te soigner');}
+  if(!p.car){p.poolT=(p.poolT||0)+dt;if(p.poolT>2.5&&Math.hypot(p.vx,p.vz)<.6){p.poolT=0;bloodDecal(p.x+rnd(-.3,.3),p.z+rnd(-.3,.3),rnd(.3,.3+Math.min(.5,p.bleed*.25)));}}
+  if(p.hp<=0)wasted();}
+// ---- sliding on the ground after a fall : road rash, blood trail, torn skin
+function roadRash(p,dt){const sp=Math.hypot(p.vx,p.vz);if(sp<4||isWater(p.x,p.z)){p.rashOn=false;return;}
+  p.rashD=(p.rashD||0)+sp*dt;p.hp=Math.max(1,p.hp-sp*dt*.55);p.lastHurt=gameT;
+  if(p.rashD>.9){p.rashD=0;bloodDecal(p.x+rnd(-.25,.25),p.z+rnd(-.25,.25),rnd(.25,.5));if(Math.random()<.5)emit(p.x,p.y+.2,p.z,'#8a0f0f',.5,.18,rnd(-1,1),1,rnd(-1,1),1);}
+  if(!p.rashOn){p.rashOn=true;for(let i=0;i<3;i++)addWound(p,rpick(['bras','jambe','torse','bras','jambe']),rnd(-1,1),rnd(-1,1),'scr');if(sp>9){addWound(p,rpick(['bras','jambe']),p.vx/sp,p.vz/sp,false);addBleed(.35,false);toast('Tu glisses sur le bitume : peau arrachée, tu saignes');}else toast('Égratignures en glissant au sol');}}
+function fracture(zone){if(zone==='jambe'){player.legT=Math.max(player.legT||0,90);player.fracT=90;toast('JAMBE CASSÉE !\nTu boites longtemps · pharmacie ou hôpital');}else{player.armT=Math.max(player.armT||0,90);player.fracT=90;toast('BRAS CASSÉ !\nTu vises très mal · pharmacie ou hôpital');}sfx.thud();}
 
 /* ================= blood, part 2 : wounds on the bodies, wall splatters, spurts, screen blood ================= */
 const WOUND={mat:null,geo:null,wall:[],wi:0,fx:null,pulse:0};
-const WBONE={tete:['Head'],torse:['Spine2','Spine1','Spine'],jambe:['LeftLeg','RightLeg','LeftUpLeg','RightUpLeg']};
-const WRAD={tete:.1,torse:.13,jambe:.075};
+const WBONE={tete:['Head'],torse:['Spine2','Spine1','Spine'],jambe:['LeftLeg','RightLeg','LeftUpLeg','RightUpLeg'],bras:['LeftForeArm','RightForeArm','LeftArm','RightArm'],pied:['LeftFoot','RightFoot','LeftLeg','RightLeg']};
+const WRAD={tete:.1,torse:.13,jambe:.075,bras:.05,pied:.05};
 function initWounds(){
   WOUND.mat=new THREE.MeshPhongMaterial({color:0x3f0000,shininess:110,specular:0x662222});
   WOUND.geo=new THREE.SphereGeometry(1,10,8);
@@ -4301,18 +4348,27 @@ function initWounds(){
 }
 // stain on the 3D character, stuck to the bone of the part that was hit
 function stainHum(h,w,ref){if(!h||!h.root)return;const names=WBONE[w.part]||WBONE.torse;let b=null;
-  for(const n of(w.part==='jambe'?[names[w.side?1:0],names[w.side?3:2]]:names)){b=h.root.getObjectByName('mixamorig'+n);if(b)break;}if(!b)return;
+  for(const n of(names.length===4?[names[w.side?1:0],names[w.side?3:2]]:names)){b=h.root.getObjectByName('mixamorig'+n);if(b)break;}if(!b)return;
   h.root.updateMatrixWorld(true);const bp=new THREE.Vector3();b.getWorldPosition(bp);const a=ref.h+w.ang,r=WRAD[w.part]||.12;
-  const wp=new THREE.Vector3(bp.x+Math.sin(a)*r,bp.y+(w.part==='tete'?.02:w.part==='jambe'?-.12:.03),bp.z+Math.cos(a)*r);
+  const wp=new THREE.Vector3(bp.x+Math.sin(a)*r,bp.y+(w.part==='tete'?.02:w.part==='jambe'?-.12:w.part==='bras'||w.part==='pied'?0:(w.dy!=null?w.dy:.03)),bp.z+Math.cos(a)*r);
   const m=new THREE.Group();b.add(m);b.worldToLocal(wp);m.position.copy(wp);const ws=new THREE.Vector3();b.getWorldScale(ws);const bq=new THREE.Quaternion();b.getWorldQuaternion(bq);
   m.quaternion.copy(bq.invert().multiply(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,0,1),new THREE.Vector3(Math.sin(a),0,Math.cos(a)))));m.scale.setScalar(1/ws.x);
-  const s=(w.big?.07:.05)*(1+Math.random()*.3),blob=(x,y,sx,sy,sz)=>{const o=new THREE.Mesh(WOUND.geo,WOUND.mat);o.position.set(x,y,0);o.scale.set(sx,sy,sz);m.add(o);};
-  blob(0,0,s,s*1.15,s*.22);for(let i=0;i<3;i++)blob(rnd(-1,1)*s*.9,rnd(-1,1)*s*.9,s*rnd(.3,.55),s*rnd(.3,.55),s*.18);if(w.part!=='jambe')blob(rnd(-.3,.3)*s,-s*1.5,s*.22,s*.9,s*.14);
-  m.userData.wound=true;(h.stains||(h.stains=[])).push(m);}
-function clearStains(h){if(!h||!h.stains)return;for(const m of h.stains)if(m.parent)m.parent.remove(m);h.stains=[];}
+  if(m.parent)m.parent.remove(m);const wl=m.position.clone(),rm=(w.scr?.04:w.big?.1:.065)*(w.k||1),inv=new THREE.Matrix4(),P=new THREE.Vector3(),P2=new THREE.Vector3();
+  for(const o of h.meshes){if(!o.isSkinnedMesh||Array.isArray(o.material))continue;const bi=o.skeleton.bones.indexOf(b);if(bi<0)continue;
+    inv.copy(o.skeleton.boneInverses[bi]).invert().premultiply(o.bindMatrixInverse);P.copy(wl).applyMatrix4(inv);P2.copy(wl);P2.x+=rm/ws.x;P2.applyMatrix4(inv);
+    let mt=o.material;if(!mt.userData.uW){const dry=mt;mt=dry.clone();mt.userData={uW:[],n:0};for(let i=0;i<8;i++)mt.userData.uW.push(new THREE.Vector4(0,0,0,0));
+      mt.onBeforeCompile=sh=>{sh.uniforms.uW={value:mt.userData.uW};
+        sh.vertexShader=sh.vertexShader.replace('#include <common>','#include <common>\nvarying vec3 vBindP;').replace('#include <begin_vertex>','#include <begin_vertex>\nvBindP=position;');
+        sh.fragmentShader=sh.fragmentShader.replace('#include <common>','#include <common>\nvarying vec3 vBindP;\nuniform vec4 uW[8];').replace('#include <color_fragment>',
+          '#include <color_fragment>\n{float wk=0.,hole=0.;for(int i=0;i<8;i++){vec4 w=uW[i];if(w.w>0.){vec3 q=(vBindP-w.xyz)/w.w;float d=length(q)+.16*sin(q.x*7.+q.y*3.)+.13*sin(q.y*9.+q.z*6.)+.08*sin(q.z*17.+q.x*13.);wk=max(wk,1.-smoothstep(.5,1.,d));hole=max(hole,1.-smoothstep(.1,.2,length(q)));}}\ndiffuseColor.rgb=mix(diffuseColor.rgb,diffuseColor.rgb*vec3(.5,.04,.04)+vec3(.07,0.,0.),wk*.93);diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.07,0.,0.),hole);}');};
+      mt.customProgramCacheKey=()=>'woundpaint';o.userData.dry=dry;o.material=mt;(h.soaked||(h.soaked=[])).push(o);}
+    const U=mt.userData;if(U.n<8){U.uW[U.n++].set(P.x,P.y,P.z,P.distanceTo(P2)||1);}}
+  (h.stains||(h.stains=[])).push(m);}
+function clearStains(h){if(!h)return;unsoak(h);h.stains=[];}
+function unsoak(h){if(!h.soaked)return;for(const o of h.soaked)if(o.userData.dry){if(o.material.dispose)o.material.dispose();o.material=o.userData.dry;o.userData.dry=null;}h.soaked=null;}
 function syncStains(a){const h=a===player?HUM.playerH:a.hum;if(!h)return;if(h.stainOwner!==a||(h.stains||[]).length!==(a.wounds||[]).length){clearStains(h);h.stainOwner=a;for(const w of a.wounds||[])stainHum(h,w,a);}}
 function addWound(a,part,dx,dz,big){if(!a.wounds)a.wounds=[];if(a.wounds.length>=8)a.wounds.shift();
-  const ang=wrapA(Math.atan2(-dx,-dz)-a.h)+rnd(-.5,.5);a.wounds.push({part,ang,side:Math.random()<.5,big});const h=a===player?HUM.playerH:a.hum;if(h){h.stainOwner=null;syncStains(a);}}
+  const ang=wrapA(Math.atan2(-dx,-dz)-a.h)+rnd(-.5,.5);a.wounds.push({part,ang,side:Math.random()<.5,big,dy:rnd(-.16,.14),k:rnd(.85,1.25),scr:big==='scr'});const h=a===player?HUM.playerH:a.hum;if(h){h.stainOwner=null;syncStains(a);}}
 // splatter on a wall behind the victim
 function wallSplat(x,y,z,dx,dy,dz){const L=3.2,t=rayT(x,y,z,x+dx*L,y+dy*L,z+dz*L);if(t>=1)return;const m=WOUND.wall[WOUND.wi=(WOUND.wi+1)%WOUND.wall.length];
   const d=t*L-.04;m.position.set(x+dx*d,y+dy*d,z+dz*d);m.material=BLOOD.tex[(Math.random()*4)|0];m.rotation.set(0,Math.atan2(dx,dz)+Math.PI,Math.random()*7);const s=rnd(.6,1.3);m.scale.set(s,s,1);m.visible=true;}
@@ -4557,7 +4613,9 @@ function updateAnimals(dt,P){
   for(const a of NAT.animals){const dP=Math.hypot(a.x-P.x,a.z-P.z),m=a.m;m.g.visible=dP<170;if(dP>220)continue;const S=a.S;
     if(a.dead){a.t+=dt;m.body.rotation.z=Math.min(Math.PI/2,m.body.rotation.z+dt*5);m.body.position.y=Math.max(S.H*.35,m.body.position.y-dt*2);
       if(a.t>90&&dP>120){a.dead=false;a.hp=S.hp;a.state='graze';m.body.rotation.z=0;m.body.position.y=S.leg+S.H/2;}m.g.position.set(a.x,a.y,a.z);rigAnim(m,dt,0,true);continue;}
-    a.t-=dt;let sp=0;
+    a.t-=dt;let sp=0;const hurtA=a.hp<S.hp?1-a.hp/S.hp:0;
+    if(hurtA>0){a.dripD=(a.dripD||0)+dt*(1+hurtA*3);if(a.dripD>1.6&&dP<90){a.dripD=0;bloodDecal(a.x+rnd(-.2,.2),a.z+rnd(-.2,.2),rnd(.15,.2+hurtA*.35));}if(hurtA>.5){a.hp-=dt*S.hp*.02;if(a.hp<=0){animalHit(a,1,null);continue;}}}
+    if(player.car&&dP<1.6+S.L*.5&&!player.car.T.fly&&!player.car.T.boat){const c=player.car,cs=Math.hypot(c.vx,c.vz);if(cs>5&&gameT-(a.carT||0)>.6){a.carT=gameT;animalHit(a,cs*5,{x:c.vx/cs,z:c.vz/cs});a.x+=c.vx/cs*1.2;a.z+=c.vz/cs*1.2;const big=S.L>1.2;c.vx*=big?.7:.93;c.vz*=big?.7:.93;if(big)carImpact(c,Math.min(30,cs*.55));sfx.thud();}}
     if(S.flee&&dP<S.flee&&!player.car&&a.state!=='flee'){a.state='flee';a.t=rnd(4,7);}
     if(S.pack&&a.state!=='charge'&&dP<28&&!player.car&&!player.dead){a.state='charge';a.t=0;if(Math.random()<.5)sfx.bark&&sfx.bark(.8);}
     if(a.state==='flee'){const ang=Math.atan2(a.x-P.x,a.z-P.z);a.h+=wrapA(ang-a.h)*Math.min(1,dt*5);sp=S.run||S.spd*3;if(a.t<=0)a.state='graze';}
@@ -4565,7 +4623,7 @@ function updateAnimals(dt,P){
     else if(a.state==='walk'){const dx=a.tx-a.x,dz=a.tz-a.z,d=Math.hypot(dx,dz);if(d<1||a.t<=0){a.state='graze';a.t=rnd(3,10);}else{a.h+=wrapA(Math.atan2(dx,dz)-a.h)*Math.min(1,dt*3);sp=S.spd;}}
     else{if(a.t<=0){a.state='walk';a.t=rnd(6,14);const Z=a.zone;a.tx=Z.x+rnd(-Z.w/2,Z.w/2);a.tz=Z.z+rnd(-Z.d/2,Z.d/2);}m.head.rotation.x=lerp(m.head.rotation.x,.55,dt*2);}
     if(a.state!=='graze')m.head.rotation.x=lerp(m.head.rotation.x,0,dt*4);
-    if(sp){const nx=a.x+Math.sin(a.h)*sp*dt,nz=a.z+Math.cos(a.h)*sp*dt;if(!inLake(nx,nz)&&!isWater(nx,nz)){a.x=nx;a.z=nz;}else{a.h+=Math.PI*.6;}const o={x:a.x,z:a.z};resolveCircle(o,S.W*.6,false);a.x=o.x;a.z=o.z;a.y=groundY(a.x,a.z);}
+    if(sp){sp*=1-hurtA*.55;const nx=a.x+Math.sin(a.h)*sp*dt,nz=a.z+Math.cos(a.h)*sp*dt;if(!inLake(nx,nz)&&!isWater(nx,nz)){a.x=nx;a.z=nz;}else{a.h+=Math.PI*.6;}const o={x:a.x,z:a.z};resolveCircle(o,S.W*.6,false);a.x=o.x;a.z=o.z;a.y=groundY(a.x,a.z);}
     a.ph+=dt*(sp?sp*2.6/Math.max(.4,S.leg):0);const amp=sp?Math.min(.8,.25+sp*.06):0;m.legs[0].rotation.x=m.legs[3].rotation.x=Math.sin(a.ph)*amp;m.legs[1].rotation.x=m.legs[2].rotation.x=-Math.sin(a.ph)*amp;
     m.tail.rotation.y=Math.sin(gameT*3+a.ph)*.3;m.g.position.set(a.x,a.y,a.z);m.g.rotation.y=a.h;rigAnim(m,dt,sp,false,a.state==='charge'&&dP<2.2,a.state==='graze'&&(a.t%9)<5);}}
 /* ---- birds : seagull flocks over the coasts, pigeons over the city (instanced wings) ---- */
@@ -4799,8 +4857,8 @@ function renderScene(){const wet=(typeof WX!=='undefined'&&WX.cur)?WX.cur.rain:0
 function updateWet(){const wet=(typeof WX!=='undefined'&&WX.cur)?WX.cur.rain:0,m=MAT.asphalt;if(Math.abs((m.userData.wet||0)-wet)<.02)return;m.userData.wet=wet;m.shininess=6+wet*110;m.specular.setScalar(.04+wet*.5);
   if(GFX.rt){m.envMap=wet>.2?GFX.rt.texture:null;m.combine=THREE.MixOperation;m.reflectivity=wet*.3;}m.color.setScalar(1-wet*.3);m.needsUpdate=true;}
 function updateNitro(dt){const c=player.car,ok=c&&!c.dead&&!c.T.fly&&!c.T.boat&&!c.T.tank;NITRO.on=!!(ok&&(keys.KeyN||touch.nitro)&&NITRO.g>.02&&Math.hypot(c.vx,c.vz)>3);
-  if(NITRO.on){NITRO.g=Math.max(0,NITRO.g-dt/5);const fx=Math.sin(c.h),fz=Math.cos(c.h),L=(c.T.len||4)/2;for(const s of[-.4,.4])emit(c.x-fx*L-fz*s,c.y+.4,c.z-fz*L+fx*s,Math.random()<.5?'#5fc8ff':'#ffffff',.35,.25,-c.vx*.2,.3,-c.vz*.2,1.5,true);shake=Math.max(shake,.025);}
-  else NITRO.g=Math.min(1,NITRO.g+dt/25);
+  if(NITRO.on){NITRO.g=Math.max(0,NITRO.g-dt/(5*(c.up?1+.45*c.up.nitro:1)));const fx=Math.sin(c.h),fz=Math.cos(c.h),L=(c.T.len||4)/2;for(const s of[-.4,.4])emit(c.x-fx*L-fz*s,c.y+.4,c.z-fz*L+fx*s,Math.random()<.5?'#5fc8ff':'#ffffff',.35,.25,-c.vx*.2,.3,-c.vz*.2,1.5,true);shake=Math.max(shake,.025);}
+  else NITRO.g=Math.min(1,NITRO.g+dt/(25/(c&&c.up?1+.3*c.up.nitro:1)));
   let el=document.getElementById('nitroBar');if(!el){const w=document.createElement('div');w.id='nitroW';w.style.cssText='height:6px;border-radius:3px;background:rgba(0,0,0,.45);margin-top:4px;overflow:hidden';el=document.createElement('i');el.id='nitroBar';el.style.cssText='display:block;height:100%;background:#5fc8ff';w.appendChild(el);const sp=document.getElementById('speedo');if(sp)sp.appendChild(w);}
   el.style.width=(NITRO.g*100).toFixed(0)+'%';}
 const ADPR={last:performance.now(),ema:60,t:0,r:0,told:false};
@@ -4827,9 +4885,9 @@ function crashPlayer(c,imp){if(c!==player.car||player.dead)return;
     player.vx=fx*sp*.7;player.vz=fz*sp*.7;player.vy=3+imp*.25;player.y=c.y+1.2;player.ground=false;player.knock=Math.min(4,1.6+imp*.08);
     const r=Math.random(),zone=imp>22&&r<.4?'tete':r<.45?'jambe':r<.75?'bras':'torse',k={tete:2,torse:1.2,jambe:.9,bras:.8}[zone];const dmg=Math.round(Math.min(45,Math.max(4,(imp-11)*1.1*k)));
     hurtPlayer(dmg,true);if(typeof addWound==='function')addWound(player,zone==='bras'?'torse':zone,fx,fz,dmg>30);if(typeof bloodHit==='function'&&dmg>12)bloodHit(player.x,player.y+.6,player.z,fx,fz,dmg>35);
-    if(zone==='jambe')player.legT=Math.max(player.legT||0,10);sfx.crash(1);shake=1;
+    if(zone==='jambe')player.legT=Math.max(player.legT||0,10);sfx.crash(1);shake=1;addBleed(dmg>25?.8:.3,false);if(imp>24&&Math.random()<.45&&!player.dead)setTimeout(()=>{if(!player.dead)fracture(zone==='jambe'||Math.random()<.5?'jambe':'bras');},1800);
     toast(`ÉJECTÉ DE LA MOTO !\nChoc ${zone==='tete'?'à la tête':zone==='jambe'?'à la jambe':zone==='bras'?'au bras':'au torse'} : −${dmg} PV`);return;}
-  if(!c.T.moto&&!c.T.fly&&!c.T.boat&&imp>22){const dmg=Math.round(Math.min(30,(imp-21)*.9));hurtPlayer(dmg,false);if(imp>42&&Math.random()<.25){const fx=Math.sin(c.h),fz=Math.cos(c.h);exitCar(true);player.vx=fx*imp*.6;player.vz=fz*imp*.6;player.vy=5;player.y=c.y+1.4;player.ground=false;player.knock=3.5;hurtPlayer(15,true);toast('Éjecté à travers le pare-brise !');}
+  if(!c.T.moto&&!c.T.fly&&!c.T.boat&&imp>22){const dmg=Math.round(Math.min(30,(imp-21)*.9));hurtPlayer(dmg,false);if(imp>42&&Math.random()<.25){const fx=Math.sin(c.h),fz=Math.cos(c.h);exitCar(true);player.vx=fx*imp*.6;player.vz=fz*imp*.6;player.vy=5;player.y=c.y+1.4;player.ground=false;player.knock=3.5;hurtPlayer(15,true);for(let i=0;i<14;i++)emit(c.x+fx*2+rnd(-1,1),c.y+1.2+rnd(0,.8),c.z+fz*2+rnd(-1,1),i%3?'#cfe8ff':'#666',.6,.12,fx*imp*.3+rnd(-3,3),rnd(2,6),fz*imp*.3+rnd(-3,3),1,false,9);hurtPlayer(8,false);addWound(player,'torse',fx,fz,false);addWound(player,'bras',fx,fz,false);addBleed(.9,false);toast('Éjecté à travers le pare-brise !\nCoupé par les éclats de verre');if(Math.random()<.4&&!player.dead)setTimeout(()=>{if(!player.dead)fracture(Math.random()<.5?'jambe':'bras');},2200);}
     else if(dmg>8)toast(`Choc violent : −${dmg} PV`);}}
 /* ================= weapon customisation : silencer, extended mag, scope, grip, laser, paint ================= */
 const WMODS_A=[{k:'sil',n:'Silencieux',p:800,d:'Tir discret : pas d\'alerte, −10 % dégâts'},{k:'mag',n:'Chargeur grande capacité',p:600,d:'+60 % de balles par chargeur'},{k:'scope',n:'Lunette',p:700,d:'Zoom en visant'},
@@ -4891,7 +4949,7 @@ const FOODS={dorada:{n:'Tapas & churros',p:40,f:()=>{player.hp=100;BOOST.stam=12
   liberty:{n:'Burger XXL',p:35,f:()=>{player.hp=100;BOOST.armor=60;},d:'Santé max · −40 % de dégâts reçus (1 min)'},
   neo:{n:'Hot-dog',p:15,f:()=>{player.hp=Math.min(100,player.hp+40);},d:'+40 santé'}};
 function eatFood(id){const F=FOODS[id];if(!F||!payOr(F.p))return;F.f();toast(`${F.n}\n${F.d}`);sfx.ding();}
-function updateBoosts(dt){if(player.safeT>0)player.safeT-=dt;if(!player.dead&&player.hp<50&&gameT-(player.lastHurt||0)>7)player.hp=Math.min(50,player.hp+dt*3);if(player.armT>0)player.armT-=dt;for(const k in BOOST)if(BOOST[k]>0)BOOST[k]-=dt;if(BOOST.stam>0)player.stamina=1;}
+function updateBoosts(dt){updateTrauma(dt);if(player.safeT>0)player.safeT-=dt;if(!player.dead&&!(player.bleed>0)&&player.hp<50&&gameT-(player.lastHurt||0)>7)player.hp=Math.min(50,player.hp+dt*3);if(player.armT>0)player.armT-=dt;for(const k in BOOST)if(BOOST[k]>0)BOOST[k]-=dt;if(BOOST.stam>0)player.stamina=1;}
 /* ================= bigger countries with hills, villages, and bridges from Néo Cité ================= */
 const BRIDGES=[];
 function bridgeSetup(){BRIDGES.length=0;
@@ -5098,7 +5156,7 @@ function genStations(){const fr=F(0,0,0);for(const [x,z] of[[-900,30],[900,30],[
 const SHOP_ACT={
   station(){if(!payOr(8))return;player.hp=Math.min(100,player.hp+20);toast('Sandwich et boisson : +20 santé');},
   pompe_essence(){const c=player.car;if(!c){toast('Viens avec un véhicule pour faire le plein');return;}if(!payOr(60))return;c.health=Math.min(100,c.health+35);carDirt(c);toast('Plein d\'essence et lavage : véhicule remis en état (+35)');},
-  pharmacie(){if(!payOr(60))return;player.hp=100;player.legT=0;player.wounds=[];if(HUM.playerH)clearStains(HUM.playerH);toast('Pansements et antidouleurs : santé au max, blessures soignées');},
+  pharmacie(){if(!payOr(60))return;player.hp=100;stopBleed();player.armT=0;player.legT=0;player.wounds=[];if(HUM.playerH)clearStains(HUM.playerH);toast('Pansements et antidouleurs : santé au max, blessures soignées');},
   fastfood(){if(!payOr(12))return;player.hp=Math.min(100,player.hp+45);toast('Menu burger-frites : +45 santé');},
 };
 
