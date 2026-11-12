@@ -2254,7 +2254,7 @@ function respawnAt(L,cost){
   player.safeT=8;
   if(player.car){player.car.setDriver(false);player.car.ai=player.car.dead?'wreck':'parked';player.car=null;}
   player.m.group.visible=true;player.x=L.x;player.z=L.z;player.y=.2;player.vx=player.vz=0;player.h=L.h;cam.yaw=L.h;player.hp=100;player.knock=0;player.dead=false;
-  player.wounds=[];CHUTE.peak=0;CHUTE.open=false;CHUTE.free=false;if(HUM.playerH)clearStains(HUM.playerH);player.legT=0;player.money=Math.max(0,player.money-cost);player.stars=0;policeETA=0;player.atkT=0;player.aimT=0;player.reload=0;seenT=0;bustT=0;
+  player.wounds=[];CHUTE.peak=0;CHUTE.open=false;CHUTE.free=false;if(HUM.playerH)clearStains(HUM.playerH);player.legT=0;stopBleed();player.armT=0;player.money=Math.max(0,player.money-cost);player.stars=0;policeETA=0;player.atkT=0;player.aimT=0;player.reload=0;seenT=0;bustT=0;
   for(const c of police)if(c.ai==='police'){c.ai='off';c.on=false;c.group.visible=false;c.x=c.z=9999;}
   if(mission){mission=null;missionBeam.visible=false;nextBeam.visible=false;}
   $('fade').classList.remove('on');save();
@@ -2271,7 +2271,7 @@ function shopAction(kind){
   if(kind==='superette')buy(40,()=>P.hp=100,'Santé restaurée');
   else if(kind==='cafe')buy(10,()=>{P.stamina=1;P.hp=Math.min(100,P.hp+25);},'Café avalé · partie sauvegardée');
   else if(kind==='boutique')buy(80,()=>{const lk=randLook();lk.skin=P.m.look.skin;lk.custom=true;setLook(P.m,lk);if(HUM.playerH)applyLook(HUM.playerH,lk);if(P.stars>0)P.stars--;seenT=0;},'Nouvelle tenue'+(P.stars>0?' · -1 étoile':''));
-  else if(kind==='hopital'){P.hp=100;toast('Soigné gratuitement');sfx.ding();}
+  else if(kind==='hopital'){P.hp=100;stopBleed();P.legT=0;P.armT=0;toast('Soigné gratuitement : plaies recousues, fractures plâtrées');sfx.ding();}
   else if(kind==='police'){if(P.stars===0){toast('Rien à te reprocher');return;}buy(100*P.stars,()=>{P.stars=0;for(const c of police)if(c.ai==='police'){c.ai='traffic';snapToGraph(c);}},'Amende payée · étoiles effacées');}
   else if(kind==='armurerie'){openShop();}
   else if(kind==='serrure'){gavPick();}
@@ -2766,7 +2766,7 @@ $('play').addEventListener('click',play);
 function updateFoot(dt,inp){
   const p=player,m=p.m;
   if(p.knock>0){p.knock-=dt;m.body.rotation.x=lerp(m.body.rotation.x,-Math.PI/2,1-Math.exp(-8*dt));m.body.position.y=.15;
-    p.vx*=Math.exp(-3*dt);p.vz*=Math.exp(-3*dt);p.x+=p.vx*dt;p.z+=p.vz*dt;resolveCircle(p,.35,false);p.y=groundY(p.x,p.z);
+    p.vx*=Math.exp(-1.9*dt);p.vz*=Math.exp(-1.9*dt);p.x+=p.vx*dt;p.z+=p.vz*dt;resolveCircle(p,.35,false);p.y=groundY(p.x,p.z);if(!p.dead)roadRash(p,dt);
     m.group.position.set(p.x,p.y,p.z);if(p.knock<=0)m.body.rotation.x=0;return;}
   if(p.climb){climbStep(p,dt);return;}
   const fx=Math.sin(cam.yaw),fz=Math.cos(cam.yaw),rx=-fz,rz=fx;
@@ -4299,12 +4299,34 @@ function updateBlood(dt,P){
     const sp=p.curSpeed||0;p.dripD=(p.dripD||0)+sp*dt+dt*.3;if(p.dripD>.7){p.dripD=0;if(Math.hypot(p.x-P.x,p.z-P.z)<70)bloodDecal(p.x+rnd(-.2,.2),p.z+rnd(-.2,.2),rnd(.18,.35));}
     if(p.bleed<=0&&p.limp)p.limp=.6;}
   // the player bleeds too
-  if(!player.dead&&!player.car){player.legT=Math.max(0,(player.legT||0)-dt);if(player.hp<40||player.legT>0){player.dripD=(player.dripD||0)+Math.hypot(player.vx,player.vz)*dt+dt*.25;if(player.dripD>.8){player.dripD=0;bloodDecal(player.x+rnd(-.2,.2),player.z+rnd(-.2,.2),rnd(.18,.32));}}}
+  if(!player.dead&&!player.car){player.legT=Math.max(0,(player.legT||0)-dt);if(player.hp<40||player.legT>0||player.bleed>.15){player.dripD=(player.dripD||0)+Math.hypot(player.vx,player.vz)*dt+dt*.25;if(player.dripD>.8){player.dripD=0;bloodDecal(player.x+rnd(-.2,.2),player.z+rnd(-.2,.2),rnd(.18,.32));}}}
 }
 // the player is shot by someone : random body part
-function playerShot(dmg){if(player.car){player.car.health-=dmg*.4;return;}const r=Math.random(),part=r<.18?'jambe':r<.24?'pied':r<.31?'tete':r<.36?'coeur':r<.5?'bras':'torse';
-  const m=part==='tete'?2.6:part==='coeur'?3.2:part==='jambe'?.7:part==='pied'?.5:part==='bras'?.6:1;if(part==='bras')player.armT=10;if(part==='pied')player.legT=Math.max(player.legT||0,15);hurtPlayer(dmg*m,false);addWound(player,part,rnd(-1,1),rnd(-1,1),part==='tete');WOUND.pulse=Math.max(WOUND.pulse,part==='tete'?1:.8);bloodHit(player.x,player.y+(part==='tete'?1.6:part==='jambe'?.55:1.15),player.z,rnd(-1,1),rnd(-1,1),part==='tete');
-  if(part==='jambe'){player.legT=12;toast('Touché à la jambe !\nTu boites, impossible de sprinter');}else if(part==='pied')toast('Balle dans le pied !\nTu ne peux plus courir');else if(part==='bras')toast('Touché au bras !\nTu vises moins bien');else if(part==='coeur'&&!player.dead)toast('Balle près du cœur !');else if(part==='tete'&&!player.dead)toast('Touché à la tête !');}
+function playerShot(dmg){if(player.car){player.car.health-=dmg*.4;return;}if(player.dead||player.safeT>0)return;
+  const r=Math.random(),part=r<.17?'jambe':r<.23?'pied':r<.28?'tete':r<.32?'coeur':r<.40?'poumon':r<.54?'bras':'torse',prot=BOOST.armor>0||rageOn();
+  const m={tete:3,coeur:3.4,poumon:1.5,jambe:.7,pied:.5,bras:.6,torse:1}[part],vital=part==='tete'||part==='coeur';
+  if(part==='bras')player.armT=Math.max(player.armT||0,10);if(part==='pied')player.legT=Math.max(player.legT||0,15);if(part==='jambe')player.legT=Math.max(player.legT||0,12);
+  addWound(player,part==='poumon'||part==='coeur'?'torse':part,rnd(-1,1),rnd(-1,1),part==='tete');WOUND.pulse=Math.max(WOUND.pulse,vital?1:.8);
+  bloodHit(player.x,player.y+(part==='tete'?1.6:part==='jambe'?.55:part==='pied'?.15:1.15),player.z,rnd(-1,1),rnd(-1,1),vital);
+  addBleed({tete:1.2,coeur:3,poumon:2.2,jambe:.6,pied:.35,bras:.4,torse:.7}[part],part==='poumon');
+  if(vital&&!prot){toast(part==='tete'?'Balle dans la tête…':'Balle en plein cœur…');hurtPlayer(999,false);return;}
+  hurtPlayer(dmg*m,false);if(player.dead)return;
+  toast({jambe:'Touché à la jambe !\nTu boites, impossible de sprinter · tu saignes',pied:'Balle dans le pied !\nTu ne peux plus courir · tu saignes',bras:'Touché au bras !\nTu vises moins bien · tu saignes',
+    poumon:'POUMON PERFORÉ !\nTu t\'étouffes : hôpital ou pharmacie, vite',coeur:'Balle près du cœur — le gilet t\'a sauvé',tete:'Touché à la tête — le casque t\'a sauvé',torse:'Touché au torse · tu saignes'}[part]);}
+// ---- haemorrhage : wounds drain health until they clot (small ones) or are treated (lung never clots)
+function addBleed(rate,lung){player.bleed=Math.min(5,(player.bleed||0)+rate);if(lung)player.lung=true;player.bleedMsg=0;}
+function stopBleed(){player.bleed=0;player.lung=false;player.fracT=0;}
+function updateTrauma(dt){const p=player;if(p.dead||!(p.bleed>0))return;
+  p.hp=Math.max(0,p.hp-p.bleed*dt);p.lastHurt=gameT;if(!p.lung)p.bleed=Math.max(0,p.bleed-dt*.03);
+  p.bleedMsg=(p.bleedMsg||0)-dt;if(p.bleedMsg<=0&&p.bleed>.5){p.bleedMsg=14;WOUND.pulse=Math.max(WOUND.pulse,.6);toast(p.lung?'Tu craches du sang… il te faut un médecin':'Hémorragie : tu perds du sang\nPharmacie ou hôpital pour te soigner');}
+  if(!p.car){p.poolT=(p.poolT||0)+dt;if(p.poolT>2.5&&Math.hypot(p.vx,p.vz)<.6){p.poolT=0;bloodDecal(p.x+rnd(-.3,.3),p.z+rnd(-.3,.3),rnd(.3,.3+Math.min(.5,p.bleed*.25)));}}
+  if(p.hp<=0)wasted();}
+// ---- sliding on the ground after a fall : road rash, blood trail, torn skin
+function roadRash(p,dt){const sp=Math.hypot(p.vx,p.vz);if(sp<4||isWater(p.x,p.z)){p.rashOn=false;return;}
+  p.rashD=(p.rashD||0)+sp*dt;p.hp=Math.max(1,p.hp-sp*dt*.55);p.lastHurt=gameT;
+  if(p.rashD>.9){p.rashD=0;bloodDecal(p.x+rnd(-.25,.25),p.z+rnd(-.25,.25),rnd(.25,.5));if(Math.random()<.5)emit(p.x,p.y+.2,p.z,'#8a0f0f',.5,.18,rnd(-1,1),1,rnd(-1,1),1);}
+  if(!p.rashOn){p.rashOn=true;addWound(p,rpick(['bras','jambe','torse']),p.vx/sp,p.vz/sp,false);if(sp>9){addWound(p,rpick(['bras','jambe']),p.vx/sp,p.vz/sp,false);addBleed(.35,false);toast('Tu glisses sur le bitume : peau arrachée, tu saignes');}else toast('Égratignures en glissant au sol');}}
+function fracture(zone){if(zone==='jambe'){player.legT=Math.max(player.legT||0,90);player.fracT=90;toast('JAMBE CASSÉE !\nTu boites longtemps · pharmacie ou hôpital');}else{player.armT=Math.max(player.armT||0,90);player.fracT=90;toast('BRAS CASSÉ !\nTu vises très mal · pharmacie ou hôpital');}sfx.thud();}
 
 /* ================= blood, part 2 : wounds on the bodies, wall splatters, spurts, screen blood ================= */
 const WOUND={mat:null,geo:null,wall:[],wi:0,fx:null,pulse:0};
@@ -4851,9 +4873,9 @@ function crashPlayer(c,imp){if(c!==player.car||player.dead)return;
     player.vx=fx*sp*.7;player.vz=fz*sp*.7;player.vy=3+imp*.25;player.y=c.y+1.2;player.ground=false;player.knock=Math.min(4,1.6+imp*.08);
     const r=Math.random(),zone=imp>22&&r<.4?'tete':r<.45?'jambe':r<.75?'bras':'torse',k={tete:2,torse:1.2,jambe:.9,bras:.8}[zone];const dmg=Math.round(Math.min(45,Math.max(4,(imp-11)*1.1*k)));
     hurtPlayer(dmg,true);if(typeof addWound==='function')addWound(player,zone==='bras'?'torse':zone,fx,fz,dmg>30);if(typeof bloodHit==='function'&&dmg>12)bloodHit(player.x,player.y+.6,player.z,fx,fz,dmg>35);
-    if(zone==='jambe')player.legT=Math.max(player.legT||0,10);sfx.crash(1);shake=1;
+    if(zone==='jambe')player.legT=Math.max(player.legT||0,10);sfx.crash(1);shake=1;addBleed(dmg>25?.8:.3,false);if(imp>24&&Math.random()<.45&&!player.dead)setTimeout(()=>{if(!player.dead)fracture(zone==='jambe'||Math.random()<.5?'jambe':'bras');},1800);
     toast(`ÉJECTÉ DE LA MOTO !\nChoc ${zone==='tete'?'à la tête':zone==='jambe'?'à la jambe':zone==='bras'?'au bras':'au torse'} : −${dmg} PV`);return;}
-  if(!c.T.moto&&!c.T.fly&&!c.T.boat&&imp>22){const dmg=Math.round(Math.min(30,(imp-21)*.9));hurtPlayer(dmg,false);if(imp>42&&Math.random()<.25){const fx=Math.sin(c.h),fz=Math.cos(c.h);exitCar(true);player.vx=fx*imp*.6;player.vz=fz*imp*.6;player.vy=5;player.y=c.y+1.4;player.ground=false;player.knock=3.5;hurtPlayer(15,true);toast('Éjecté à travers le pare-brise !');}
+  if(!c.T.moto&&!c.T.fly&&!c.T.boat&&imp>22){const dmg=Math.round(Math.min(30,(imp-21)*.9));hurtPlayer(dmg,false);if(imp>42&&Math.random()<.25){const fx=Math.sin(c.h),fz=Math.cos(c.h);exitCar(true);player.vx=fx*imp*.6;player.vz=fz*imp*.6;player.vy=5;player.y=c.y+1.4;player.ground=false;player.knock=3.5;hurtPlayer(15,true);for(let i=0;i<14;i++)emit(c.x+fx*2+rnd(-1,1),c.y+1.2+rnd(0,.8),c.z+fz*2+rnd(-1,1),i%3?'#cfe8ff':'#666',.6,.12,fx*imp*.3+rnd(-3,3),rnd(2,6),fz*imp*.3+rnd(-3,3),1,false,9);hurtPlayer(8,false);addWound(player,'torse',fx,fz,false);addWound(player,'bras',fx,fz,false);addBleed(.9,false);toast('Éjecté à travers le pare-brise !\nCoupé par les éclats de verre');if(Math.random()<.4&&!player.dead)setTimeout(()=>{if(!player.dead)fracture(Math.random()<.5?'jambe':'bras');},2200);}
     else if(dmg>8)toast(`Choc violent : −${dmg} PV`);}}
 /* ================= weapon customisation : silencer, extended mag, scope, grip, laser, paint ================= */
 const WMODS_A=[{k:'sil',n:'Silencieux',p:800,d:'Tir discret : pas d\'alerte, −10 % dégâts'},{k:'mag',n:'Chargeur grande capacité',p:600,d:'+60 % de balles par chargeur'},{k:'scope',n:'Lunette',p:700,d:'Zoom en visant'},
@@ -4915,7 +4937,7 @@ const FOODS={dorada:{n:'Tapas & churros',p:40,f:()=>{player.hp=100;BOOST.stam=12
   liberty:{n:'Burger XXL',p:35,f:()=>{player.hp=100;BOOST.armor=60;},d:'Santé max · −40 % de dégâts reçus (1 min)'},
   neo:{n:'Hot-dog',p:15,f:()=>{player.hp=Math.min(100,player.hp+40);},d:'+40 santé'}};
 function eatFood(id){const F=FOODS[id];if(!F||!payOr(F.p))return;F.f();toast(`${F.n}\n${F.d}`);sfx.ding();}
-function updateBoosts(dt){if(player.safeT>0)player.safeT-=dt;if(!player.dead&&player.hp<50&&gameT-(player.lastHurt||0)>7)player.hp=Math.min(50,player.hp+dt*3);if(player.armT>0)player.armT-=dt;for(const k in BOOST)if(BOOST[k]>0)BOOST[k]-=dt;if(BOOST.stam>0)player.stamina=1;}
+function updateBoosts(dt){updateTrauma(dt);if(player.safeT>0)player.safeT-=dt;if(!player.dead&&!(player.bleed>0)&&player.hp<50&&gameT-(player.lastHurt||0)>7)player.hp=Math.min(50,player.hp+dt*3);if(player.armT>0)player.armT-=dt;for(const k in BOOST)if(BOOST[k]>0)BOOST[k]-=dt;if(BOOST.stam>0)player.stamina=1;}
 /* ================= bigger countries with hills, villages, and bridges from Néo Cité ================= */
 const BRIDGES=[];
 function bridgeSetup(){BRIDGES.length=0;
@@ -5122,7 +5144,7 @@ function genStations(){const fr=F(0,0,0);for(const [x,z] of[[-900,30],[900,30],[
 const SHOP_ACT={
   station(){if(!payOr(8))return;player.hp=Math.min(100,player.hp+20);toast('Sandwich et boisson : +20 santé');},
   pompe_essence(){const c=player.car;if(!c){toast('Viens avec un véhicule pour faire le plein');return;}if(!payOr(60))return;c.health=Math.min(100,c.health+35);carDirt(c);toast('Plein d\'essence et lavage : véhicule remis en état (+35)');},
-  pharmacie(){if(!payOr(60))return;player.hp=100;player.legT=0;player.wounds=[];if(HUM.playerH)clearStains(HUM.playerH);toast('Pansements et antidouleurs : santé au max, blessures soignées');},
+  pharmacie(){if(!payOr(60))return;player.hp=100;stopBleed();player.armT=0;player.legT=0;player.wounds=[];if(HUM.playerH)clearStains(HUM.playerH);toast('Pansements et antidouleurs : santé au max, blessures soignées');},
   fastfood(){if(!payOr(12))return;player.hp=Math.min(100,player.hp+45);toast('Menu burger-frites : +45 santé');},
 };
 
