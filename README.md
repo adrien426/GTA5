@@ -47,3 +47,7 @@ Sur téléphone : joystick à gauche et boutons à droite. Le joystick accélèr
 - La prévisualisation dans le navigateur de développement a été tentée, mais WebGL est désactivé dans cet environnement. Le rendu GPU, les performances et les interactions en jeu restent à vérifier sur un appareil avec WebGL.
 
 Voir `CREDITS-POC.md` pour les ressources.
+
+## Correctif de chargement GLB
+
+Le modèle Casual publié dans le premier commit était tronqué (786 444 octets sur 802 788). Il a été remplacé par le binaire complet, dont le SHA Git est vérifié avant publication. Le chargeur vérifie désormais la signature, la version et la longueur déclarée de chaque GLB avant son décodage, et indique le chemin du modèle si une erreur survient. Le script du jeu et le modèle corrigé utilisent une URL versionnée pour éviter le cache de la version défectueuse.

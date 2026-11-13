@@ -16,6 +16,20 @@ const hemi=new THREE.HemisphereLight(0xa5cbeb,0x594e3a,2.0);scene.add(hemi);cons
 const sky=new THREE.Mesh(new THREE.SphereGeometry(1400,32,24),new THREE.ShaderMaterial({side:THREE.BackSide,depthWrite:false,uniforms:{top:{value:new THREE.Color('#335d80')},horizon:{value:new THREE.Color('#eab18b')},sunColor:{value:new THREE.Color('#fff1c5')},sunDir:{value:sun.position.clone().normalize()},night:{value:0}},vertexShader:'varying vec3 vPos;void main(){vPos=position;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'varying vec3 vPos;uniform vec3 top,horizon,sunColor,sunDir;uniform float night;void main(){vec3 d=normalize(vPos);float t=pow(max(d.y,0.),.4);vec3 c=mix(horizon,top,t);float s=max(dot(d,sunDir),0.);c+=sunColor*(pow(s,1400.)*3.+pow(s,14.)*.22)*(1.-night);gl_FragColor=vec4(c,1.);}'}));scene.add(sky);scene.fog=new THREE.FogExp2(0xc7a18d,.0017);
 const envScene=new THREE.Scene();envScene.add(sky.clone());const pmrem=new THREE.PMREMGenerator(renderer);scene.environment=pmrem.fromScene(envScene,.04,.1,1600).texture;pmrem.dispose();
 const loader=new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);const texLoader=new THREE.TextureLoader();
+async function loadGlb(path){
+ const url=new URL(path,document.baseURI);
+ try{
+  const response=await fetch(url);
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  const data=await response.arrayBuffer();
+  if(data.byteLength<12)throw new Error('fichier GLB incomplet');
+  const header=new DataView(data);
+  if(header.getUint32(0,true)!==0x46546c67||header.getUint32(4,true)!==2)throw new Error('format GLB invalide');
+  const expected=header.getUint32(8,true);
+  if(expected!==data.byteLength)throw new Error('fichier incomplet : '+data.byteLength+' octets reçus, '+expected+' attendus');
+  return await loader.parseAsync(data,new URL('.',url).href);
+ }catch(error){throw new Error(path.split('?')[0]+' : '+error.message)}
+}
 function texture(name,repeat){const t=texLoader.load('assets/tex/'+name+'.jpg');t.colorSpace=THREE.SRGBColorSpace;t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(repeat,repeat);t.anisotropy=4;return t}
 const mat=(c,roughness=.75,metalness=0)=>new THREE.MeshStandardMaterial({color:c,roughness,metalness});
 const roadMat=new THREE.MeshStandardMaterial({color:0xa3a6a6,map:texture('asphalt',90),roughness:.74});const paveMat=new THREE.MeshStandardMaterial({color:0xb4afa4,map:texture('pave',5),roughness:.88});const concrete=new THREE.MeshStandardMaterial({map:texture('conc',4),color:0xaaa598,roughness:.85});const lineMat=mat(0xd6d2b8);const black=mat(0x1a2327,.5,.4);const foliage=mat(0x4e6952);const lampMat=new THREE.MeshStandardMaterial({color:0xffdb9a,emissive:0xffc96b,emissiveIntensity:2});
@@ -69,7 +83,7 @@ function human(proto,anims){const root=skeletonClone(proto);root.traverse(o=>{if
 function animateHuman(h,speed,dt){const next=speed>4?'run':speed>.2?'walk':'idle';for(const k in h.acts)h.acts[k].setEffectiveWeight(k===next?1:0);h.mix.update(dt)}
 async function init(){
  const files=['nsx','volvo','kia','james','adam','pnj_femme','n_CommonTree_1','n_PalmTree_1'];let done=0;const models={};
- await Promise.all(files.map(async f=>{models[f]=(await loader.loadAsync('assets/models/'+f+'.glb')).scene;done++;$('progress').textContent=Math.round(done/(files.length+2)*100)+'%';$('loadStatus').textContent='Chargement : '+f.replaceAll('_',' ')+'…'}));
+ await Promise.all(files.map(async f=>{models[f]=(await loadGlb('assets/models/'+f+'.glb')).scene;done++;$('progress').textContent=Math.round(done/(files.length+2)*100)+'%';$('loadStatus').textContent='Chargement : '+f.replaceAll('_',' ')+'…'}));
  animData=await fetch('assets/anims.json').then(r=>{if(!r.ok)throw Error('Animations manquantes');return r.json()});done++;
  const metas=await Promise.all(['nsx','volvo','kia'].map(f=>fetch('assets/models/'+f+'.json').then(r=>r.json())));
  activeCar=makeCar(models.nsx,metas[0],4,45,0,'HONDA NSX');
@@ -78,7 +92,7 @@ async function init(){
  const h=human(models.james,animData);player=h.root;mixer=h.mix;actions=h.acts;player.visible=false;scene.add(player);player.position.set(7,0,45);
  for(let i=0;i<26;i++){const hh=human(models[i%3===0?'pnj_femme':i%3===1?'james':'adam'],animData);const road=grid[i%7],side=i%2?1:-1;hh.root.position.set(road+side*12.5,.3,range(-230,230));hh.dir=i%2?1:-1;hh.speed=range(.6,1.15);hh.root.rotation.y=hh.dir>0?0:Math.PI;hh.root.scale.setScalar(range(.92,1.02));scene.add(hh.root);peds.push(hh)}
  // Additional original GLB downloaded directly from the user's Drive, displayed in the park.
- const casual=await loader.loadAsync('assets/casual.glb');const parkPerson=casual.scene;const cb=new THREE.Box3().setFromObject(parkPerson),sz=cb.getSize(new V());parkPerson.scale.setScalar(1.75/sz.y);parkPerson.position.set(180,.3,40);shadowModel(parkPerson);scene.add(parkPerson);if(casual.animations.length){const mm=new THREE.AnimationMixer(parkPerson);mm.clipAction(casual.animations[0]).play();decor.push(mm)}
+ const casual=await loadGlb('assets/casual.glb?v=4cbff2a0');const parkPerson=casual.scene;const cb=new THREE.Box3().setFromObject(parkPerson),sz=cb.getSize(new V());parkPerson.scale.setScalar(1.75/sz.y);parkPerson.position.set(180,.3,40);shadowModel(parkPerson);scene.add(parkPerson);if(casual.animations.length){const mm=new THREE.AnimationMixer(parkPerson);mm.clipAction(casual.animations[0]).play();decor.push(mm)}
  for(let i=0;i<115;i++){const tree=models[i%5===0?'n_PalmTree_1':'n_CommonTree_1'].clone(true);const ix=Math.floor(rand()*6),iz=Math.floor(rand()*6),x=(grid[ix]+grid[ix+1])/2+(rand()>.5?25:-25),z=(grid[iz]+grid[iz+1])/2+range(-23,23);tree.position.set(x,.3,z);const b=new THREE.Box3().setFromObject(tree),s=range(5,9)/b.getSize(new V()).y;tree.scale.setScalar(s);shadowModel(tree);scene.add(tree)}
  loaded=true;$('play').disabled=false;$('play').innerHTML='ENTRER DANS LA VILLE <span>↗</span>';$('loadStatus').textContent='Prêt. Casque conseillé · Clavier et tactile';updateMission();camera.position.set(17,5,25);camera.lookAt(4,1,45);window.__game={state,renderer,scene,camera,cars,player,get activeCar(){return activeCar},recover,interact};
 }
