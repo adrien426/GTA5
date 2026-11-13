@@ -219,7 +219,7 @@ body.title .hud,body.title #mic,body.title #touch{visibility:hidden}
 /* touch layout v2 : more visible buttons, no overlaps, portrait and landscape */
 .tb{background:rgba(8,10,14,.62);border:2px solid rgba(255,255,255,.7);text-shadow:0 1px 2px #000;box-shadow:0 2px 8px rgba(0,0,0,.45);-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
 #joy{background:rgba(8,10,14,.35);border:2px solid rgba(255,255,255,.6)}#knob{background:rgba(255,255,255,.6)}
-#tA{background:rgba(229,72,77,.6)}#tN{right:calc(20px + env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));width:88px;height:88px;background:rgba(40,130,220,.6);font-size:15px}
+#tA{background:rgba(229,72,77,.6)}#touch .tb.fly{background:rgba(40,130,220,.7);border-color:#fff;font-size:13px;font-weight:800}#tN{right:calc(20px + env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));width:88px;height:88px;background:rgba(40,130,220,.6);font-size:15px}
 #tW,#tM,#tP,#tSpec,#tFp,#tR{width:46px;height:46px;font-size:11px;top:calc(150px + env(safe-area-inset-top,0px))}
 #tW{right:calc(20px + env(safe-area-inset-right,0px))}#tM{right:calc(74px + env(safe-area-inset-right,0px))}#tP{right:calc(128px + env(safe-area-inset-right,0px))}
 #tSpec{right:calc(182px + env(safe-area-inset-right,0px));font-size:20px;color:#f2c230}#tFp{right:calc(236px + env(safe-area-inset-right,0px));font-size:18px}#tR{right:calc(290px + env(safe-area-inset-right,0px));font-size:10px}
@@ -2135,7 +2135,7 @@ function updateHUD(){
   const sp=$('speedo');
   if(player.car){sp.hidden=false;$('kmh').textContent=Math.round(Math.abs(player.car.vf)*3.6);$('carhp').firstChild.style.width=Math.max(0,player.car.health)+'%';$('vname').textContent=player.car.T.name;}
   else sp.hidden=true;
-  if(IS_TOUCH){$('tJ').textContent=player.car?'FREIN':'SAUT';$('tS').textContent=player.car?'KLAXON':'SPRINT';$('tE').textContent=player.car?'SORTIR':'ENTRER';$('tR').hidden=!player.car;$('tN').hidden=!(player.car&&!player.car.T.fly&&!player.car.T.boat);$('tJ').textContent=player.swim?'REMONTER':player.car?'FREIN':'SAUT';$('tS').textContent=player.swim?'PLONGER':player.car?'KLAXON':'SPRINT';$('tA').hidden=!!player.car;$('tW').hidden=!!player.car;if($('tA').dataset.w!==player.weap){$('tA').dataset.w=$('tW').dataset.w=player.weap;$('tA').innerHTML=$('tW').innerHTML=W().svg;}}
+  if(IS_TOUCH){$('tJ').textContent=player.car?'FREIN':'SAUT';$('tS').textContent=player.car?'KLAXON':'SPRINT';$('tE').textContent=player.car?'SORTIR':'ENTRER';$('tR').hidden=!player.car;$('tN').hidden=!(player.car&&!player.car.T.fly&&!player.car.T.boat);{const fl=!!(player.car&&player.car.T.fly);$('tJ').textContent=player.swim?'REMONTER':fl?'▲ MONTER':player.car?'FREIN':'SAUT';$('tS').textContent=player.swim?'PLONGER':fl?'▼ DESCENDRE':player.car?'KLAXON':'SPRINT';$('tJ').classList.toggle('fly',fl);$('tS').classList.toggle('fly',fl);if(fl&&!touch.flyTip){touch.flyTip=1;toast('▲ MONTER pour décoller · ▼ DESCENDRE pour atterrir\nJoystick : avancer et tourner');}}$('tA').hidden=!!player.car;$('tW').hidden=!!player.car;if($('tA').dataset.w!==player.weap){$('tA').dataset.w=$('tW').dataset.w=player.weap;$('tA').innerHTML=$('tW').innerHTML=W().svg;}}
   updateWeapHUD();
 }
 
