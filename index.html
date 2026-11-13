@@ -1492,11 +1492,11 @@ function carPhysics(c,thr,steer,hb,dt){
   const perf=c.health<25?.55:1;
   const pk=perkCar(c),U=c.up,ua=U?(1+.12*U.moteur)*(1+.07*U.turbo)*(1+.04*U.boite):1,uv=U?(1+.06*U.moteur)*(1+.05*U.turbo):1,ub=U?30*(1+.3*U.freins):30;
   if(thr>0){if(vf<-.5)vf+=thr*ub*dt;else vf+=thr*t.acc*ua*pk*perf*dt*Math.max(0,1-(vf/(t.maxV*uv*pk))**2);}
-  else if(thr<0){if(vf>.5)vf+=thr*ub*dt;else vf=Math.max(-10,vf+thr*7*dt);}
+  else if(thr<0){if(vf>.5)vf+=thr*ub*(1-.3*(typeof WX!=='undefined'&&WX.cur?WX.cur.rain:0))*dt;else vf=Math.max(-10,vf+thr*7*dt);}
   else vf-=Math.sign(vf)*Math.min(Math.abs(vf),2.2*dt);
   vf-=vf*.08*dt;
   if(hb)vf-=Math.sign(vf)*Math.min(Math.abs(vf),8*dt);
-  const grip=(hb?1.1:(Math.abs(vf)>28?5.5:9))*(U?1+.18*U.pneus:1);vl*=Math.exp(-grip*dt);
+  const wetK=typeof WX!=='undefined'&&WX.cur?WX.cur.rain:0;const grip=(hb?1.1:(Math.abs(vf)>28?5.5:9))*(U?1+.18*U.pneus:1)*(1-.42*wetK);vl*=Math.exp(-grip*dt);
   c.vx=fx*vf+rx*vl;c.vz=fz*vf+rz*vl;c.vf=vf;
   const sp=Math.abs(vf);let tr=2.15*Math.min(1,sp/4)/(1+sp/42);if(hb)tr*=1.55;
   c.steer=lerp(c.steer,steer,1-Math.exp(-10*dt));
@@ -4316,7 +4316,7 @@ function playerShot(dmg){if(player.car){player.car.health-=dmg*.4;return;}if(pla
     poumon:'POUMON PERFORÉ !\nTu t\'étouffes : hôpital ou pharmacie, vite',coeur:'Balle près du cœur — le gilet t\'a sauvé',tete:'Touché à la tête — le casque t\'a sauvé',torse:'Touché au torse · tu saignes'}[part]);}
 // ---- haemorrhage : wounds drain health until they clot (small ones) or are treated (lung never clots)
 function addBleed(rate,lung){player.bleed=Math.min(5,(player.bleed||0)+rate);if(lung)player.lung=true;player.bleedMsg=0;}
-function stopBleed(){player.bleed=0;player.lung=false;player.fracT=0;}
+function stopBleed(){player.bleed=0;player.lung=false;player.fracT=0;player.fracLeg=false;player.fracArm=false;}
 function updateTrauma(dt){const p=player;if(p.dead||!(p.bleed>0))return;
   p.hp=Math.max(0,p.hp-p.bleed*dt);p.lastHurt=gameT;if(!p.lung)p.bleed=Math.max(0,p.bleed-dt*.03);
   p.bleedMsg=(p.bleedMsg||0)-dt;if(p.bleedMsg<=0&&p.bleed>.5){p.bleedMsg=14;WOUND.pulse=Math.max(WOUND.pulse,.6);toast(p.lung?'Tu craches du sang… il te faut un médecin':'Hémorragie : tu perds du sang\nPharmacie ou hôpital pour te soigner');}
@@ -4327,7 +4327,10 @@ function roadRash(p,dt){const sp=Math.hypot(p.vx,p.vz);if(sp<4||isWater(p.x,p.z)
   p.rashD=(p.rashD||0)+sp*dt;p.hp=Math.max(1,p.hp-sp*dt*.55);p.lastHurt=gameT;
   if(p.rashD>.9){p.rashD=0;bloodDecal(p.x+rnd(-.25,.25),p.z+rnd(-.25,.25),rnd(.25,.5));if(Math.random()<.5)emit(p.x,p.y+.2,p.z,'#8a0f0f',.5,.18,rnd(-1,1),1,rnd(-1,1),1);}
   if(!p.rashOn){p.rashOn=true;for(let i=0;i<3;i++)addWound(p,rpick(['bras','jambe','torse','bras','jambe']),rnd(-1,1),rnd(-1,1),'scr');if(sp>9){addWound(p,rpick(['bras','jambe']),p.vx/sp,p.vz/sp,false);addBleed(.35,false);toast('Tu glisses sur le bitume : peau arrachée, tu saignes');}else toast('Égratignures en glissant au sol');}}
-function fracture(zone){if(zone==='jambe'){player.legT=Math.max(player.legT||0,90);player.fracT=90;toast('JAMBE CASSÉE !\nTu boites longtemps · pharmacie ou hôpital');}else{player.armT=Math.max(player.armT||0,90);player.fracT=90;toast('BRAS CASSÉ !\nTu vises très mal · pharmacie ou hôpital');}sfx.thud();}
+function injHud(){let el=$('inj');if(!el){el=document.createElement('div');el.id='inj';el.className='hud';el.style.cssText='position:fixed;left:14px;bottom:86px;font:700 13px system-ui;color:#ffb3b3;text-shadow:0 1px 3px #000;line-height:1.35;pointer-events:none;white-space:pre-line';document.body.appendChild(el);}
+  const p=player,L=[];if(!p.dead){if(p.lung)L.push('🫁 Poumon perforé');if(p.bleed>.15)L.push('🩸 Hémorragie'+(p.bleed>1.5?' grave':''));if(p.legT>0)L.push(p.fracLeg?'🦴 Jambe cassée':'🦵 Jambe blessée');else p.fracLeg=false;if(p.armT>0)L.push(p.fracArm?'🦴 Bras cassé':'💪 Bras blessé');else p.fracArm=false;}
+  const t=L.join('\n');if(el.textContent!==t)el.textContent=t;}
+function fracture(zone){if(zone==='jambe')player.fracLeg=true;else player.fracArm=true;if(zone==='jambe'){player.legT=Math.max(player.legT||0,90);player.fracT=90;toast('JAMBE CASSÉE !\nTu boites longtemps · pharmacie ou hôpital');}else{player.armT=Math.max(player.armT||0,90);player.fracT=90;toast('BRAS CASSÉ !\nTu vises très mal · pharmacie ou hôpital');}sfx.thud();}
 
 /* ================= blood, part 2 : wounds on the bodies, wall splatters, spurts, screen blood ================= */
 const WOUND={mat:null,geo:null,wall:[],wi:0,fx:null,pulse:0};
@@ -4949,7 +4952,7 @@ const FOODS={dorada:{n:'Tapas & churros',p:40,f:()=>{player.hp=100;BOOST.stam=12
   liberty:{n:'Burger XXL',p:35,f:()=>{player.hp=100;BOOST.armor=60;},d:'Santé max · −40 % de dégâts reçus (1 min)'},
   neo:{n:'Hot-dog',p:15,f:()=>{player.hp=Math.min(100,player.hp+40);},d:'+40 santé'}};
 function eatFood(id){const F=FOODS[id];if(!F||!payOr(F.p))return;F.f();toast(`${F.n}\n${F.d}`);sfx.ding();}
-function updateBoosts(dt){updateTrauma(dt);if(player.safeT>0)player.safeT-=dt;if(!player.dead&&!(player.bleed>0)&&player.hp<50&&gameT-(player.lastHurt||0)>7)player.hp=Math.min(50,player.hp+dt*3);if(player.armT>0)player.armT-=dt;for(const k in BOOST)if(BOOST[k]>0)BOOST[k]-=dt;if(BOOST.stam>0)player.stamina=1;}
+function updateBoosts(dt){updateTrauma(dt);if(frame%20===0)injHud();if(player.safeT>0)player.safeT-=dt;if(!player.dead&&!(player.bleed>0)&&player.hp<50&&gameT-(player.lastHurt||0)>7)player.hp=Math.min(50,player.hp+dt*3);if(player.armT>0)player.armT-=dt;for(const k in BOOST)if(BOOST[k]>0)BOOST[k]-=dt;if(BOOST.stam>0)player.stamina=1;}
 /* ================= bigger countries with hills, villages, and bridges from Néo Cité ================= */
 const BRIDGES=[];
 function bridgeSetup(){BRIDGES.length=0;
