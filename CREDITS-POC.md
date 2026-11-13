@@ -8,3 +8,5 @@
 - Textures asphalt / conc / pave / grass : ressources Poly Haven CC0 reprises du dépôt existant, selon ses crédits.
 - Polices : DM Sans et Barlow Condensed, distribuées via Google Fonts. Des polices système servent de secours.
 - Architecture, rue, interface, logique de jeu et missions : nouvelle réalisation pour ce POC. Aucun bâtiment ou environnement de GTA n'est utilisé dans cette scène.
+
+- Téléphone / garage : les modèles optimisés `h2r.glb`, `heli.glb`, `w_deagle.glb` et `w_ak.glb`, ainsi que les métadonnées de véhicules correspondantes, sont repris des ressources déjà présentes dans ce dépôt. Ils proviennent de la collection 3D du propriétaire ; les licences et droits d’origine restent applicables.
