@@ -1501,7 +1501,7 @@ function carPhysics(c,thr,steer,hb,dt){
   const sp=Math.abs(vf);let tr=2.15*Math.min(1,sp/4)/(1+sp/42);if(hb)tr*=1.55;
   c.steer=lerp(c.steer,steer,1-Math.exp(-10*dt));
   c.h+=c.steer*tr*dt*(vf>=0?1:-1);
-  if(t.moto)c.roll=lerp(c.roll,clamp(-c.steer*Math.min(1,sp/10)*.55,-.55,.55),1-Math.exp(-5*dt));
+  if(t.moto)c.roll=lerp(c.roll,clamp(-c.steer*Math.min(1,sp/10)*(t.stand?.3:.55),-.55,.55),1-Math.exp(-5*dt));
   else c.roll=lerp(c.roll,clamp(-vl*.014-c.steer*sp*.0022,-.06,.06),1-Math.exp(-6*dt));
   let slopeP=0;if(c===player.car&&!wetC&&!t.fly&&!t.boat){const hl=(t.len||4)*.4,sl=clamp((groundY(c.x+fx*hl,c.z+fz*hl)-groundY(c.x-fx*hl,c.z-fz*hl))/(hl*2),-.45,.45);if(Math.abs(sl)>.02){const g=9.8*.75*sl*dt;c.vx-=fx*g;c.vz-=fz*g;c.vf-=g;}slopeP=-Math.atan(sl);}
   c.pitch=lerp(c.pitch,clamp(-thr*.03,-.04,.04)+(t.moto?0:slopeP),1-Math.exp(-5*dt));
@@ -1743,7 +1743,7 @@ function updateHumans(dt,P){
   updateDrivers(P);
   const ph=HUM.playerH,moto=player.car&&player.car.T.moto?player.car:null,sit=player.car&&!moto&&!player.car.T.custom&&player.car.driver?player.car:null;player.m.group.visible=false;ph.root.visible=!player.car||!!moto||!!sit;
   const rc=moto||sit;if(rc){if(ph.root.parent!==rc.body){rc.body.add(ph.root);if(moto)ph.root.position.set(0,moto.T.seatY,moto.T.seatZ);else{const t=sit.T;ph.root.position.set(t.dx!=null?t.dx:-.4,(t.seat||.6)-.84+(t.sitY||0),(t.dz||0)+(t.sitZ!=null?t.sitZ:.02));}ph.root.quaternion.identity();}
-    if(sit)sit.driver.visible=false;setAnim(ph,'idle',0);ph.mixer.update(dt);ridePose(ph);}
+    if(sit)sit.driver.visible=false;setAnim(ph,'idle',0);ph.mixer.update(dt);if(rc.T.stand){if(ph.rideB)for(const e of ph.rideB)if(e.done&&e.b.quaternion.equals(e.last)){e.b.quaternion.copy(e.base);e.done=false;}}else ridePose(ph);}
   else if(ph.root.parent!==scene)scene.add(ph.root);
   hideLegs(ph,!!sit);
   if(!player.car){const swT=player.swim?(player.swimTilt||0):0;ph.root.position.set(player.x,player.y+CHUTE.skyX*.75+swT*.7,player.z);ph.root.rotation.order='YXZ';ph.root.rotation.set(Math.max(CHUTE.skyX,swT),player.h,0);
@@ -1868,6 +1868,7 @@ function initVehicles(){
   for(let i=0;i<12;i++){const s=randomRoadSpot(P,0,500);if(!s)continue;const [rx,rz]=rightOf(s.di,s.dj);const c=new Car(rpick(['sedan','sport','van']));c.place(s.x+rx*2.8,s.z+rz*2.8,s.h);c.ai='parked';parked.push(c);}
   if(CT.moto.model){// motorbikes : one next to the spawn point, a few along the roads
     startVehicle();
+    {const c=new Car('trottinette','#1f8f6a');c.place(player.x-2.6,player.z+1.6,player.h||0);c.ai='parked';parked.push(c);}
     for(let i=0;i<8;i++){const s=randomRoadSpot(P,0,450);if(!s)continue;const [rx,rz]=rightOf(s.di,s.dj);const c=new Car(i%2?'moto':'superbike');c.place(s.x+rx*3.3,s.z+rz*3.3,s.h);c.ai='parked';parked.push(c);}}
   for(let i=0;i<9;i++){const c=new Car(i<6?'police':'jeep');c.ai='off';c.on=false;c.group.visible=false;c.x=9999;c.z=9999;police.push(c);}
   for(const [x,z,h] of BASE.jeeps){const c=new Car('jeep');c.place(x,z,h);c.ai='parked';parked.push(c);}
@@ -3475,6 +3476,7 @@ function updateSeaLife(dt,P){
 
 /* ================= new vehicles : boats, planes, helicopters, tanks ================= */
 Object.assign(CT,{
+  trottinette:{len:1.15,w:.5,bh:.3,ch:.3,cl:.6,cz:0,maxV:7.5,acc:6,name:'Trottinette électrique',moto:true,stand:true,custom:'trot',snd:'scooter',seat:.3,dz:0,roofY:1.2,rz:0,wb:.5},
   bateau:{len:6.6,w:2.4,bh:.8,ch:.8,cl:3,cz:0,maxV:30,acc:12,name:'Bateau',boat:true,custom:'boat',seat:.75,roofY:1.9,rz:-.5,dz:-.9,wb:2},
   vedette:{len:7.4,w:2.6,bh:.9,ch:.9,cl:3.3,cz:0,maxV:36,acc:15,name:'Vedette',boat:true,custom:'boat',seat:.8,roofY:2.0,rz:-.5,dz:-1,wb:2},
   avion:{len:9,w:2.6,bh:1,ch:1,cl:4,cz:0,maxV:95,acc:14,name:'Avion',fly:'plane',custom:'plane',seat:1.15,roofY:2.4,rz:1.2,dz:1.4,wb:3},
@@ -3488,6 +3490,7 @@ Object.assign(CT,{
   voilier:{len:8,w:2.6,bh:.8,ch:.8,cl:3.4,cz:0,maxV:16,acc:6,name:'Brise (voilier)',boat:true,custom:'sail',seat:.8,roofY:2,rz:-1,dz:-2.5,wb:2},
   jetski:{len:3.1,w:1.2,bh:.5,ch:.5,cl:1.5,cz:0,maxV:34,acc:18,name:'Wave Jet (jet-ski)',boat:true,custom:'jetski',seat:.6,roofY:1.2,rz:0,dz:-.2,wb:1},
 });
+PROF.trottinette=PROF.sport;
 for(const k of['bateau','vedette','avion','helico','tank','helipol','helimini','jet','jetski','voilier','avionligne','chasseur'])PROF[k]=PROF.van;
 function buildCustomVehicle(car){
   const t=car.T,b=car.body,P=[],Hd=[],Tl=[];
@@ -3532,6 +3535,13 @@ function buildCustomVehicle(car){
     add(boxGeo(.14,2.2,1.8),pm,0,3.3,-4.9,P).rotation.x=-.4;add(boxGeo(4,.12,1.1),pm,0,4.3,-5.5,P);
     for(const [x,z] of[[-1.5,.2],[1.5,.2],[0,4.5]]){add(new THREE.CylinderGeometry(.04,.04,1,5),MAT.dark,x,.75,z);add(new THREE.CylinderGeometry(.26,.26,.18,10).rotateZ(Math.PI/2),MAT.dark,x,.26,z);}
     add(boxGeo(.14,.1,.1),CARM.head,0,1.6,6.8,Hd,false);add(boxGeo(.14,.1,.1),CARM.tail,0,4.3,-6,Tl,false);}
+  else if(t.custom==='trot'){t.seatY=.13;t.seatZ=-.12;t.w=.5;
+    add(boxGeo(.2,.05,.72),pm,0,.15,-.08,P);add(boxGeo(.16,.02,.6),MAT.dark,0,.185,-.08);add(boxGeo(.2,.09,.2),pm,0,.2,-.5,P);
+    const st=add(new THREE.CylinderGeometry(.028,.032,1.02,8),MAT.metal,0,.62,.4);st.rotation.x=-.16;add(boxGeo(.07,.12,.22),pm,0,.2,.34,P).rotation.x=-.5;
+    add(new THREE.CylinderGeometry(.018,.018,.52,8).rotateZ(Math.PI/2),MAT.dark,0,1.12,.32);for(const sx of[-1,1])add(new THREE.CylinderGeometry(.024,.024,.11,8).rotateZ(Math.PI/2),lam('#111'),sx*.22,1.12,.32);
+    add(boxGeo(.1,.07,.05),MAT.dark,0,1.06,.34);
+    for(const z of[.5,-.5]){add(new THREE.CylinderGeometry(.11,.11,.05,14).rotateZ(Math.PI/2),lam('#111'),0,.11,z);add(new THREE.CylinderGeometry(.05,.05,.06,10).rotateZ(Math.PI/2),MAT.metal,0,.11,z);}
+    add(boxGeo(.07,.05,.03),CARM.head,0,.95,.4,Hd,false);add(boxGeo(.08,.03,.03),CARM.tail,0,.26,-.61,Tl,false);}
   else if(t.custom==='jetski'){
     add(extrudeX(polyShape([[-1.5,.1],[-1.55,.55],[.6,.62],[1.5,.4],[1.2,.0],[-1.3,-.05]]),1.1,.08),pm,0,-.25,0,P);
     add(boxGeo(.55,.25,1.1),MAT.dark,0,.48,-.35);add(boxGeo(.7,.12,.3),MAT.metal,0,.75,.55);add(boxGeo(.08,.35,.08),MAT.metal,0,.55,.55);
