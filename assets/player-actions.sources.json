@@ -1,0 +1,65 @@
+{
+  "target": "assets/models/james.glb",
+  "sourceUnits": "centimeters",
+  "outputUnits": "meters",
+  "sampleRate": 24,
+  "retargeting": "World-space rest-pose rotation delta applied to the target bind pose; in-place root translation; disjoint upper/lower-body masks at runtime.",
+  "clips": [
+    {
+      "clip": "punch",
+      "name": "Lead Jab",
+      "driveFileId": "1HPAoaG2-l5z1lUrl6lZp9x8gD2hEaqiO",
+      "sha256": "8ddaf41c44a869e99fe6084e8bfa477e55b33fd13c41c9b88d90808ec3c5079f",
+      "bytes": 409632
+    },
+    {
+      "clip": "punch2",
+      "name": "Jab Cross",
+      "driveFileId": "1XwySkFZyihehxqQwtvFIa0CHkJLOOYjf",
+      "sha256": "6d4e15cb9706a1a49249af9553ed82f6358ac2147b423b985c07968c317cba5a",
+      "bytes": 433936
+    },
+    {
+      "clip": "aim",
+      "name": "Rifle Aiming Idle",
+      "driveFileId": "1GPuBFrSzlhmtM97NBp_MOpmX6zDp1Kup",
+      "sha256": "b45214c173e36e2a3724d24bd31baef6618a594d83beb2a1bd413cd11cf980e3",
+      "bytes": 595936
+    },
+    {
+      "clip": "fire",
+      "name": "Firing Rifle",
+      "driveFileId": "10N1MkZAYNMJgplfoxD_zKhfAKyDOpfFk",
+      "sha256": "b8670491b064b3058398830d2c89b23d8ce8e6e6aaf0543eb0182bc9391fcf1a",
+      "bytes": 408736
+    },
+    {
+      "clip": "roll",
+      "name": "Falling To Roll",
+      "driveFileId": "1w4FVqCPUBH9nZQi_24eWBw2WhysiBoC7",
+      "sha256": "77e2f81b577a78c5a8a5d63424ac2dacb898327ca099d2d479db9d28247ba680",
+      "bytes": 480016
+    },
+    {
+      "clip": "exitRoll",
+      "name": "Run To Rolling",
+      "driveFileId": "1FTStMcRcbONx0p77I-Y_2iL2Styd5gJ_",
+      "sha256": "440e547100a81de49763c30957ba805dde998bc80e2bacfe06c4e2d294f907aa",
+      "bytes": 538160
+    },
+    {
+      "clip": "jump",
+      "name": "Jump",
+      "driveFileId": "1e_3awt0lbMHYY1TBi-00ssDDLlqFkFEn",
+      "sha256": "6954e1e4609aed4c19851d9c7a5bd95ee758b4b1bcd4be6599577620c808a125",
+      "bytes": 555968
+    },
+    {
+      "clip": "fall",
+      "name": "Falling",
+      "driveFileId": "1gxTOxAL8w0aIlispL5xDLDIk16N_90Zg",
+      "sha256": "3209fff2191eb286a5f93558bf3b0784d9ce0b9665728edd734250b10a8d548b",
+      "bytes": 1099840
+    }
+  ]
+}

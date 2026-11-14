@@ -10,3 +10,5 @@
 - Architecture, rue, interface, logique de jeu et missions : nouvelle réalisation pour ce POC. Aucun bâtiment ou environnement de GTA n'est utilisé dans cette scène.
 
 - Téléphone / garage : les modèles optimisés `h2r.glb`, `heli.glb`, `w_deagle.glb` et `w_ak.glb`, ainsi que les métadonnées de véhicules correspondantes, sont repris des ressources déjà présentes dans ce dépôt. Ils proviennent de la collection 3D du propriétaire ; les licences et droits d’origine restent applicables.
+
+- Animations du personnage joueur : FBX « Lead Jab », « Jab Cross », « Rifle Aiming Idle », « Firing Rifle », « Falling To Roll », « Run To Rolling », « Jump » et « Falling », téléchargés du dossier ANIMATION du Google Drive du propriétaire. Conversion et adaptation au squelette James pour le POC ; sources et empreintes dans `assets/player-actions.sources.json`. Les droits et licences d’origine restent applicables.
