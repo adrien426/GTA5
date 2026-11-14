@@ -1,0 +1,10 @@
+{
+  "target": "assets/models/james.glb",
+  "clip": "riding",
+  "sourceName": "Seated Idle.fbx",
+  "driveFileId": "1NUpVELFqS7kZIAdVYDD93IZIAS7aaa2k",
+  "sourceBytes": 666128,
+  "sourceSha256": "633cf2b1c52eb27f7336e952a654abb59c3b738acd1b0fc361e162126f407859",
+  "sampleRate": 24,
+  "retargeting": "World-space source bind-pose delta applied to James, centimeters to meters, in-place translation. Runtime hip anchoring and two-bone IK for handlebar and footpeg contacts."
+}

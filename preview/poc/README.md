@@ -8,7 +8,7 @@ La publication GitHub Actions existante place cette branche dans `preview/poc/` 
 
 ## Contenu
 
-- Quartier procédural d'environ 500 × 500 mètres, quais, parcs, boutiques et tours.
+- Ville procédurale d'environ 790 × 790 mètres (100 îlots), quais, parcs, boutiques et tours.
 - Honda NSX de départ, Volvo V50 et Kia Picanto ; circulation et véhicules stationnés accessibles.
 - Marche et course avec animations Mixamo, passants animés.
 - Trois contrats de livraison, récompenses, progression du solde sauvegardée localement.
@@ -87,3 +87,17 @@ C bascule entre troisième et première personne. À pied en première personne,
 Les tirs utilisent un rayon de visée depuis la caméra, puis un trajet depuis le point de tir vers la cible. Un traceur, un éclat et l’indicateur TIR / TOUCHÉ donnent un retour visible ; les bâtiments et véhicules peuvent arrêter le projectile. Les coups attendent leur phase de contact avant de vérifier une cible proche devant le joueur.
 
 E / G et le bouton SORTIR autorisent la sortie d’un véhicule en mouvement ou d’un hélicoptère en vol si l’espace latéral est libre. Le véhicule abandonné conserve son élan puis ralentit ; l’hélicoptère redescend. Le joueur hérite d’une partie de la vitesse, chute et joue la roulade à la réception. La jauge VIE diminue selon la vitesse de sortie et le choc à l’atterrissage. À zéro, le joueur est remis sur pied après un bref K.O.
+
+## Moto, hélicoptère, impacts et ville agrandie
+
+La moto utilise désormais l’animation Seated Idle du Drive, adaptée au squelette James. Le bassin est ancré à la selle ; une résolution des chaînes à deux os place les deux mains sur le guidon et les deux pieds sur les repose-pieds. Les contacts sont calculés dans le repère de la moto, y compris lorsqu’elle tourne ou s’incline.
+
+Sur l’hélicoptère, seule la pièce `rotor` est animée. La pièce `tail`, qui inclut l’aileron arrière, conserve son transform local et reste attachée au fuselage. Les matériaux PAINT de remplacement des véhicules reçoivent une peinture propre au véhicule, au lieu de conserver le rose de repérage des modèles source.
+
+Les tirs utilisent le point de sortie de l’arme. Le pistolet a un flash plus visible, une brève lumière, un traceur et un recul léger. Quand SON ON est activé, un son de tir est synthétisé localement. Les personnages touchés réagissent, affichent brièvement leur vie restante et un signal d’impact rouge, avec quelques particules de sang et une petite trace temporaire au sol. Les effets expirent et les traces sont plafonnées ; aucun effet de démembrement n’est utilisé.
+
+La zone jouable passe de 502 à 790 mètres de côté, soit environ 2,48 fois sa surface précédente. Elle comporte 100 îlots, 42 passants et 12 ennemis armés. Les ennemis portent un indicateur HOSTILE et apparaissent en rouge sur la carte. Ils patrouillent, suivent le joueur par les rues, alertent les alliés proches lorsqu’ils sont touchés et ripostent à courte portée lorsqu’ils ont une ligne de vue libre. Leur tir réduit la vie du joueur.
+
+Les petits éléments statiques sont regroupés en instances par matériau. Les îlots proches affichent leurs détails ; les bâtiments éloignés utilisent une représentation simplifiée dans un seul maillage instancié. Les personnages éloignés sont masqués et leurs animations sont limitées. Ces mesures limitent le coût de la ville agrandie ; la fluidité réelle sur téléphone doit être vérifiée avec WebGL.
+
+Les tests de `tests/gameplay.test.mjs` vérifient aussi les cinq contacts du pilote à l’arrêt et en virage, l’immobilité de la pièce arrière, les 100 îlots, les 12 ennemis, leur riposte, les effets de bouche de canon et les impacts rouges. Le rendu GPU reste hors de ces tests.
