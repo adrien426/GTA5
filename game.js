@@ -73,8 +73,9 @@ for(let i=0;i<35;i++){const mountain=new THREE.Mesh(new THREE.ConeGeometry(range
 mergeStaticBoxes(scene);createFarCity();
 const enemies=[],vehicleModels={},vehicleMetas={},stationaryActors=[],effects=[];let phoneOpen=false,phoneBusy=false,weaponRoot=null,firstPersonWeapon=null,weaponId='fists',lastDelivered=null;const jump={y:0,vy:0,grounded:true};let cameraKick=0,enemyAlertTimer=0;let attackCooldown=0,attackHeld=false,oneShot=null,playerActionPack=null,animationClock=0,airClock=0,recoilTime=99,punchSequence=0,ejection=null,hitFlash=0,shotFlash=0,knockoutTime=0;const playerClips={},animationWeights=new Map();
 const keys={},touch={x:0,y:0},state={playing:false,paused:false,driving:true,speed:0,heading:0,camYaw:0,camPitch:.22,view:0,health:100,bank:0,mission:0,stage:0,time:0,quality:'auto',sound:false};let player,activeCar,animData,mixer,actions={},lastAction='',toastTimeout,loaded=false,pixelRatio=renderer.getPixelRatio();
-try{const save=JSON.parse(localStorage.getItem('nocturne-poc-v1')||'null');if(save){state.bank=Number(save.bank)||0;state.mission=clamp(Number(save.mission)||0,0,2)}}catch{}
-function save(){try{localStorage.setItem('nocturne-poc-v1',JSON.stringify({bank:state.bank,mission:state.mission}))}catch{}}
+const defeatedEnemies=new Set();
+try{const save=JSON.parse(localStorage.getItem('nocturne-poc-v1')||'null');if(save){if(Array.isArray(save.defeatedEnemies))for(const id of save.defeatedEnemies)if(typeof id==='string')defeatedEnemies.add(id);state.bank=Number(save.bank)||0;state.mission=clamp(Number(save.mission)||0,0,2)}}catch{}
+function save(){try{localStorage.setItem('nocturne-poc-v1',JSON.stringify({bank:state.bank,mission:state.mission,defeatedEnemies:[...defeatedEnemies]}))}catch{}}
 const missions=[{name:'La première course',pickup:[4,74],drop:[148,-140],reward:350,desc:'Récupérez le pli à la Maison Nord.'},{name:'Le dernier service',pickup:[-140,-68],drop:[220,148],reward:500,desc:'Un colis attend devant le café.'},{name:'Lumières du port',pickup:[76,220],drop:[220,-212],reward:750,desc:'Rejoignez le rendez-vous du port.'}];
 const marker=new THREE.Group();const ring=new THREE.Mesh(new THREE.TorusGeometry(3,.08,8,64),new THREE.MeshBasicMaterial({color:0xd3e49a}));ring.rotation.x=Math.PI/2;marker.add(ring);const beam=new THREE.Mesh(new THREE.CylinderGeometry(.4,2,12,24,1,true),new THREE.MeshBasicMaterial({color:0xd3e49a,transparent:true,opacity:.12,side:THREE.DoubleSide,depthWrite:false}));beam.position.y=6;marker.add(beam);scene.add(marker);
 function target(){return missions[state.mission][state.stage?'drop':'pickup']}
@@ -371,23 +372,33 @@ function prepareActor(actor,hostile=false){
  actor.ui=new THREE.Group();actor.ui.position.set(0,2.05,0);const bg=new THREE.Mesh(new THREE.PlaneGeometry(.82,.07),new THREE.MeshBasicMaterial({color:0x162328,depthWrite:false}));const bar=new THREE.Mesh(new THREE.PlaneGeometry(.78,.045),new THREE.MeshBasicMaterial({color:hostile?0xe7685b:0xd3e49a,depthWrite:false}));bar.position.z=.005;actor.ui.add(bg,bar);actor.healthBar=bar;
  if(hostile){const c=document.createElement('canvas');c.width=256;c.height=64;const g=c.getContext('2d');g.fillStyle='#ef9b8e';g.font='bold 29px sans-serif';g.textAlign='center';g.fillText('HOSTILE',128,45);const label=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));label.position.y=.18;label.scale.set(.9,.225,1);actor.ui.add(label)}actor.ui.visible=hostile;actor.root.add(actor.ui);
 }
+// Fixed territories on outer streets; the starting intersection stays peaceful.
+const gangZones=[{id:'west',x:-216,z:216,radius:48},{id:'north',x:216,z:-216,radius:48},{id:'quays',x:288,z:216,radius:48}];
 function initEnemies(proto,weapon){
- const positions=[[11.25,96],[-11.25,126],[83.25,118],[60.75,176],[-132.75,194],[-155.25,-108],[227.25,-180],[299.25,250],[-299.25,300],[-227.25,-284],[155.25,-300],[299.25,-284]];
+ const positions=gangZones.flatMap(zone=>[-18,-6,6,18].map(offset=>({zone,x:zone.x+11.25,z:zone.z+offset})));
+
  for(let i=0;i<positions.length;i++){
-  const enemy=human(proto,animData);enemy.enemy=true;enemy.hp=100;enemy.speed=2.6;enemy.dir=1;enemy.home=new V(positions[i][0],.3,positions[i][1]);enemy.root.position.copy(enemy.home);for(let retry=0;retry<15&&personBlocked(enemy.root.position.x,enemy.root.position.z,.4,.3);retry++)enemy.root.position.z+=3;
+  const slot=positions[i],id=slot.zone.id+'-'+i%4;
+  const enemy=human(proto,animData);enemy.id=id;enemy.zone=slot.zone;enemy.enemy=true;enemy.hp=100;enemy.speed=2.6;enemy.dir=1;enemy.home=new V(slot.x,.3,slot.z);enemy.root.position.copy(enemy.home);for(let retry=0;retry<15&&personBlocked(enemy.root.position.x,enemy.root.position.z,.4,.3);retry++)enemy.root.position.z+=3;
   enemy.home.copy(enemy.root.position);enemy.shotTimer=1.8+i*.2;enemy.aggroTime=0;enemy.recoil=9;enemy.route=[];enemy.routeTimer=0;enemy.shots=0;
   for(const base of ['walk','run']){const lower=enemy.acts[base].getClip().clone();lower.name='enemy'+i+base+'Lower';lower.tracks=lower.tracks.filter(t=>!isUpperTrack(t));enemy.acts[base+'Lower']=enemy.mix.clipAction(lower).play().setEffectiveWeight(0)}
   for(const name of ['aim','fire']){const clip=THREE.AnimationClip.parse(playerActionPack.clips[name]);clip.name='enemy'+i+name;clip.tracks=clip.tracks.filter(isUpperTrack);enemy.acts[name]=enemy.mix.clipAction(clip).play().setEffectiveWeight(0);enemy.acts[name].paused=true;enemy.acts[name].setLoop(THREE.LoopOnce,1);enemy.acts[name].clampWhenFinished=true}
-  prepareActor(enemy,true);enemy.weapon=makeHeldWeapon(weapon,'w_ak');enemy.weapon.position.set(.015,.14,.02);enemy.root.getObjectByName('mixamorigRightHand').add(enemy.weapon);scene.add(enemy.root);peds.push(enemy);enemies.push(enemy);
+  prepareActor(enemy,true);enemy.weapon=makeHeldWeapon(weapon,'w_ak');enemy.weapon.position.set(.015,.14,.02);enemy.root.getObjectByName('mixamorigRightHand').add(enemy.weapon);scene.add(enemy.root);peds.push(enemy);enemies.push(enemy);if(defeatedEnemies.has(id)){enemy.hp=0;enemy.down=true;enemy.root.rotation.x=-Math.PI/2}
  }
 }
 function buildEnemyRoute(enemy,target){
  const near=value=>grid.reduce((best,next)=>Math.abs(next-value)<Math.abs(best-value)?next:best,grid[0]);const start={x:near(enemy.root.position.x),z:near(enemy.root.position.z)},goal={x:near(target.x),z:near(target.z)},route=[start];let x=start.x,z=start.z;while(x!==goal.x){x+=Math.sign(goal.x-x)*72;route.push({x,z})}while(z!==goal.z){z+=Math.sign(goal.z-z)*72;route.push({x,z})}route.push({x:target.x,z:target.z});enemy.route=route;enemy.routeTimer=3;
 }
 function updateEnemy(enemy,dt){
- if(enemy.down){enemy.down-=dt;if(enemy.down<=0){if(!personBlocked(enemy.root.position.x,enemy.root.position.z,.4,enemy.root.position.y,enemy)){enemy.hp=100;enemy.down=0;enemy.root.rotation.x=0;enemy.shotTimer=2}else enemy.down=1}return}
- const target=state.driving?activeCar.root.position:player.position,p=enemy.root.position,distance=Math.hypot(target.x-p.x,target.z-p.z);enemy.aggroTime=Math.max(0,enemy.aggroTime-dt);if(distance<40&&target.y<7)enemy.aggroTime=8;
- const active=enemy.aggroTime>0;let destination;enemy.routeTimer-=dt;const sight=distance<60&&clearLine(p,target);
+ if(enemy.down)return;
+ const target=state.driving?activeCar.root.position:player.position,p=enemy.root.position,distance=Math.hypot(target.x-p.x,target.z-p.z),zone=enemy.zone;
+ const inTerritory=Math.hypot(target.x-zone.x,target.z-zone.z)<=zone.radius;
+ const insideLeash=Math.hypot(p.x-zone.x,p.z-zone.z)<=zone.radius+8;
+ const sight=distance<60&&clearLine(p,target);
+ enemy.aggroTime=Math.max(0,enemy.aggroTime-dt);
+ if(inTerritory&&insideLeash&&distance<28&&target.y<7&&sight)enemy.aggroTime=8;
+ if(!inTerritory||!insideLeash){enemy.aggroTime=0;enemy.route=[]}
+ const active=enemy.aggroTime>0;let destination;enemy.routeTimer-=dt;
  if(active){if(sight)destination=target;else{if(enemy.routeTimer<=0||!enemy.route.length)buildEnemyRoute(enemy,target);while(enemy.route.length>1&&Math.hypot(enemy.route[0].x-p.x,enemy.route[0].z-p.z)<1.5)enemy.route.shift();destination=enemy.route[0]}}
  else destination={x:enemy.home.x,z:enemy.home.z+Math.sin(state.time*.2+enemy.home.x)*7};
  let speed=0;if(destination&&(!active||distance>12||!sight)){const dx=destination.x-p.x,dz=destination.z-p.z,len=Math.hypot(dx,dz);if(len>.3){const before=p.clone();moveWithCollisions(p,dx/len*(active?2.6:.8)*dt,dz/len*(active?2.6:.8)*dt,.38,(x,z,r)=>personBlocked(x,z,r,p.y,enemy));speed=before.distanceTo(p)/Math.max(dt,.001);enemy.root.rotation.y=Math.atan2(dx,dz)}}
@@ -430,8 +441,8 @@ function updateActorFeedback(dt){
 
 function clearLine(from,to){const distance=from.distanceTo(to),steps=Math.ceil(distance/.25);for(let i=1;i<steps;i++){const t=i/steps;if(blocked(THREE.MathUtils.lerp(from.x,to.x,t),THREE.MathUtils.lerp(from.z,to.z,t),.05))return false}return true}
 function damagePed(ped,damage,point=null){
- if(ped.down)return;ped.hp=(ped.hp??100)-damage;ped.hit=.35;ped.feedback=3;ped.redFlash=.18;bloodImpact(ped,point);if(ped.enemy){ped.aggroTime=12;ped.shotTimer=Math.min(ped.shotTimer,.9);for(const ally of enemies)if(ally.root.position.distanceTo(ped.root.position)<40)ally.aggroTime=12}
- if(ped.hp<=0){ped.down=12;ped.root.rotation.x=-Math.PI/2;toast('PNJ à terre.')}else{if(!ped.stationary){ped.dir*=-1;ped.root.rotation.y=ped.dir>0?0:Math.PI}toast('Touché · '+Math.max(0,ped.hp)+' / 100')}
+ if(ped.down)return;ped.hp=(ped.hp??100)-damage;ped.hit=.35;ped.feedback=3;ped.redFlash=.18;bloodImpact(ped,point);if(ped.enemy){ped.aggroTime=12;ped.shotTimer=Math.min(ped.shotTimer,.9);for(const ally of enemies)if(!ally.down&&ally.zone===ped.zone&&ally.root.position.distanceTo(ped.root.position)<40)ally.aggroTime=12}
+ if(ped.hp<=0){ped.down=ped.enemy?true:12;ped.root.rotation.x=-Math.PI/2;if(ped.enemy){ped.hp=0;ped.aggroTime=0;ped.route=[];defeatedEnemies.add(ped.id);save()}toast(ped.enemy?'Membre du gang éliminé.':'PNJ à terre.')}else{if(!ped.stationary){ped.dir*=-1;ped.root.rotation.y=ped.dir>0?0:Math.PI}toast('Touché · '+Math.max(0,ped.hp)+' / 100')}
 }
 function applyMeleeHit(){
  const origin=player.position,targets=[...peds,...stationaryActors].filter(p=>!p.down&&inMeleeRange(origin,player.rotation.y,p.root.position)&&clearLine(origin,p.root.position)).sort((a,b)=>a.root.position.distanceTo(origin)-b.root.position.distanceTo(origin));

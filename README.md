@@ -101,3 +101,9 @@ La zone jouable passe de 502 à 790 mètres de côté, soit environ 2,48 fois sa
 Les petits éléments statiques sont regroupés en instances par matériau. Les îlots proches affichent leurs détails ; les bâtiments éloignés utilisent une représentation simplifiée dans un seul maillage instancié. Les personnages éloignés sont masqués et leurs animations sont limitées. Ces mesures limitent le coût de la ville agrandie ; la fluidité réelle sur téléphone doit être vérifiée avec WebGL.
 
 Les tests de `tests/gameplay.test.mjs` vérifient aussi les cinq contacts du pilote à l’arrêt et en virage, l’immobilité de la pièce arrière, les 100 îlots, les 12 ennemis, leur riposte, les effets de bouche de canon et les impacts rouges. Le rendu GPU reste hors de ces tests.
+
+## Territoires des gangs
+
+Les 12 ennemis sont répartis en trois groupes fixes de quatre : rues de l’ouest, secteur nord et quais à l’est. Leurs points de départ se trouvent à plus de 200 mètres du véhicule initial. Ils patrouillent près de leur emplacement, détectent le joueur à courte portée avec une ligne de vue libre et cessent de le poursuivre lorsqu’il quitte leur territoire. Une attaque peut alerter les membres vivants du même gang à proximité.
+
+Un membre éliminé ne revient plus, même après un K.O. du joueur ou un rechargement de la page : les éliminations sont conservées dans la sauvegarde locale de cet appareil, avec le solde et la progression. Les passants conservent leur comportement précédent. Les tests CPU vérifient les emplacements libres, la distance au départ, la fin de poursuite et l’absence de réapparition après un long délai.
