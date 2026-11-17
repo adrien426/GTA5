@@ -16,7 +16,7 @@ Jeu de ville ouverte en 3D dans le navigateur (Three.js, aucun build) : conduite
 
 ## Édition nouvelle génération
 
-- Bande-annonce d'ouverture en 5 plans (~30 s) : survol depuis la mer, travelling dans une avenue, cartes des 3 personnages, grue au-dessus du joueur, titre, puis descente derrière le joueur. Bandes noires, coupes franches, passable d'un appui. Rejouable avec le bouton « ▶ BANDE-ANNONCE » de l'écran titre.
+- Bande-annonce d'ouverture en 5 plans (~30 s) : survol depuis la mer, travelling dans une avenue, carte du personnage joué, grue au-dessus du joueur, titre, puis descente derrière le joueur. Bandes noires, coupes franches, passable d'un appui. Rejouable avec le bouton « ▶ BANDE-ANNONCE » de l'écran titre.
 - Rendu nouvelle génération (ordinateur, WebGL2) : rendu multi-échantillonné, étalonnage cinéma permanent (ombres bleutées, hautes lumières orangées, lumière dorée au lever et au coucher du soleil, vignettage, grain). Touche **G** : nouvelle génération → classique → désactivé (mémorisé).
 
 ## Multijoueur

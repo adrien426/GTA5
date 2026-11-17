@@ -2824,7 +2824,7 @@ function cineStart(force){if((CINE.done&&!force)||CINE.on)return;CINE.on=true;CI
   el.hidden=false;el.classList.remove('out');$('cineT').querySelector('span').textContent='ÉDITION NOUVELLE GÉNÉRATION';
   document.body.classList.add('cine');}
 function cineEnd(){if(!CINE.on)return;CINE.on=false;const el=$('cine');if(el){el.classList.add('out');$('cineT').classList.remove('on');$('cineCard').classList.remove('on');setTimeout(()=>{el.hidden=true;},850);}document.body.classList.remove('cine');player.safeT=Math.max(player.safeT||0,3);camera.fov=62;camera.updateProjectionMatrix();}
-function cineCardSet(t,s){const c=$('cineCard');if(c.dataset.k===t)return;c.dataset.k=t;c.classList.remove('on');if(!t)return;setTimeout(()=>{if(c.dataset.k!==t)return;c.querySelector('b').textContent=t;c.querySelector('span').textContent=s;c.classList.add('on');},t?120:0);}
+function cineCardSet(t,s){const c=$('cineCard');if(c.dataset.k===t)return;c.dataset.k=t;if(!t){c.classList.remove('on');return;}c.querySelector('b').textContent=t;c.querySelector('span').textContent=s;c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
 function cineCam(dt){CINE.t+=dt;const T=CINE.t,P=playerPos(),py=P.y||0,h=player.h||0,sm=x=>{x=clamp(x,0,1);return x*x*(3-2*x);};
   let i=CINE_SHOTS.findIndex(r=>T<r[1]);if(i<0)i=CINE_SHOTS.length-1;const [t0,t1]=CINE_SHOTS[i],k=clamp((T-t0)/(t1-t0),0,1),e=sm(k);
   if(i!==CINE.shot){CINE.shot=i;const f=$('cineFlash');f.classList.add('on');setTimeout(()=>f.classList.remove('on'),40);}
@@ -2834,10 +2834,10 @@ function cineCam(dt){CINE.t+=dt;const T=CINE.t,P=playerPos(),py=P.y||0,h=player.
     cineCardSet('Bienvenue','à Néo Cité');}
   else if(i===1){// low tracking shot down an avenue
     const z0=0;cx=lerp(-HALF+20,-HALF+150,k);cz=z0+3.5;cy=2.2+Math.sin(T*2)*.05;lx=cx+25;ly=2.4;lz=z0-1;fov=56;
-    cineCardSet('Une ville','Trois destins');}
+    cineCardSet('Une ville','Mille façons d\'y vivre');}
   else if(i===2){// hero cards : slow low-angle orbit around the player
-    const ang=h+Math.PI*.75+k*1.4,r=lerp(4.2,3.4,e);cx=P.x+Math.sin(ang)*r;cz=P.z+Math.cos(ang)*r;cy=py+1.1;lx=P.x;ly=py+1.45;lz=P.z;fov=34;
-    const ks=Object.keys(typeof HEROES!=='undefined'?HEROES:{}),j=Math.min(ks.length-1,Math.floor(k*ks.length)),hr=ks.length?HEROES[ks[j]]:null;
+    const ang=h-.7+k*1.4,r=lerp(4.2,3.4,e);cx=P.x+Math.sin(ang)*r;cz=P.z+Math.cos(ang)*r;cy=py+1.1;lx=P.x;ly=py+1.45;lz=P.z;fov=34;
+    const hr=typeof HEROES!=='undefined'?HEROES[playerChar]:null;
     cineCardSet(hr?hr.n:'',hr?hr.role:'');}
   else if(i===3){// crane up above the player, big title
     cineCardSet('','');const ang=h+Math.PI;cx=P.x+Math.sin(ang)*lerp(6,60,e);cz=P.z+Math.cos(ang)*lerp(6,60,e);cy=py+lerp(2,130,e);lx=P.x+Math.sin(h)*lerp(5,120,e);ly=py+lerp(1.5,10,e);lz=P.z+Math.cos(h)*lerp(5,120,e);fov=lerp(50,45,e);}
