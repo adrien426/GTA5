@@ -464,6 +464,7 @@ window.addEventListener('error',e=>{if(!finished&&/THREE|three/.test(String(e.me
     <h1>NÉO CITÉ</h1>
     <p>Une ville ouverte : conduis, explore, entre dans les boutiques — on voit à travers les portes et les vitrines.</p>
     <button class="btn" id="play">JOUER</button>
+    <button class="btn" id="trailer" style="margin-top:8px;background:linear-gradient(90deg,#ff3d8b,#ff9a5a);color:#fff">▶ BANDE-ANNONCE</button>
     <div id="chars" hidden role="group" aria-label="Personnage"></div>
     <div id="mpBox"><label class="mpOn"><input type="checkbox" id="mpOn"> Jouer en ligne</label><input id="mpName" maxlength="16" placeholder="Pseudo" aria-label="Pseudo" autocomplete="off"><input id="mpCode" maxlength="24" placeholder="Salon privé (optionnel)" title="Laisse vide pour rejoindre le salon public" aria-label="Code du salon" autocomplete="off"><div id="mpStatus" aria-live="polite"></div></div>
     <div id="stats"></div>
@@ -2763,7 +2764,7 @@ function pause(){if(state!=='play')return;radio.tick(false);state='pause';pauseA
   const got=tokens.filter(t=>t.taken).length;$('stats').textContent=`Missions réussies : ${missionsDone} · Jetons : ${got}/${tokens.length} · $${player.money.toLocaleString('fr-FR')}`;
   if(document.pointerLockElement)document.exitPointerLock();}
 function play(){if(!CINE.done&&!/nocine/.test(location.search))cineStart();sfx.init();sfx.resume();if(MP.wanted&&!MP.rooms.length)mpJoin();state='play';$('menu').hidden=true;document.body.classList.remove('title');lockPtr();pressed={};}
-$('play').addEventListener('click',play);
+$('play').addEventListener('click',play);$('trailer').addEventListener('click',()=>{play();cineStart(true);});
 
 function updateFoot(dt,inp){
   const p=player,m=p.m;
@@ -2807,22 +2808,44 @@ function updateDrive(dt,inp){
 }
 
 const _v=new THREE.Vector3();
-// opening cinematic : aerial sweep over the city down to the player, black bars, skippable
-const CINE={on:false,t:0,dur:11,done:false};
-function cineStart(){if(CINE.done||CINE.on)return;CINE.on=true;CINE.t=0;CINE.done=true;let el=$('cine');
-  if(!el){el=document.createElement('div');el.id='cine';el.innerHTML='<div class="cb" style="top:0"></div><div class="cb" style="bottom:0"></div><div id="cineT"><b>NÉO CITÉ</b><span></span></div><div id="cineS">Touche / appui pour passer</div>';
-    const st=document.createElement('style');st.textContent='#cine{position:fixed;inset:0;z-index:60;pointer-events:auto}#cine .cb{position:absolute;left:0;right:0;height:11vh;background:#000;transition:height .8s}#cine.out .cb{height:0}#cine.out{pointer-events:none}#cineT{position:absolute;left:6vw;bottom:17vh;color:#fff;font:800 clamp(28px,7vw,74px) system-ui;letter-spacing:.08em;text-shadow:0 3px 18px #000;opacity:0;transition:opacity 1.2s}#cineT span{display:block;font:500 clamp(13px,2.2vw,22px) system-ui;letter-spacing:.02em;opacity:.9;margin-top:6px}#cineT.on{opacity:1}#cineS{position:absolute;right:3vw;bottom:2.5vh;color:#ddd;font:500 12px system-ui;opacity:.7}';document.head.appendChild(st);document.body.appendChild(el);
+// opening trailer : multi-shot sequence (aerial, street dolly, hero cards, crane, landing behind the player), letterbox, skippable
+const CINE={on:false,t:0,dur:31,done:false,shot:-1};
+const CINE_SHOTS=[[0,6.5],[6.5,12],[12,21.5],[21.5,26.5],[26.5,31]];
+function cineStart(force){if((CINE.done&&!force)||CINE.on)return;CINE.on=true;CINE.t=0;CINE.done=true;CINE.shot=-1;let el=$('cine');
+  if(!el){el=document.createElement('div');el.id='cine';el.innerHTML='<div class="cb" style="top:0"></div><div class="cb" style="bottom:0"></div><div id="cineFlash"></div><div id="cineCard"><i></i><b></b><span></span></div><div id="cineT"><b>NÉO CITÉ</b><span></span></div><div id="cineS">Touche / appui pour passer</div>';
+    const st=document.createElement('style');st.textContent='#cine{position:fixed;inset:0;z-index:60;pointer-events:auto;overflow:hidden}#cine .cb{position:absolute;left:0;right:0;height:12vh;background:#000;transition:height .8s;z-index:2}#cine.out .cb{height:0}#cine.out{pointer-events:none}'
+      +'#cineFlash{position:absolute;inset:0;background:#000;opacity:0;transition:opacity .25s}#cineFlash.on{opacity:1;transition:none}'
+      +'#cineCard{position:absolute;left:7vw;bottom:19vh;color:#fff;opacity:0;transform:translateX(-30px);transition:opacity .7s,transform .9s cubic-bezier(.2,.8,.2,1);font-family:var(--font)}#cineCard.on{opacity:1;transform:none}'
+      +'#cineCard i{display:block;width:72px;height:5px;margin-bottom:12px;background:linear-gradient(90deg,#ff3d8b,#ffb347)}#cineCard b{display:block;font:italic 800 clamp(40px,9vw,104px)/0.9 var(--font);letter-spacing:.02em;text-transform:uppercase;background:linear-gradient(180deg,#fff 30%,#ffd1a6);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 16px rgba(0,0,0,.7))}#cineCard span{display:block;margin-top:8px;font:500 clamp(15px,2.4vw,26px) var(--font);letter-spacing:.18em;text-transform:uppercase;color:#ffe2c9;text-shadow:0 2px 10px #000}'
+      +'#cineT{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;opacity:0;transition:opacity 1.2s;text-align:center}#cineT.on{opacity:1}#cineT b{font:italic 800 clamp(64px,17vw,190px)/.85 var(--font);letter-spacing:.03em;background:linear-gradient(180deg,#ffe9b0 0%,#ff9a5a 45%,#ff3d8b 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 6px 30px rgba(0,0,0,.6))}#cineT span{display:block;font:600 clamp(14px,2.4vw,26px) var(--font);letter-spacing:.5em;margin-top:14px;text-shadow:0 2px 12px #000}'
+      +'#cineS{position:absolute;right:4vw;bottom:3.5vh;z-index:3;font:500 14px var(--font);color:#ddd;opacity:.75}';
+    document.head.appendChild(st);document.body.appendChild(el);
     el.addEventListener('pointerdown',e=>{e.stopPropagation();if(CINE.t>.8)cineEnd();});addEventListener('keydown',e=>{if(CINE.on&&CINE.t>.8)cineEnd();});}
-  el.hidden=false;el.classList.remove('out');const hr=typeof HEROES!=='undefined'&&HEROES[playerChar];$('cineT').querySelector('span').textContent=hr?hr.n+' — '+hr.role:'Une ville, mille façons d\'y vivre';
+  el.hidden=false;el.classList.remove('out');$('cineT').querySelector('span').textContent='ÉDITION NOUVELLE GÉNÉRATION';
   document.body.classList.add('cine');}
-function cineEnd(){if(!CINE.on)return;CINE.on=false;const el=$('cine');if(el){el.classList.add('out');$('cineT').classList.remove('on');setTimeout(()=>{el.hidden=true;},850);}document.body.classList.remove('cine');player.safeT=Math.max(player.safeT||0,3);}
-function cineCam(dt){CINE.t+=dt;const k=clamp(CINE.t/CINE.dur,0,1),e=k*k*(3-2*k),P=playerPos(),h=player.h||0;
-  $('cineT').classList.toggle('on',CINE.t>1.2&&CINE.t<CINE.dur-2.5);
-  // start high and far, orbit a third of a turn, end behind the player
-  const ang=h+Math.PI+(1-e)*2.3,r=lerp(190,7.5,e),y=(P.y||0)+lerp(120,2.6,Math.pow(e,.8));
-  let cx=P.x+Math.sin(ang)*r,cz=P.z+Math.cos(ang)*r,cy=Math.max(y,groundY(cx,cz)+2);
-  camera.position.set(cx,cy,cz);camera.lookAt(P.x,(P.y||0)+1.3+(1-e)*18,P.z);camera.fov=lerp(48,62,e);camera.updateProjectionMatrix();
-  if(k>=1)cineEnd();}
+function cineEnd(){if(!CINE.on)return;CINE.on=false;const el=$('cine');if(el){el.classList.add('out');$('cineT').classList.remove('on');$('cineCard').classList.remove('on');setTimeout(()=>{el.hidden=true;},850);}document.body.classList.remove('cine');player.safeT=Math.max(player.safeT||0,3);camera.fov=62;camera.updateProjectionMatrix();}
+function cineCardSet(t,s){const c=$('cineCard');if(c.dataset.k===t)return;c.dataset.k=t;c.classList.remove('on');if(!t)return;setTimeout(()=>{if(c.dataset.k!==t)return;c.querySelector('b').textContent=t;c.querySelector('span').textContent=s;c.classList.add('on');},t?120:0);}
+function cineCam(dt){CINE.t+=dt;const T=CINE.t,P=playerPos(),py=P.y||0,h=player.h||0,sm=x=>{x=clamp(x,0,1);return x*x*(3-2*x);};
+  let i=CINE_SHOTS.findIndex(r=>T<r[1]);if(i<0)i=CINE_SHOTS.length-1;const [t0,t1]=CINE_SHOTS[i],k=clamp((T-t0)/(t1-t0),0,1),e=sm(k);
+  if(i!==CINE.shot){CINE.shot=i;const f=$('cineFlash');f.classList.add('on');setTimeout(()=>f.classList.remove('on'),40);}
+  let cx,cy,cz,lx,ly,lz,fov=50;
+  if(i===0){// aerial approach from the sea toward the skyline
+    cx=lerp(HALF+620,HALF+160,e);cz=lerp(HALF+420,HALF+90,e);cy=lerp(190,95,e);lx=0;ly=25;lz=0;fov=lerp(40,48,e);
+    cineCardSet('Bienvenue','à Néo Cité');}
+  else if(i===1){// low tracking shot down an avenue
+    const z0=0;cx=lerp(-HALF+20,-HALF+150,k);cz=z0+3.5;cy=2.2+Math.sin(T*2)*.05;lx=cx+25;ly=2.4;lz=z0-1;fov=56;
+    cineCardSet('Une ville','Trois destins');}
+  else if(i===2){// hero cards : slow low-angle orbit around the player
+    const ang=h+Math.PI*.75+k*1.4,r=lerp(4.2,3.4,e);cx=P.x+Math.sin(ang)*r;cz=P.z+Math.cos(ang)*r;cy=py+1.1;lx=P.x;ly=py+1.45;lz=P.z;fov=34;
+    const ks=Object.keys(typeof HEROES!=='undefined'?HEROES:{}),j=Math.min(ks.length-1,Math.floor(k*ks.length)),hr=ks.length?HEROES[ks[j]]:null;
+    cineCardSet(hr?hr.n:'',hr?hr.role:'');}
+  else if(i===3){// crane up above the player, big title
+    cineCardSet('','');const ang=h+Math.PI;cx=P.x+Math.sin(ang)*lerp(6,60,e);cz=P.z+Math.cos(ang)*lerp(6,60,e);cy=py+lerp(2,130,e);lx=P.x+Math.sin(h)*lerp(5,120,e);ly=py+lerp(1.5,10,e);lz=P.z+Math.cos(h)*lerp(5,120,e);fov=lerp(50,45,e);}
+  else{// descend behind the player
+    const ang=h+Math.PI+(1-e)*1.6,r=lerp(150,7.5,e);cx=P.x+Math.sin(ang)*r;cz=P.z+Math.cos(ang)*r;cy=py+lerp(110,2.6,Math.pow(e,.8));lx=P.x;ly=py+1.3+(1-e)*14;lz=P.z;fov=lerp(46,62,e);}
+  $('cineT').classList.toggle('on',(i===3&&k>.25)||(i===4&&k<.35));
+  cy=Math.max(cy,groundY(cx,cz)+1.2);camera.position.set(cx,cy,cz);camera.lookAt(lx,ly,lz);camera.fov=fov;camera.updateProjectionMatrix();
+  if(T>=CINE.dur)cineEnd();}
 function updateCamera(dt){if(CINE.on){cineCam(dt);return;}
   if(cam.fp&&!(player.car&&player.car.T.fly)){fpCamera(dt);return;}
   if(HUM.playerH&&!player.car)HUM.playerH.root.visible=true;
@@ -2858,7 +2881,7 @@ function loop(now){
   if(pressed.pause){if(wheel.open)closeWheel();else if(shopUI.open)closeShop();else if(phone.open)closePhone();else if(big)setBigMap(false);else{pause();pressed={};return;}}
   if(pressed.wheel){wheel.open?closeWheel():openWheel();}
   if(pressed.mic)micToggle();
-  let inp=readInput();if(phone.open||wheel.open||shopUI.open)inp={x:0,y:0,sprint:false,hb:true};
+  let inp=readInput();if(phone.open||wheel.open||shopUI.open||CINE.on)inp={x:0,y:0,sprint:false,hb:true};
   updatePhone(dt);
   const P0=playerPos();
   updateSky(dt,P0);updateWeather(dt,P0);if((frame&15)===0)updateChunks();
@@ -4851,22 +4874,30 @@ function initGfx(){try{const rt=new THREE.WebGLCubeRenderTarget(IS_TOUCH?64:128,
   GFX.rt=rt;GFX.cam=new THREE.CubeCamera(1,2000,rt);for(const c of GFX.cam.children)c.layers.set(1);sky.layers.enable(1);scene.add(GFX.cam);
   for(const k in paintCache)envOn(paintCache[k],.03);envOn(CARM.glass,.55);envOn(GLASS,.4);envOn(MAT.metal,.35);}catch(e){GFX.rt=null;}}
 function envOn(m,r){if(!GFX.rt||!m||!m.isMeshPhongMaterial&&!m.isMeshLambertMaterial)return;m.envMap=GFX.rt.texture;m.combine=THREE.MixOperation;m.reflectivity=r;m.needsUpdate=true;}
-const POST={on:!IS_TOUCH,comp:null,bloom:null,k:0};
-function initPost(){try{if(!THREE.EffectComposer||!THREE.UnrealBloomPass)return;const c=new THREE.EffectComposer(renderer);c.addPass(new THREE.RenderPass(scene,camera));
-  const b=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth/2,innerHeight/2),.8,.55,.8);c.addPass(b);// final pass : sRGB output + cinematic grade (edge chromatic aberration, contrast, saturation, vignette, film grain)
-  const grade=new THREE.ShaderPass({uniforms:{tDiffuse:{value:null},uT:{value:0},uK:{value:1}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
-    fragmentShader:`uniform sampler2D tDiffuse;uniform float uT;uniform float uK;varying vec2 vUv;
+const POST={on:!IS_TOUCH,comp:null,bloom:null,k:0,ng:true,msaa:false};{const v=store.get('ng');if(v===0)POST.on=false;else if(v===1)POST.ng=false;}
+function initPost(){try{if(!THREE.EffectComposer||!THREE.UnrealBloomPass)return;
+  // multisampled target (WebGL2) : the composer keeps its antialiasing, so the cinematic grade can stay on in daylight
+  let rt;if(renderer.capabilities.isWebGL2&&THREE.WebGLMultisampleRenderTarget){rt=new THREE.WebGLMultisampleRenderTarget(innerWidth,innerHeight,{format:THREE.RGBAFormat});rt.samples=4;POST.msaa=true;}
+  const c=rt?new THREE.EffectComposer(renderer,rt):new THREE.EffectComposer(renderer);c.addPass(new THREE.RenderPass(scene,camera));
+  const b=new THREE.UnrealBloomPass(new THREE.Vector2(innerWidth/2,innerHeight/2),.8,.55,.8);c.addPass(b);
+  // final pass : sRGB output + cinematic grade (edge chromatic aberration, split toning teal/orange, golden-hour warmth, contrast, vignette, film grain)
+  const grade=new THREE.ShaderPass({uniforms:{tDiffuse:{value:null},uT:{value:0},uK:{value:1},uNG:{value:0},uGold:{value:0}},vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+    fragmentShader:`uniform sampler2D tDiffuse;uniform float uT;uniform float uK;uniform float uNG;uniform float uGold;varying vec2 vUv;
       float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233))+uT)*43758.5453);}
       void main(){vec2 d=vUv-.5;float r2=dot(d,d);vec2 off=d*r2*.012*uK;
         vec3 c=vec3(texture2D(tDiffuse,vUv+off).r,texture2D(tDiffuse,vUv).g,texture2D(tDiffuse,vUv-off).b);
-        c=LinearTosRGB(vec4(c,1.)).rgb;float l=dot(c,vec3(.299,.587,.114));c=mix(vec3(l),c,1.+.12*uK);c=(c-.5)*(1.+.06*uK)+.5;
-        c*=1.-r2*.55*uK;c+=(hash(vUv*vec2(1920.,1080.))-.5)*.035*uK;gl_FragColor=vec4(c,1.);}`});
+        c=LinearTosRGB(vec4(c,1.)).rgb;float l=dot(c,vec3(.299,.587,.114));
+        vec3 sh=vec3(-.025,.012,.045),hi=vec3(.06,.02,-.045);c+=uNG*(mix(sh,hi,smoothstep(.2,.8,l)));
+        c*=mix(vec3(1.),vec3(1.08,.98,.9),uGold*uNG);c+=uNG*uGold*vec3(.05,.0,.035)*(1.-l);
+        c=mix(vec3(l),c,1.+(.12+.1*uNG)*uK);c=(c-.5)*(1.+(.06+.06*uNG)*uK)+.5;
+        c*=1.-r2*(.55+.25*uNG)*uK;c+=(hash(vUv*vec2(1920.,1080.))-.5)*.035*uK;gl_FragColor=vec4(c,1.);}`});
   c.addPass(grade);POST.grade=grade;POST.comp=c;POST.bloom=b;postSize();addEventListener('resize',postSize);}catch(e){POST.comp=null;}}
 function postSize(){if(POST.comp){POST.comp.setPixelRatio(renderer.getPixelRatio());POST.comp.setSize(innerWidth,innerHeight);}}
-function postToggle(){POST.on=!POST.on;toast(POST.on?'Effets lumineux : activés':'Effets lumineux : désactivés (plus fluide)');}
-// bloom only when it matters (night, rain) : by day the scene keeps its antialiasing
-function renderScene(){const wet=(typeof WX!=='undefined'&&WX.cur)?WX.cur.rain:0,want=POST.on&&POST.comp&&(nightF>.3||wet>.35);
-  if(want){POST.bloom.strength=.35+Math.max(nightF,wet*.6)*.75;if(POST.grade)POST.grade.uniforms.uT.value=(gameT*7)%100;POST.comp.render();}else renderer.render(scene,camera);}
+function postToggle(){if(POST.on&&POST.ng){POST.ng=false;toast('Rendu classique');}else if(POST.on){POST.on=false;toast('Effets lumineux : désactivés (plus fluide)');}else{POST.on=true;POST.ng=!!POST.msaa;toast(POST.ng?'Rendu nouvelle génération : activé':'Effets lumineux : activés');}store.set('ng',POST.on?(POST.ng?2:1):0);}
+// bloom only when it matters (night, rain) in classic mode; next-gen mode keeps the grade on all day (needs the multisampled target)
+function renderScene(){const wet=(typeof WX!=='undefined'&&WX.cur)?WX.cur.rain:0,ng=POST.ng&&POST.msaa,want=POST.on&&POST.comp&&(ng||nightF>.3||wet>.35);
+  if(want){POST.bloom.strength=(ng?.22:.35)+Math.max(nightF,wet*.6)*.75;POST.bloom.threshold=ng?.72:.8;if(POST.grade){const u=POST.grade.uniforms;u.uT.value=(gameT*7)%100;u.uNG.value=ng?1:0;
+    const dh=Math.min(Math.abs(dayT-18.5),Math.abs(dayT-6.5));u.uGold.value=clamp(1-dh/2.2,0,1)*.9+.1;}POST.comp.render();}else renderer.render(scene,camera);}
 function updateWet(){const wet=(typeof WX!=='undefined'&&WX.cur)?WX.cur.rain:0,m=MAT.asphalt;if(Math.abs((m.userData.wet||0)-wet)<.02)return;m.userData.wet=wet;m.shininess=6+wet*110;m.specular.setScalar(.04+wet*.5);
   if(GFX.rt){m.envMap=wet>.2?GFX.rt.texture:null;m.combine=THREE.MixOperation;m.reflectivity=wet*.3;}m.color.setScalar(1-wet*.3);m.needsUpdate=true;}
 function updateNitro(dt){const c=player.car,ok=c&&!c.dead&&!c.T.fly&&!c.T.boat&&!c.T.tank;NITRO.on=!!(ok&&(keys.KeyN||touch.nitro)&&NITRO.g>.02&&Math.hypot(c.vx,c.vz)>3);
