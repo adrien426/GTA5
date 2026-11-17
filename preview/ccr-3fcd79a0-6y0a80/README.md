@@ -19,6 +19,7 @@ Jeu de ville ouverte en 3D dans le navigateur (Three.js, aucun build) : conduite
 - Bande-annonce d'ouverture en 5 plans (~30 s) : survol depuis la mer, travelling dans une avenue, carte du personnage joué, grue au-dessus du joueur, titre, puis descente derrière le joueur. Bandes noires, coupes franches, passable d'un appui. Rejouable avec le bouton « ▶ BANDE-ANNONCE » de l'écran titre.
 - Rendu nouvelle génération (ordinateur, WebGL2) : rendu multi-échantillonné, étalonnage cinéma permanent (ombres bleutées, hautes lumières orangées, lumière dorée au lever et au coucher du soleil, vignettage, grain). Touche **G** : nouvelle génération → classique → désactivé (mémorisé).
 
+- Duo original **Maya Solis & Kenzo Ruiz** (personnages par défaut d'une nouvelle partie) : colocataires, ils démarrent devant leur appart (déjà acheté, lit pour dormir et sauvegarder). Celui que tu ne joues pas marche à tes côtés et monte avec toi dans les véhicules ; changer de l'un à l'autre te met à sa place, là où il se trouve. Appli **Duo ♥** du téléphone : jauge de relation (temps passé ensemble, sorties, cadeaux), proposition d'être en couple à partir de 60 (santé qui remonte quand ils sont ensemble), pause possible. Maya : tir précis ; Kenzo : conduite +12 %, dégâts +15 %.
 ## Multijoueur
 
 Cocher « Jouer en ligne » sur l'écran titre : tous les joueurs du salon public se retrouvent dans la même ville (ou dans un salon privé en saisissant le même code).
