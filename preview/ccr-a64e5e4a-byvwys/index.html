@@ -233,6 +233,9 @@ body.touch #toast{font-size:17px;top:22%;max-width:56vw}body.touch #speedo{right
 @media (orientation:portrait){body.touch #speedo{bottom:calc(240px + env(safe-area-inset-bottom,0px))}body.touch #toast{max-width:88vw}}
 @media (orientation:landscape) and (max-height:430px){#tE{bottom:calc(118px + env(safe-area-inset-bottom,0px))}#tW,#tM,#tP,#tSpec,#tFp,#tR{top:calc(146px + env(safe-area-inset-top,0px))}}
 body.cine .hud,body.cine #touch{visibility:hidden}
+#toast{top:17%;font-size:22px;font-weight:700;font-style:normal;line-height:1.25;max-width:min(520px,80vw);padding:10px 18px;border-radius:12px;background:rgba(12,8,20,.72);border:1px solid rgba(255,255,255,.12);box-shadow:0 8px 24px rgba(0,0,0,.35);text-shadow:0 1px 2px #000}
+#toast:not(.on){pointer-events:none}body.touch #toast{font-size:15px;top:20%;padding:7px 12px}
+#mpHud.solo{padding:4px 10px;font-size:14px;opacity:.8}
 
 /* title / pause screen v3 : the live 3D city at sunset stays visible, left-hand panel, sunset gradient title */
 .screen{justify-content:flex-start;padding:16px calc(6vw + env(safe-area-inset-right,0px)) 16px calc(6vw + env(safe-area-inset-left,0px));overflow:auto;
@@ -589,6 +592,12 @@ function asphaltTex(img,into){
   for(const v of[-7.4,7.2]){W(12*m,v*m,48*m,.2*m);W(v*m,12*m,.2*m,48*m);}
   if(into)return null;return tex(c);
 }
+// highway texture (14 m wide, 16 m long) : asphalt, wheel tracks, white edge lines, dashed yellow centre line
+function hwyTex(img){const c=hwyTex.c||(hwyTex.c=mkC(256,512)),g=c.getContext('2d');
+  if(img){g.fillStyle=g.createPattern(img,'repeat');g.save();g.scale(.5,.5);g.fillRect(0,0,512,1024);g.restore();g.fillStyle='rgba(30,32,36,.38)';g.fillRect(0,0,256,512);}
+  else{g.fillStyle='#3a3c41';g.fillRect(0,0,256,512);speckle(g,256,512,9000,.28,.07);}
+  g.fillStyle='rgba(0,0,0,.13)';for(const x of[46,84,172,210])g.fillRect(x-9,0,18,512);
+  g.fillStyle='rgba(236,236,230,.9)';g.fillRect(9,0,6,512);g.fillRect(241,0,6,512);g.fillStyle='rgba(227,192,74,.95)';g.fillRect(125,0,6,190);return c;}
 function tileTex(base,line,px=256,cells=2,noise=8000){
   const c=mkC(px,px),g=c.getContext('2d');g.fillStyle=base;g.fillRect(0,0,px,px);speckle(g,px,px,noise,.12,.08);
   g.strokeStyle=line;g.lineWidth=2;const s=px/cells;
@@ -963,7 +972,7 @@ function trafficLights(){
 function lampPost(x,z,ry){
   const g=new THREE.CylinderGeometry(.08,.11,6,7);place(g,x,3.2,z);addStatic(g,MAT.frame);
   const fr=F(x,z,ry);fbox(fr,MAT.frame,0,6.15,.7,.1,.1,1.5,{collide:false});fbox(fr,MAT.lamp,0,6.05,1.35,.34,.12,.55,{collide:false});
-  {const [px,pz]=fw(fr,0,1.35),pg=new THREE.PlaneGeometry(11,11);pg.rotateX(-Math.PI/2);place(pg,px,.23,pz);addStatic(pg,NG.poolMat());}// pool of light on the ground at night
+  {const [px,pz]=fw(fr,0,1.35),pg=new THREE.PlaneGeometry(9,9);pg.rotateX(-Math.PI/2);place(pg,px,.23,pz);addStatic(pg,NG.poolMat());}// pool of light on the ground at night
   addCollider(x-.15,x+.15,z-.15,z+.15,0,6,{cam:false});
 }
 function bench(fr,lx,lz){fbox(fr,MAT.wood,lx,.65,lz,1.8,.08,.5,{collide:false});fbox(fr,MAT.wood,lx,.95,lz-.22,1.8,.4,.06,{collide:false});
@@ -2697,7 +2706,7 @@ const CONTACTS=[
 ];
 function phTitle(t){return `<div class="phTitle"><button data-back="1" aria-label="Retour">‹</button>${t}</div>`;}
 function openPhone(){if(player.dead)return;if(prison.on||GAV.on){toast('Pas de téléphone en prison');return;}phone.open=true;$('phone').hidden=false;phView('home');if(document.pointerLockElement)document.exitPointerLock();sfx.ding();}
-function closePhone(){phone.open=false;$('phone').hidden=true;}
+function closePhone(){phone.open=false;$('phone').hidden=true;if(state==='play'&&!big)lockPtr();}// recapture the mouse right away (no extra click)
 function phView(v){
   phone.view=v;let h='';
   if(v==='home')h='<div class="phGrid">'+APPS.map(a=>`<button class="phApp" data-v="${a[0]}"><i style="background:${a[3]}">${a[2]}</i>${a[1]}</button>`).join('')+'</div>';
@@ -2987,7 +2996,7 @@ function loop(now){
   pressed={};
   renderScene();
 }
-function setBigMap(on){big=on;$('bigmap').hidden=!on;if(on&&document.pointerLockElement)document.exitPointerLock();}
+function setBigMap(on){big=on;$('bigmap').hidden=!on;if(on&&document.pointerLockElement)document.exitPointerLock();if(!on&&state==='play'&&!phone.open)lockPtr();}
 $('mapClose').addEventListener('click',e=>{e.stopPropagation();setBigMap(false);});
 $('heroBtn').addEventListener('click',e=>{e.stopPropagation();heroMenu();});
 $('mapBtns').addEventListener('click',e=>{e.stopPropagation();const b=e.target.closest('button');if(!b)return;if(b.dataset.find)findNearest(b.dataset.find);if(b.dataset.zoom){bigZoom=bigZoom===1?3:bigZoom===3?8:1;b.textContent='🔍 Zoom ×'+bigZoom;}});
@@ -3735,10 +3744,9 @@ function genTerrain(){
   g.setAttribute('color',new THREE.BufferAttribute(cols,3));g.computeVertexNormals();
   const m=new THREE.Mesh(g,new THREE.MeshLambertMaterial({vertexColors:true}));m.receiveShadow=true;scene.add(m);TERRAIN=m;TERRS.push({m,w:W,d:D});
   // highways : asphalt ribbons with a dashed centre line
-  const asph=lam('#34373b'),ln=lam('#e3c04a');
+  if(!MAT.hwy){const t=tex(hwyTex());t.anisotropy=MAXANI;MAT.hwy=new THREE.MeshStandardMaterial({map:t,roughness:.93,metalness:0});}
   for(const r of ROADS){const L=Math.hypot(r[2]-r[0],r[3]-r[1]),ry=Math.atan2(r[2]-r[0],r[3]-r[1]);
-    const rg=new THREE.PlaneGeometry(14,L);rg.rotateX(-Math.PI/2);place(rg,(r[0]+r[2])/2,.03,(r[1]+r[3])/2,ry);addStatic(rg,asph);
-    for(let t=6;t<L-6;t+=14){const x=lerp(r[0],r[2],t/L),z=lerp(r[1],r[3],t/L);const d=boxGeo(.3,.02,5);place(d,x,.045,z,ry);addStatic(d,ln);}}
+    const rg=new THREE.PlaneGeometry(14,L);rg.rotateX(-Math.PI/2);const uv=rg.attributes.uv;for(let i=0;i<uv.count;i++)uv.setY(i,uv.getY(i)*L/16);place(rg,(r[0]+r[2])/2,.03,(r[1]+r[3])/2,ry);addStatic(rg,MAT.hwy);}
   // forests and rocks (instanced)
   const trunk=new THREE.InstancedMesh(new THREE.CylinderGeometry(.18,.28,3,6),MAT.trunk,1800),leaf=new THREE.InstancedMesh(new THREE.ConeGeometry(1.9,5,7),lam('#2f5d2a'),1800);
   const rocks=new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1.4,0),lam('#7d756a'),500);let nt=0,nr=0;const M=new THREE.Matrix4(),q=new THREE.Quaternion(),s=new THREE.Vector3(),p=new THREE.Vector3();
@@ -4165,7 +4173,7 @@ function genArmSigns(){
     const fr=new THREE.Mesh(boxGeo(9.3,4.8,.15),lam('#1a1a1a'));fr.position.z=-.1;fr.scale.z=.5;board.add(fr);
     const bd2=bd.clone();bd2.position.z=-.2;bd2.rotation.y=Math.PI;board.add(bd2);
     const lamp=new THREE.Mesh(new THREE.SphereGeometry(.35,10,8),new THREE.MeshBasicMaterial({color:0xff2a2a}));lamp.position.y=9.8;grp.add(lamp);
-    scene.add(grp);const beam=makeBeam(0xe5484d,1.1,70);beam.position.set(b.cx,groundY(b.cx,b.cz)+top,b.cz);beam.ring.visible=false;
+    scene.add(grp);const beam=makeBeam(0xe5484d,1.1,70);beam.children[0].material.opacity=.09;beam.position.set(b.cx,groundY(b.cx,b.cz)+top,b.cz);beam.ring.visible=false;
     ARM.signs.push({board,lamp,beam,x:b.cx,z:b.cz});
     if(b.pyl){const [px,pz]=b.pyl,y0=groundY(px,pz),pg=new THREE.Group();pg.position.set(px,y0,pz);pg.rotation.y=b.ry||0;
       for(const sx of[-1.1,1.1]){const c=new THREE.Mesh(new THREE.CylinderGeometry(.12,.12,6.2,8),pole);c.position.set(sx,3.1,0);pg.add(c);}
@@ -4940,7 +4948,7 @@ function initPost(){NG.initPost();}
 function postSize(){NG.size();}
 function postToggle(){NG.setPost(!POST.on);store.set('ng',POST.on?2:0);toast(POST.on?'Effets cinéma : activés':'Effets cinéma : désactivés (plus fluide)');}
 function renderScene(){NG.render();}
-function updateWet(){const wet=(typeof WX!=='undefined'&&WX.cur)?WX.cur.rain:0,m=MAT.asphalt;if(Math.abs((m.userData.wet||0)-wet)<.02)return;m.userData.wet=wet;m.roughness=lerp(.93,.22,wet);m.color.setScalar(1-wet*.35);}
+function updateWet(){const wet=(typeof WX!=='undefined'&&WX.cur)?WX.cur.rain:0,m=MAT.asphalt;if(Math.abs((m.userData.wet||0)-wet)<.02)return;m.userData.wet=wet;for(const x of[MAT.asphalt,MAT.hwy])if(x){x.roughness=lerp(.93,.28,wet);x.color.setScalar(1-wet*.38);}}
 function updateNitro(dt){const c=player.car,ok=c&&!c.dead&&!c.T.fly&&!c.T.boat&&!c.T.tank;NITRO.on=!!(ok&&(keys.KeyN||touch.nitro)&&NITRO.g>.02&&Math.hypot(c.vx,c.vz)>3);
   if(NITRO.on){NITRO.g=Math.max(0,NITRO.g-dt/(5*(c.up?1+.45*c.up.nitro:1)));const fx=Math.sin(c.h),fz=Math.cos(c.h),L=(c.T.len||4)/2;for(const s of[-.4,.4])emit(c.x-fx*L-fz*s,c.y+.4,c.z-fz*L+fx*s,Math.random()<.5?'#5fc8ff':'#ffffff',.35,.25,-c.vx*.2,.3,-c.vz*.2,1.5,true);shake=Math.max(shake,.025);}
   else NITRO.g=Math.min(1,NITRO.g+dt/(25/(c&&c.up?1+.3*c.up.nitro:1)));
@@ -4958,7 +4966,7 @@ function updateRipples(dt,P){const wet=(typeof WX!=='undefined'&&WX.cur)?WX.cur.
   for(const r of RIP.list){if(r.t>=1)continue;r.t+=dt*1.7;if(r.t>=1){r.m.visible=false;continue;}const sc=.08+r.t*.55;r.m.scale.set(sc,1,sc);r.m.material.opacity=(1-r.t)*.5;}}
 function loadPhotoTextures(){if(location.protocol==='file:')return;const L=(n,cb)=>{const im=new Image();im.onload=()=>{try{cb(im);}catch(e){}};im.src='assets/tex/'+n+'.jpg';};
   const swap=(t,im)=>{t.image=im;t.needsUpdate=true;};
-  L('asphalt',im=>{asphaltTex(im,T.asphalt.image);T.asphalt.needsUpdate=true;});
+  L('asphalt',im=>{asphaltTex(im,T.asphalt.image);T.asphalt.needsUpdate=true;if(MAT.hwy){hwyTex(im);MAT.hwy.map.needsUpdate=true;}});
   L('grass',im=>{swap(T.grass,im);MAT.grass.color.set('#ffffff');});L('pave',im=>{swap(T.side,im);MAT.side.color.set('#d6d6d2');});L('conc',im=>swap(T.conc,im));
   const det=(n,rock)=>L(n,im=>{for(const t of TERRS){if(!!t.rock!==rock)continue;const tx=new THREE.Texture(im);tx.wrapS=tx.wrapT=THREE.RepeatWrapping;tx.repeat.set(t.w/9,t.d/9);tx.encoding=THREE.sRGBEncoding;tx.anisotropy=4;tx.needsUpdate=true;t.m.material.map=tx;t.m.material.needsUpdate=true;}});
   det('detail',false);det('rockd',true);}
@@ -5437,7 +5445,7 @@ function mpHud(){
   const el=$('mpHud');if(!el)return;const n=MP.peers.size;
   el.hidden=!(MP.on||MP.joining);
   el.innerHTML=MP.joining&&!MP.on?'<b>EN LIGNE</b> connexion…':`<b>EN LIGNE</b> ${MP.code==='public'?'salon public':'salon « '+esc(MP.code)+' »'} · ${n+1} joueur${n?'s':''}`+
-    (n?'<small>'+[...MP.peers.values()].map(p=>esc(p.name)).join(' · ')+'</small>':'<small>en attente d\'autres joueurs…</small>');
+    (n?'<small>'+[...MP.peers.values()].map(p=>esc(p.name)).join(' · ')+'</small>':'');el.classList.toggle('solo',!n&&!MP.joining);
   const st=$('mpStatus');if(st)st.textContent=MP.on?`Connecté · ${n+1} joueur${n?'s':''} dans le salon`:MP.joining?'Connexion…':'';
 }
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}

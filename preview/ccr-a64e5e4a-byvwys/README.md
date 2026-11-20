@@ -42,6 +42,15 @@ Mécaniques des open worlds récents, avec du contenu original (aucun nom, perso
 - **NéoGram** (nouvelle appli du téléphone) : le réseau social de la ville. Les habitants publient sur la vie de Néo Cité… et sur toi : courses-poursuites, explosions, drifts, braquages, excès de vitesse. Une notification s'affiche quand quelqu'un poste une vidéo de toi.
 - **Passants qui filment** : pendant une poursuite, un drift ou après une explosion, des passants s'arrêtent et lèvent leur téléphone vers toi.
 
+## Passe de corrections et de réalisme
+
+- Les reflets du ciel (carrosseries, vitres, routes mouillées) se recalculent tout de suite après un saut d'heure (dormir, attendre, charger une partie) : plus de route blanche la nuit.
+- Autoroutes entre les villes : vrai asphalte, lignes de rive blanches, tirets jaunes peints au sol, traces de roues, brillantes sous la pluie.
+- Mer plus bleue vue de la plage (moins de reflet blanc à l'horizon), route mouillée moins « miroir », halos des lampadaires plus doux.
+- Messages à l'écran dans une carte discrète au lieu d'un gros texte au milieu ; bloc « EN LIGNE » compact quand tu es seul.
+- La souris est recapturée dès qu'on ferme le téléphone ou la carte (plus besoin de recliquer).
+- Faisceaux des armureries plus discrets.
+
 ## Rendu nouvelle génération (ambiance Floride au coucher du soleil)
 
 Refonte complète de l'image, inspirée des open worlds récents (aucun code, logo ni ressource de jeu commercial repris) :

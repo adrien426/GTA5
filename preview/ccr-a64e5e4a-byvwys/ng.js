@@ -185,7 +185,7 @@ NG.updateSky=function(dt,P){
   // éclairages artificiels (HDR : les fenêtres, lampadaires et phares « brillent » réellement)
   const em=smooth(.25,.75,nightF);
   for(const m of SHOPM)m.emissiveIntensity=em*1.3;for(const m of adMats)m.emissiveIntensity=.2+em*1.4;
-  for(const m of FACM)m.emissiveIntensity=em*1.5;for(const m of NEON)if(m)m.emissiveIntensity=.35+em*3.6;if(POOL)POOL.color.setRGB(1,.7,.4).multiplyScalar(em*.4);if(BEAM)BEAM.color.setRGB(1,.93,.78).multiplyScalar(em*.45);
+  for(const m of FACM)m.emissiveIntensity=em*1.5;for(const m of NEON)if(m)m.emissiveIntensity=.35+em*3.6;if(POOL)POOL.color.setRGB(1,.72,.45).multiplyScalar(em*.28);if(BEAM)BEAM.color.setRGB(1,.93,.78).multiplyScalar(em*.45);
   MAT.lamp.emissiveIntensity=em*4.5;CARM.head.emissiveIntensity=.2+em*3;CARM.tail.emissiveIntensity=.3+em*1.6;
   MAT.ceil.emissiveIntensity=.5+em*.3;
   headSpot.intensity=player.car&&!player.car.dead?em*2.6:0;
@@ -195,8 +195,8 @@ NG.updateSky=function(dt,P){
 /* ---------- carte d'environnement PMREM du ciel (reflets des matériaux PBR) ---------- */
 const ENV={gen:null,scene:null,rt:null,t:0,sun:new THREE.Vector3(),cl:-1};
 function updateEnv(dt){if(!NG.ready||!ENV.gen)return;ENV.t-=dt;
-  const moved=ENV.sun.distanceToSquared(U.uSunDir.value)>.0027||Math.abs(ENV.cl-W.cloud)>.08;
-  if(ENV.t>0&&!(moved&&ENV.t<8))return;ENV.t=12;ENV.sun.copy(U.uSunDir.value);ENV.cl=W.cloud;
+  const dd=ENV.sun.distanceToSquared(U.uSunDir.value),moved=dd>.0027||Math.abs(ENV.cl-W.cloud)>.08,jump=dd>.06||Math.abs(ENV.cl-W.cloud)>.3;
+  if(ENV.t>0&&!jump&&!(moved&&ENV.t<8))return;ENV.t=12;ENV.sun.copy(U.uSunDir.value);ENV.cl=W.cloud;
   try{const rt=ENV.gen.fromScene(ENV.scene,0,.1,100);if(ENV.rt)ENV.rt.dispose();ENV.rt=rt;scene.environment=rt.texture;}catch(e){ENV.gen=null;}}
 
 /* ---------- ambiance « Floride » : néons des toits (allumés la nuit) ---------- */
@@ -251,13 +251,13 @@ void main(){
   g+=(vec2(nx-n0,ny-n0)*0.12+vec2(mx-m0,my-m0)*0.07)*fz;
   vec3 N=normalize(vec3(-g.x,1.0,-g.y));
   float NV=max(dot(N,V),0.0);
-  float F=0.02+0.98*pow(1.0-NV,5.0);
+  float F=min(0.02+0.98*pow(1.0-NV,5.0),0.62);
   vec3 R=reflect(-V,N);R.y=abs(R.y)+0.01;R=normalize(R);
   vec3 sky=ngSky(R,uRefl);
   // couleur de l'eau : bleu profond au large, turquoise près des côtes
   float sd=uLake>0.5?40.0:shoreDist(p);
   float sh=exp(-sd/55.0);
-  vec3 deep=vec3(0.004,0.03,0.055),shal=vec3(0.02,0.30,0.30);
+  vec3 deep=vec3(0.006,0.042,0.078),shal=vec3(0.02,0.30,0.30);
   if(uLake>0.5){deep=vec3(0.01,0.045,0.04);shal=deep;}
   vec3 body=mix(deep,shal,sh)*uLight;
   // diffusion sous-marine dans les crêtes face au soleil
