@@ -485,6 +485,7 @@ window.addEventListener('error',e=>{if(!finished&&/THREE|three/.test(String(e.me
     <h1>NÉO CITÉ</h1>
     <p>Néo Cité au coucher du soleil : palmiers, néons, plages et gratte-ciel. Conduis, explore, braque, vis ta vie de criminel dans une ville ouverte.</p>
     <button class="btn" id="play">JOUER</button>
+    <button class="btn" id="trailer" style="margin-top:8px;background:linear-gradient(90deg,#ff3d8b,#ff9a5a);color:#fff">▶ BANDE-ANNONCE</button>
     <div id="chars" hidden role="group" aria-label="Personnage"></div>
     <div id="mpBox"><label class="mpOn"><input type="checkbox" id="mpOn"> Jouer en ligne</label><input id="mpName" maxlength="16" placeholder="Pseudo" aria-label="Pseudo" autocomplete="off"><input id="mpCode" maxlength="24" placeholder="Salon privé (optionnel)" title="Laisse vide pour rejoindre le salon public" aria-label="Code du salon" autocomplete="off"><div id="mpStatus" aria-live="polite"></div></div>
     <div id="stats"></div>
@@ -1632,7 +1633,7 @@ function hurtPlayer(d,knock){if(player.dead||player.safeT>0)return;player.lastHu
 
 /* ================= realistic humans (skinned Mixamo body, pooled by distance) ================= */
 const HUM={ready:false,proto:null,H:1.8,clips:{},bodyMap:null,hairMap:null,pool:[],mats:new Map(),staff:[],playerH:null,kinds:{}};
-const HKINDS={adam:'Adam',james:'James',femme:'Victoria'};
+const HKINDS={maya:'Maya',kenzo:'Kenzo',adam:'Adam',james:'James',femme:'Victoria'};
 // non-player characters (assets/models/pnj_*.glb) ; the player stays Adam or James
 const NPC_KINDS=['pull','blond','femme','agent','pilote','soldat'];
 const PED_MIX=['adam','james','pull','blond','femme','agent','adam','pull','femme','blond','james','femme','femme','pilote','femme','femme'];
@@ -1698,11 +1699,12 @@ function loadHumans(onProgress){
     HUM.proto=sc;const box=new THREE.Box3().setFromObject(sc);HUM.H=Math.max(.5,box.max.y-box.min.y);
     HUM.kinds.base={kind:'base',proto:sc,clips:HUM.clips,H:HUM.H,fixed:false};
     for(const [kind,gg] of [['james',gj],['adam',gd],...NPC_KINDS.map((k,i)=>[k,gn[i]])])if(gg)HUM.kinds[kind]=prepFixedHuman(kind,gg.scene,an);
+    if(HUM.kinds.femme)HUM.kinds.maya=HUM.kinds.femme;if(HUM.kinds.adam)HUM.kinds.kenzo=HUM.kinds.adam;// duo : original characters on shared rigs, own outfits
     const kinds=Object.keys(HUM.kinds);
     const mix=PED_MIX.filter(k=>HUM.kinds[k]);if(!mix.length)mix.push('base');for(let i=0;i<HPOOL;i++)HUM.pool.push(makeHuman(mix[i%mix.length]));
     if(mix[0]!=='base')for(let i=0;i<2;i++)HUM.pool.push(makeHuman('base'));
-    playerChar=HKINDS[saveData.char]&&HUM.kinds[saveData.char]?saveData.char:HUM.kinds.adam?'adam':HUM.kinds.james?'james':'base';
-    HUM.playerH=makeHuman(playerChar);applyLook(HUM.playerH,player.m.look,1.02);charButtons();
+    const fresh=!saveData.char;playerChar=HKINDS[saveData.char]&&HUM.kinds[saveData.char]?saveData.char:HUM.kinds.maya?'maya':HUM.kinds.adam?'adam':HUM.kinds.james?'james':'base';
+    HUM.playerH=makeHuman(playerChar);applyLook(HUM.playerH,heroLook(playerChar),1.02);if(fresh&&isDuo(playerChar))duoNewGame();charButtons();
     for(const s of staff)HUM.staff.push({m:s,x:s.group.position.x,y:s.group.position.y,z:s.group.position.z,h:s.group.rotation.y,staff:true,mannequin:!!s.mannequin,curSpeed:0,state:'idle',ht:rnd(.95,1.05)});
     HUM.ready=true;prog(1);
   }).catch(e=>{console.warn('Personnages réalistes indisponibles',e);});
@@ -1721,7 +1723,7 @@ function prepFixedHuman(kind,sc,an){
 }
 function setPlayerChar(k){
   if(!HUM.kinds[k]||!HUM.ready)return;playerChar=k;const old=HUM.playerH;if(old.root.parent)old.root.parent.remove(old.root);
-  HUM.playerH=makeHuman(k);applyLook(HUM.playerH,player.m.look,1.02);charButtons();save();
+  HUM.playerH=makeHuman(k);applyLook(HUM.playerH,heroLook(k),1.02);charButtons();save();
 }
 const START={car:null};
 function startVehicle(){const kind=store.get('startVeh')||'moto';const old=START.car;if(old&&old!==player.car){old.on=false;old.group.visible=false;old.x=old.z=9999;old.ai='off';}
@@ -2702,12 +2704,13 @@ function phView(v){
   else if(v==='radio')h=phTitle('Radio')+STATIONS.map((st,i)=>`<button class="phRow${i===radioSt?' on':''}" data-r="${i}"><b>${st?st.name:'Radio coupée'}</b><small>${i===radioSt?'Sélectionnée':'Écouter en voiture'}</small></button>`).join('');
   else if(v==='banque'){const got=tokens.filter(t=>t.taken).length;h=phTitle('Banque')+`<div class="phRow"><small>Solde</small><div class="phBig">$${player.money.toLocaleString('fr-FR')}</div></div><div class="phRow"><b>${got} / ${tokens.length}</b><small>jetons dorés trouvés</small></div><div class="phRow"><b>${player.stars} étoile${player.stars>1?'s':''}</b><small>niveau de recherche</small></div>`;}
   else if(v==='heure'){const hh=Math.floor(dayT),mm=Math.floor((dayT-hh)*60);h=phTitle('Horloge')+`<div class="phClock">${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}</div><button class="phRow" data-t="6"><b>Attendre 6 heures</b><small>Fais passer le temps</small></button>`;}
+  else if(v==='duo')h=duoView();
   else if(phExtra(v)!==null)h=phExtra(v);
   else if(v==='call')h=`<div class="phCall"><div style="font-size:48px">☎</div><b>${phone.call.n}</b><small>Appel en cours…</small></div>`;
   $('phBody').innerHTML=h;
 }
 $('phBody').addEventListener('keydown',e=>e.stopPropagation());
-$('phBody').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;const ds=t.dataset;if(phExtraClick(ds))return;
+$('phBody').addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;const ds=t.dataset;if(phExtraClick(ds)||duoClick(ds))return;
   if(ds.back)phView('home');
   else if(ds.v){if(ds.v==='carte'){closePhone();setBigMap(true);}else phView(ds.v);}
   else if(ds.c!=null){phone.call=CONTACTS[+ds.c];phone.callT=1.4;phView('call');sfx.ding();}
@@ -2758,7 +2761,7 @@ function pause(){if(state!=='play')return;radio.tick(false);state='pause';pauseA
   const got=tokens.filter(t=>t.taken).length;$('stats').textContent=`Missions réussies : ${missionsDone} · Jetons : ${got}/${tokens.length} · $${player.money.toLocaleString('fr-FR')}`;
   if(document.pointerLockElement)document.exitPointerLock();}
 function play(){if(!CINE.done&&!/nocine/.test(location.search))cineStart();sfx.init();sfx.resume();if(MP.wanted&&!MP.rooms.length)mpJoin();state='play';$('menu').hidden=true;document.body.classList.remove('title');lockPtr();pressed={};}
-$('play').addEventListener('click',play);
+$('play').addEventListener('click',play);$('trailer').addEventListener('click',()=>{play();cineStart(true);});
 
 function updateFoot(dt,inp){
   const p=player,m=p.m;
@@ -2802,22 +2805,44 @@ function updateDrive(dt,inp){
 }
 
 const _v=new THREE.Vector3();
-// opening cinematic : aerial sweep over the city down to the player, black bars, skippable
-const CINE={on:false,t:0,dur:11,done:false};
-function cineStart(){if(CINE.done||CINE.on)return;CINE.on=true;CINE.t=0;CINE.done=true;let el=$('cine');
-  if(!el){el=document.createElement('div');el.id='cine';el.innerHTML='<div class="cb" style="top:0"></div><div class="cb" style="bottom:0"></div><div id="cineT"><b>NÉO CITÉ</b><span></span></div><div id="cineS">Touche / appui pour passer</div>';
-    const st=document.createElement('style');st.textContent='#cine{position:fixed;inset:0;z-index:60;pointer-events:auto}#cine .cb{position:absolute;left:0;right:0;height:11vh;background:#000;transition:height .8s}#cine.out .cb{height:0}#cine.out{pointer-events:none}#cineT{position:absolute;left:6vw;bottom:17vh;color:#fff;font:italic 800 clamp(34px,8vw,96px) var(--font);letter-spacing:.02em;opacity:0;transition:opacity 1.2s}#cineT b{background:linear-gradient(100deg,#ff3d9a,#ff7a59 45%,#ffc76b);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 14px rgba(0,0,0,.6))}#cineT span{display:block;font:600 clamp(14px,2.2vw,24px) var(--font);letter-spacing:.12em;text-transform:uppercase;opacity:.92;margin-top:6px;text-shadow:0 2px 10px #000}#cineT.on{opacity:1}#cineS{position:absolute;right:3vw;bottom:2.5vh;color:#ddd;font:500 12px system-ui;opacity:.7}';document.head.appendChild(st);document.body.appendChild(el);
+// opening trailer : multi-shot sequence (aerial, street dolly, hero cards, crane, landing behind the player), letterbox, skippable
+const CINE={on:false,t:0,dur:31,done:false,shot:-1};
+const CINE_SHOTS=[[0,6.5],[6.5,12],[12,21.5],[21.5,26.5],[26.5,31]];
+function cineStart(force){if((CINE.done&&!force)||CINE.on)return;CINE.on=true;CINE.t=0;CINE.done=true;CINE.shot=-1;let el=$('cine');
+  if(!el){el=document.createElement('div');el.id='cine';el.innerHTML='<div class="cb" style="top:0"></div><div class="cb" style="bottom:0"></div><div id="cineFlash"></div><div id="cineCard"><i></i><b></b><span></span></div><div id="cineT"><b>NÉO CITÉ</b><span></span></div><div id="cineS">Touche / appui pour passer</div>';
+    const st=document.createElement('style');st.textContent='#cine{position:fixed;inset:0;z-index:60;pointer-events:auto;overflow:hidden}#cine .cb{position:absolute;left:0;right:0;height:12vh;background:#000;transition:height .8s;z-index:2}#cine.out .cb{height:0}#cine.out{pointer-events:none}'
+      +'#cineFlash{position:absolute;inset:0;background:#000;opacity:0;transition:opacity .25s}#cineFlash.on{opacity:1;transition:none}'
+      +'#cineCard{position:absolute;left:7vw;bottom:19vh;color:#fff;opacity:0;transform:translateX(-30px);transition:opacity .7s,transform .9s cubic-bezier(.2,.8,.2,1);font-family:var(--font)}#cineCard.on{opacity:1;transform:none}'
+      +'#cineCard i{display:block;width:72px;height:5px;margin-bottom:12px;background:linear-gradient(90deg,#ff3d8b,#ffb347)}#cineCard b{display:block;font:italic 800 clamp(40px,9vw,104px)/0.9 var(--font);letter-spacing:.02em;text-transform:uppercase;background:linear-gradient(180deg,#fff 30%,#ffd1a6);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 4px 16px rgba(0,0,0,.7))}#cineCard span{display:block;margin-top:8px;font:500 clamp(15px,2.4vw,26px) var(--font);letter-spacing:.18em;text-transform:uppercase;color:#ffe2c9;text-shadow:0 2px 10px #000}'
+      +'#cineT{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;opacity:0;transition:opacity 1.2s;text-align:center}#cineT.on{opacity:1}#cineT b{font:italic 800 clamp(64px,17vw,190px)/.85 var(--font);letter-spacing:.03em;background:linear-gradient(180deg,#ffe9b0 0%,#ff9a5a 45%,#ff3d8b 100%);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 6px 30px rgba(0,0,0,.6))}#cineT span{display:block;font:600 clamp(14px,2.4vw,26px) var(--font);letter-spacing:.5em;margin-top:14px;text-shadow:0 2px 12px #000}'
+      +'#cineS{position:absolute;right:4vw;bottom:3.5vh;z-index:3;font:500 14px var(--font);color:#ddd;opacity:.75}';
+    document.head.appendChild(st);document.body.appendChild(el);
     el.addEventListener('pointerdown',e=>{e.stopPropagation();if(CINE.t>.8)cineEnd();});addEventListener('keydown',e=>{if(CINE.on&&CINE.t>.8)cineEnd();});}
-  el.hidden=false;el.classList.remove('out');const hr=typeof HEROES!=='undefined'&&HEROES[playerChar];$('cineT').querySelector('span').textContent=hr?hr.n+' — '+hr.role:'Une ville, mille façons d\'y vivre';
+  el.hidden=false;el.classList.remove('out');$('cineT').querySelector('span').textContent='ÉDITION NOUVELLE GÉNÉRATION';
   document.body.classList.add('cine');}
-function cineEnd(){if(!CINE.on)return;CINE.on=false;const el=$('cine');if(el){el.classList.add('out');$('cineT').classList.remove('on');setTimeout(()=>{el.hidden=true;},850);}document.body.classList.remove('cine');player.safeT=Math.max(player.safeT||0,3);}
-function cineCam(dt){CINE.t+=dt;const k=clamp(CINE.t/CINE.dur,0,1),e=k*k*(3-2*k),P=playerPos(),h=player.h||0;
-  $('cineT').classList.toggle('on',CINE.t>1.2&&CINE.t<CINE.dur-2.5);
-  // start high and far, orbit a third of a turn, end behind the player
-  const ang=h+Math.PI+(1-e)*2.3,r=lerp(190,7.5,e),y=(P.y||0)+lerp(120,2.6,Math.pow(e,.8));
-  let cx=P.x+Math.sin(ang)*r,cz=P.z+Math.cos(ang)*r,cy=Math.max(y,groundY(cx,cz)+2);
-  camera.position.set(cx,cy,cz);camera.lookAt(P.x,(P.y||0)+1.3+(1-e)*18,P.z);camera.fov=lerp(48,62,e);camera.updateProjectionMatrix();
-  if(k>=1)cineEnd();}
+function cineEnd(){if(!CINE.on)return;CINE.on=false;const el=$('cine');if(el){el.classList.add('out');$('cineT').classList.remove('on');$('cineCard').classList.remove('on');setTimeout(()=>{el.hidden=true;},850);}document.body.classList.remove('cine');player.safeT=Math.max(player.safeT||0,3);camera.fov=62;camera.updateProjectionMatrix();}
+function cineCardSet(t,s){const c=$('cineCard');if(c.dataset.k===t)return;c.dataset.k=t;if(!t){c.classList.remove('on');return;}c.querySelector('b').textContent=t;c.querySelector('span').textContent=s;c.classList.remove('on');void c.offsetWidth;c.classList.add('on');}
+function cineCam(dt){CINE.t+=dt;const T=CINE.t,P=playerPos(),py=P.y||0,h=player.h||0,sm=x=>{x=clamp(x,0,1);return x*x*(3-2*x);};
+  let i=CINE_SHOTS.findIndex(r=>T<r[1]);if(i<0)i=CINE_SHOTS.length-1;const [t0,t1]=CINE_SHOTS[i],k=clamp((T-t0)/(t1-t0),0,1),e=sm(k);
+  if(i!==CINE.shot){CINE.shot=i;const f=$('cineFlash');f.classList.add('on');setTimeout(()=>f.classList.remove('on'),40);}
+  let cx,cy,cz,lx,ly,lz,fov=50;
+  if(i===0){// aerial approach from the sea toward the skyline
+    cx=lerp(HALF+620,HALF+160,e);cz=lerp(HALF+420,HALF+90,e);cy=lerp(190,95,e);lx=0;ly=25;lz=0;fov=lerp(40,48,e);
+    cineCardSet('Bienvenue','à Néo Cité');}
+  else if(i===1){// low tracking shot down an avenue
+    const z0=0;cx=lerp(-HALF+20,-HALF+150,k);cz=z0+3.5;cy=2.2+Math.sin(T*2)*.05;lx=cx+25;ly=2.4;lz=z0-1;fov=56;
+    cineCardSet('Une ville','Mille façons d\'y vivre');}
+  else if(i===2){// hero cards : slow low-angle orbit around the player
+    const ang=h-.7+k*1.4,r=lerp(4.2,3.4,e);cx=P.x+Math.sin(ang)*r;cz=P.z+Math.cos(ang)*r;cy=py+1.1;lx=P.x;ly=py+1.45;lz=P.z;fov=34;
+    const hr=typeof HEROES!=='undefined'?HEROES[playerChar]:null;
+    if(isDuo(playerChar))cineCardSet('Maya & Kenzo',duoState().couple?'Ensemble, contre tous':'Complices, peut-être plus');else cineCardSet(hr?hr.n:'',hr?hr.role:'');}
+  else if(i===3){// crane up above the player, big title
+    cineCardSet('','');const ang=h+Math.PI;cx=P.x+Math.sin(ang)*lerp(6,60,e);cz=P.z+Math.cos(ang)*lerp(6,60,e);cy=py+lerp(2,130,e);lx=P.x+Math.sin(h)*lerp(5,120,e);ly=py+lerp(1.5,10,e);lz=P.z+Math.cos(h)*lerp(5,120,e);fov=lerp(50,45,e);}
+  else{// descend behind the player
+    const ang=h+Math.PI+(1-e)*1.6,r=lerp(150,7.5,e);cx=P.x+Math.sin(ang)*r;cz=P.z+Math.cos(ang)*r;cy=py+lerp(110,2.6,Math.pow(e,.8));lx=P.x;ly=py+1.3+(1-e)*14;lz=P.z;fov=lerp(46,62,e);}
+  $('cineT').classList.toggle('on',(i===3&&k>.25)||(i===4&&k<.35));
+  cy=Math.max(cy,groundY(cx,cz)+1.2);camera.position.set(cx,cy,cz);camera.lookAt(lx,ly,lz);camera.fov=fov;camera.updateProjectionMatrix();
+  if(T>=CINE.dur)cineEnd();}
 function updateCamera(dt){if(CINE.on){cineCam(dt);return;}
   if(cam.fp&&!(player.car&&player.car.T.fly)){fpCamera(dt);return;}
   if(HUM.playerH&&!player.car)HUM.playerH.root.visible=true;
@@ -2853,8 +2878,8 @@ function loop(now){
   if(pressed.pause){if(wheel.open)closeWheel();else if(shopUI.open)closeShop();else if(phone.open)closePhone();else if(big)setBigMap(false);else{pause();pressed={};return;}}
   if(pressed.wheel){wheel.open?closeWheel():openWheel();}
   if(pressed.mic)micToggle();
-  let inp=readInput();if(phone.open||wheel.open||shopUI.open)inp={x:0,y:0,sprint:false,hb:true};
-  updatePhone(dt);
+  let inp=readInput();if(phone.open||wheel.open||shopUI.open||CINE.on)inp={x:0,y:0,sprint:false,hb:true};
+  updatePhone(dt);duoUpdate(dt);
   const P0=playerPos();
   updateSky(dt,P0);updateWeather(dt,P0);if((frame&15)===0)updateChunks();
   // player
@@ -3043,19 +3068,77 @@ function safeBlast(x,z,R){for(const s of safes){if(s.open)continue;if(Math.hypot
   SAFELAST.kind=s.kind;SAFELAST.t=gameT;toast(s.kind==='banque'?'COFFRE-FORT OUVERT !\nRamasse le butin':'COFFRE DE LA BIJOUTERIE OUVERT !');addWanted(s.kind==='banque'?4:3);
   setTimeout(()=>{s.open=false;s.door.rotation.y=0;},10*60*1000);}}
 
+// ---- duo : Maya Solis & Kenzo Ruiz (original characters). They share an apartment from the start; the one you don't play walks with you,
+// rides along in vehicles, and a relationship gauge grows with time spent together, outings and gifts, until they can become a couple.
+const DUO={h:null,kind:null,x:0,z:0,y:0,hd:0,sp:0,away:true,talkT:45,intro:false,lastRel:0};
+function isDuo(k){return k==='maya'||k==='kenzo';}
+function duoOther(){return playerChar==='maya'?'kenzo':'maya';}
+function duoState(){return saveData.duo||(saveData.duo={rel:20,couple:false,apt:-1});}
+function heroLook(k){if(k==='maya')return {shirt:'#d6336c',pants:'#f1f3f5',hair:'#3a1d10',custom:true};if(k==='kenzo')return {shirt:'#1864ab',pants:'#2b2f36',hair:'#0f0a07',custom:true};return player.m.look;}
+function duoNewGame(){const S=duoState();let bi=-1,bd=1e9;for(let i=0;i<INT.BLD.length;i++){const B=INT.BLD[i],d=Math.hypot(B.x-player.x,B.z-player.z);if(d<bd){bd=d;bi=i;}}
+  if(bi<0)return;S.apt=bi;saveData.apts=saveData.apts||[];if(!saveData.apts.includes(bi))saveData.apts.push(bi);const B=INT.BLD[bi];
+  player.x=B.x+Math.sin(B.h)*1.5;player.z=B.z+Math.cos(B.h)*1.5;player.h=B.h;cam.yaw=B.h;player.y=groundY(player.x,player.z);DUO.intro=true;}
+function duoRelLabel(r,c){return c?'En couple':r>=60?'Très proches':r>=35?'Complices':'Colocataires';}
+function duoSync(){const want=HUM.ready&&isDuo(playerChar)?duoOther():null;if(DUO.kind===want)return;
+  if(DUO.h){if(DUO.h.root.parent)DUO.h.root.parent.remove(DUO.h.root);DUO.h=null;}DUO.kind=want;if(!want)return;
+  DUO.h=makeHuman(want);applyLook(DUO.h,heroLook(want),want==='maya'?.97:1.02);DUO.away=true;}
+function duoPlace(){const a=player.h+Math.PI*.7;DUO.x=player.x+Math.sin(a)*1.5;DUO.z=player.z+Math.cos(a)*1.5;DUO.y=player.y;DUO.hd=player.h;DUO.sp=0;}
+const DUO_LINES={0:['On rentre bientôt à l\'appart ?','T\'as vu le prix des loyers ici ?','Tu me dois toujours un café.','Reste pas planté là, on y va.'],
+  1:['Avec toi, cette ville a l\'air moins dure.','On fait une bonne équipe, non ?','Je te suis, comme d\'habitude.','Un jour on se tire d\'ici, tous les deux.'],
+  2:['Je t\'aime, même quand tu conduis mal.','Toi et moi, contre tout le monde.','Ce soir, resto. C\'est toi qui invites.','Fais attention à toi, d\'accord ?']};
+function duoUpdate(dt){duoSync();const h=DUO.h;if(!h)return;const S=duoState(),other=HEROES[DUO.kind].n.split(' ')[0];
+  if(DUO.intro&&state==='play'&&!CINE.on){DUO.intro=false;setTimeout(()=>toast('MAYA & KENZO\nVotre appart est juste là : E devant la porte · appli Duo ♥ dans le téléphone (T)'),600);}
+  const hide=!!player.car||player.dead||prison.on||GAV.on||!!player.swim;
+  // time together : in the same vehicle or side by side
+  const near=hide?!!player.car:Math.hypot(DUO.x-player.x,DUO.z-player.z)<8;
+  if(near&&!player.dead){S.rel=Math.min(100,S.rel+dt/30);if(S.couple&&player.hp<100)player.hp=Math.min(100,player.hp+dt*1.2);}
+  if(DUO.lastRel<60&&S.rel>=60&&!S.couple)toast(`${other} et toi êtes très proches…\nAppli Duo ♥ : proposer d'être en couple`);DUO.lastRel=S.rel;
+  if(hide){h.root.visible=false;DUO.away=true;return;}
+  if(DUO.away){DUO.away=false;duoPlace();}
+  const side=player.h+Math.PI*.7,tx=player.x+Math.sin(side)*1.5,tz=player.z+Math.cos(side)*1.5,dx=tx-DUO.x,dz=tz-DUO.z,d=Math.hypot(dx,dz);
+  if(d>35){duoPlace();return;}
+  const want=d<.35?0:clamp(d*1.9,1.1,7.5);DUO.sp+=(want-DUO.sp)*Math.min(1,dt*6);const st=Math.min(DUO.sp*dt,d);
+  if(d>.01){DUO.x+=dx/d*st;DUO.z+=dz/d*st;}
+  const th=DUO.sp>.4?Math.atan2(dx,dz):player.h;let dh=th-DUO.hd;dh=Math.atan2(Math.sin(dh),Math.cos(dh));DUO.hd+=dh*Math.min(1,dt*8);
+  DUO.y+=(player.y-DUO.y)*Math.min(1,dt*8);
+  h.root.visible=true;h.root.position.set(DUO.x,DUO.y,DUO.z);h.root.rotation.set(0,DUO.hd,0);locoAnim(h,DUO.sp);h.mixer.update(dt);
+  DUO.talkT-=dt;if(DUO.talkT<=0){DUO.talkT=rnd(70,130);if(player.stars>0)toast(`${other} : On se tire d'ici, vite !`);else toast(`${other} : ${rpick(DUO_LINES[S.couple?2:S.rel>=35?1:0])}`);}}
+function duoView(){const S=duoState();
+  if(!isDuo(playerChar))return phTitle('Duo')+'<div class="phRow"><b>Maya & Kenzo</b><small>Deux colocataires de Néo Cité. Joue l\'un des deux pour qu\'ils fassent équipe.</small></div>'+
+    ['maya','kenzo'].filter(k=>HUM.kinds[k]).map(k=>`<button class="phRow" data-hero="${k}"><b>Jouer ${HEROES[k].n}</b><small>${HEROES[k].role}</small></button>`).join('');
+  const o=HEROES[duoOther()],r=Math.floor(S.rel),apt=S.apt>=0?INT.BLD[S.apt]:null;
+  return phTitle('Duo')+`<div class="phRow"><b>${HEROES[playerChar].n.split(' ')[0]} & ${o.n.split(' ')[0]} · ${duoRelLabel(r,S.couple)}</b><small>Relation ${r} / 100</small>`+
+    `<div style="height:8px;border-radius:4px;background:#333;margin-top:6px;overflow:hidden"><div style="height:100%;width:${r}%;background:linear-gradient(90deg,#ff3d8b,#ffb347)"></div></div></div>`+
+    `<button class="phRow" data-duo="date"><b>Sortie en ville — $150</b><small>+5 relation · 2 heures passent</small></button>`+
+    `<button class="phRow" data-duo="gift"><b>Offrir un cadeau — $400</b><small>+8 relation</small></button>`+
+    (S.couple?`<div class="phRow"><b>❤ En couple</b><small>Ensemble, ta santé remonte doucement</small></div><button class="phRow" data-duo="pause"><b>Faire une pause</b><small>Vous redevenez colocataires</small></button>`
+      :`<button class="phRow" data-duo="ask"><b>Proposer d'être en couple</b><small>${r>=60?'Le moment semble bien choisi…':'Il faut une relation de 60'}</small></button>`)+
+    `<button class="phRow" data-hero="${duoOther()}"><b>Jouer ${o.n}</b><small>Tu prends sa place, là où il ou elle se trouve</small></button>`+
+    (apt?`<div class="phRow"><b>L'appart</b><small>Immeuble au ${Math.round(apt.x)} · ${Math.round(apt.z)} — lit pour dormir et sauvegarder</small></div>`:'');}
+function duoClick(ds){if(!ds.duo)return false;const S=duoState(),o=HEROES[duoOther()].n.split(' ')[0];
+  if(ds.duo==='date'){if(!payOr(150))return true;S.rel=Math.min(100,S.rel+5);dayT=(dayT+2)%24;toast(`Sortie en ville avec ${o}\n+5 relation`);sfx.ding();}
+  else if(ds.duo==='gift'){if(!payOr(400))return true;S.rel=Math.min(100,S.rel+8);toast(`${o} : Pour moi ? Merci !\n+8 relation`);sfx.ding();}
+  else if(ds.duo==='ask'){if(S.rel>=60){S.couple=true;closePhone();showFade('EN COUPLE',`${HEROES[playerChar].n.split(' ')[0]} & ${o}, officiellement ensemble`,()=>$('fade').classList.remove('on'));fadeT=2.2;sfx.win();}
+    else{S.rel=Math.max(0,S.rel-3);toast(`${o} : Doucement… on n'en est pas encore là.\n−3 relation`);}}
+  else if(ds.duo==='pause'){S.couple=false;S.rel=Math.max(0,S.rel-20);toast(`${o} : D'accord… on reste colocs.`);}
+  save();if(phone.open)phView('duo');return true;}
+
 // ---- protagonists : Adam (driver), James (gunman), Victoria (rich, sharp shooter)
-const HEROES={adam:{n:'Adam',role:'Le pilote',perk:'Conduite : +20 % de vitesse et d\'accélération',money:500},
+const HEROES={maya:{n:'Maya Solis',role:'Le duo — la tête',perk:'Duo · tir précis · le partenaire te suit partout',money:1500},
+  kenzo:{n:'Kenzo Ruiz',role:'Le duo — les mains',perk:'Duo · conduite +12 % · dégâts +15 %',money:1500},
+  adam:{n:'Adam',role:'Le pilote',perk:'Conduite : +20 % de vitesse et d\'accélération',money:500},
   james:{n:'James',role:'Le fou de la gâchette',perk:'Armes : +40 % de dégâts',money:500},
   femme:{n:'Victoria',role:'La femme d\'affaires',perk:'Riche · tir très précis · revenus des commerces +25 %',money:60000}};
 const NITRO={g:1,on:false};
-function perkCar(c){return (c&&c===player.car&&playerChar==='adam'?(SPEC.on>0?1.35:1.2):1)*(c===player.car&&NITRO.on?1.45:1);}
-function perkDmg(){return (playerChar==='james'?1.4:1)*(rageOn()?2:1);}
-function perkSpread(){return (playerChar==='femme'?.45:1)*(BOOST.aim>0?.5:1)*(player.armT>0?1.8:1);}
+function perkCar(c){return (c&&c===player.car&&playerChar==='adam'?(SPEC.on>0?1.35:1.2):playerChar==='kenzo'?1.12:1)*(c===player.car&&NITRO.on?1.45:1);}
+function perkDmg(){return (playerChar==='james'?1.4:playerChar==='kenzo'?1.15:1)*(rageOn()?2:1);}
+function perkSpread(){return (playerChar==='femme'?.45:playerChar==='maya'?.6:1)*(BOOST.aim>0?.5:1)*(player.armT>0?1.8:1);}
 function heroState(){saveData.heroes=saveData.heroes||{};return saveData.heroes;}
 function switchHero(k){
   if(prison.on||GAV.on){toast('Impossible : tu es enfermé');return;}
   if(!HEROES[k]||k===playerChar||player.dead)return;if(player.stars>0){toast('Impossible avec la police aux trousses');return;}
   const H=heroState();H[playerChar]={money:player.money,x:player.x,z:player.z,h:player.h};
+  if(isDuo(k)&&isDuo(playerChar)&&DUO.h&&!player.car){H[k]={money:H[k]?H[k].money:HEROES[k].money,x:DUO.x,z:DUO.z,h:DUO.hd};}
   if(player.car)exitCar(true);setBigMap(false);closePhone();
   showFade(HEROES[k].n.toUpperCase(),HEROES[k].role,()=>{
     const s=H[k];player.money=s?s.money:HEROES[k].money;if(s&&Math.abs(s.x)<HALF+40){player.x=s.x;player.z=s.z;player.h=s.h;}
@@ -3092,7 +3175,7 @@ function updateChatter(dt,P){chatT-=dt;if(chatT>0)return;chatT=rnd(7,15);if(play
   if(!best)return;const line=rpick(CHATTER);best.voice=best.voice||rnd(.6,1.5);say(line,best.voice);showSub('Passant : « '+line+' »');}
 
 // ---- phone apps
-APPS.push(['maison','Maison','⌂','#3fbf6f'],['armes','Armurerie','🔫','#e5484d'],['clan','Clan','⚑','#c92a2a'],['appels','Joueurs','✆','#2f9e44'],['revente','Revente','◆','#0ca678'],['auto','AutoNéo','🚗','#d6336c'],['jobs','Emplois','⚒','#f08c00'],['immo','Commerces','⌂','#5f3dc4'],['heros','Persos','☺','#1098ad']);
+APPS.push(['duo','Duo','♥','#e64980'],['maison','Maison','⌂','#3fbf6f'],['armes','Armurerie','🔫','#e5484d'],['clan','Clan','⚑','#c92a2a'],['appels','Joueurs','✆','#2f9e44'],['revente','Revente','◆','#0ca678'],['auto','AutoNéo','🚗','#d6336c'],['jobs','Emplois','⚒','#f08c00'],['immo','Commerces','⌂','#5f3dc4'],['heros','Persos','☺','#1098ad']);
 function phExtra(v){
   if(v==='maison')return phTitle('Maison')+`<button class="phRow on" data-homego="1"><b>Rentrer à la maison (GPS)</b><small>Ta villa avec piscine, au sud de Néo Cité · ${Math.round(Math.hypot(HOME.x-player.x,HOME.z-player.z))} m</small></button><button class="phRow" data-homecar="1"><b>Faire livrer ma voiture</b><small>${CT[saveData.myCar||'muscle'].name}</small></button><div class="phRow"><small>Appartements achetés : ${(saveData.apts||[]).length} · entre dans n'importe quel immeuble pour en visiter</small></div>`;
   if(v==='armes'){const n=nearestShop('armurerie',playerPos());return phTitle('Armurerie')+`<button class="phRow on" data-armgo="1"><b>Y aller (GPS)</b><small>${n?'La plus proche est à '+Math.round(n.d)+' m · point violet sur la carte':'—'}</small></button>`+
@@ -4846,11 +4929,11 @@ function initGfx(){try{const rt=new THREE.WebGLCubeRenderTarget(IS_TOUCH?64:128,
   GFX.rt=rt;GFX.cam=new THREE.CubeCamera(1,2000,rt);for(const c of GFX.cam.children)c.layers.set(1);sky.layers.enable(1);scene.add(GFX.cam);
   for(const k in paintCache)envOn(paintCache[k],.03);envOn(CARM.glass,.55);envOn(GLASS,.4);envOn(MAT.metal,.35);}catch(e){GFX.rt=null;}}
 function envOn(m,r){if(!GFX.rt||!m||!m.isMeshPhongMaterial&&!m.isMeshLambertMaterial)return;m.envMap=GFX.rt.texture;m.combine=THREE.MixOperation;m.reflectivity=r;m.needsUpdate=true;}
-const POST={on:!IS_TOUCH,comp:null,bloom:null,k:0};
+const POST={on:!IS_TOUCH,comp:null,bloom:null,k:0};{const v=store.get('ng');if(v===0)POST.on=false;else if(v===2)POST.on=true;}
 // HDR post-processing (bloom, sun shafts, lens flare, ACES, grading) : see ng.js
 function initPost(){NG.initPost();}
 function postSize(){NG.size();}
-function postToggle(){NG.setPost(!POST.on);toast(POST.on?'Effets cinéma : activés':'Effets cinéma : désactivés (plus fluide)');}
+function postToggle(){NG.setPost(!POST.on);store.set('ng',POST.on?2:0);toast(POST.on?'Effets cinéma : activés':'Effets cinéma : désactivés (plus fluide)');}
 function renderScene(){NG.render();}
 function updateWet(){const wet=(typeof WX!=='undefined'&&WX.cur)?WX.cur.rain:0,m=MAT.asphalt;if(Math.abs((m.userData.wet||0)-wet)<.02)return;m.userData.wet=wet;m.roughness=lerp(.93,.22,wet);m.color.setScalar(1-wet*.35);}
 function updateNitro(dt){const c=player.car,ok=c&&!c.dead&&!c.T.fly&&!c.T.boat&&!c.T.tank;NITRO.on=!!(ok&&(keys.KeyN||touch.nitro)&&NITRO.g>.02&&Math.hypot(c.vx,c.vz)>3);
