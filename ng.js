@@ -174,7 +174,7 @@ NG.updateSky=function(dt,P){
   sun.position.set(P.x+_v2.x*160,_v2.y*160,P.z+_v2.z*160);sun.target.position.set(P.x,0,P.z);
   // lumière d'ambiance (ciel / sol)
   _c.copy(zen).lerp(hor,.55);const al=Math.max(_c.r,_c.g,_c.b,1e-4);
-  hemi.color.copy(_c).multiplyScalar(1/al).lerp(_g.setRGB(1,1,1),.38).lerp(_g.setRGB(.45,.56,1),night);
+  hemi.color.copy(_c).multiplyScalar(1/al).lerp(_g.setRGB(1,1,1),.5).lerp(_g.setRGB(.45,.56,1),night);
   hemi.groundColor.setRGB(.42,.36,.29).lerp(_g.setRGB(.25,.22,.2),night);
   hemi.intensity=Math.min(.95,al*.95)+.07+cl*.12*dayF;
   if(W.flash){sun.intensity+=1.4;hemi.intensity+=.5;}
