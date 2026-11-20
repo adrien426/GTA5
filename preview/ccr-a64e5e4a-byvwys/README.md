@@ -3,6 +3,7 @@
 Jeu de ville ouverte en 3D dans le navigateur (Three.js, aucun build) : conduite, police et étoiles de recherche, armes, téléphone, base militaire, micro.
 
 - `index.html` : le jeu
+- `ng.js` : moteur de rendu « nouvelle génération » (ciel, brume, océan, reflets, post-traitement HDR)
 - `assets/` : modèle humain animé et animations
 - `assets/models/` : modèles 3D issus du dossier Google Drive « 3D », convertis en GLB compressés (meshopt + textures WebP)
   - véhicules : Volvo V50 (berline, police), Kia Picanto (taxi, citadine), Honda NSX (sportive), Honda Sonic 150R (moto), Kawasaki Ninja H2R (superbike), hélicoptère de police
@@ -13,6 +14,17 @@ Jeu de ville ouverte en 3D dans le navigateur (Three.js, aucun build) : conduite
 - Modèles tiers (crédits) :
   - « Car Concept » © 2024 Darmstadt Graphics Group GmbH, modèle et textures Eric Chadwick — CC BY 4.0 (Khronos glTF Sample Assets)
   - Ferrari 458 Italia par vicent091036, distribué avec les exemples three.js
+
+## Rendu nouvelle génération (ambiance Floride au coucher du soleil)
+
+Refonte complète de l'image, inspirée des open worlds récents (aucun code, logo ni ressource de jeu commercial repris) :
+- **Ciel atmosphérique** : dégradé de diffusion qui suit la hauteur du soleil, halo autour du soleil, **ceinture de Vénus** rose à l'opposé du couchant, heure bleue violette, **nuages procéduraux** qui dérivent avec le vent (liseré argenté à contre-jour, dessous orangés au couchant, éclairés par la ville la nuit), cirrus, **étoiles scintillantes**, **lune**, pollution lumineuse orangée à l'horizon la nuit. La météo couvre le ciel (orages, brouillard, pluie).
+- **Brume aérienne** : brouillard plus dense près du sol qu'en altitude, qui prend la couleur du ciel et s'illumine du côté du soleil ; les lointains bleuissent, les montagnes se détachent depuis l'hélico.
+- **Océan** : houle à six trains de vagues + vaguelettes, reflet du ciel et des nuages (Fresnel), **chemin de soleil** scintillant, eau **turquoise** près des côtes et bleu profond au large, écume sur le rivage. Les lacs utilisent la même eau.
+- **Reflets PBR** : carte d'environnement du ciel recalculée en continu ; **carrosseries métallisées avec vernis**, vitres teintées, **vitres des tours** qui reflètent le ciel et le soleil, routes mouillées qui brillent sous la pluie.
+- **Post-traitement HDR** (ordinateur) : rendu flottant antialiasé (MSAA ×4), **bloom** à mip-maps (néons, phares, soleil), **rayons crépusculaires** à travers les immeubles, reflets d'objectif discrets, tonemapping ACES, étalonnage chaud (ombres légèrement bleutées, hautes lumières dorées), vignette et grain. Touche **G** pour couper ces effets si ça rame (la qualité adaptative le fait aussi toute seule).
+- **Ville** : palmiers le long des rues de Néo Cité, **néons** roses / cyan / violets / orange sur les toits et les arêtes des tours, **halos de lumière** au sol sous les lampadaires la nuit, fenêtres éclairées plus lumineuses, ombres plus fines (carte 3072²).
+- **Écran titre** refait : la ville 3D au coucher du soleil reste visible derrière un panneau à gauche, titre en dégradé coucher de soleil.
 
 ## Multijoueur
 
