@@ -185,7 +185,7 @@ NG.updateSky=function(dt,P){
   // éclairages artificiels (HDR : les fenêtres, lampadaires et phares « brillent » réellement)
   const em=smooth(.25,.75,nightF);
   for(const m of SHOPM)m.emissiveIntensity=em*1.3;for(const m of adMats)m.emissiveIntensity=.2+em*1.4;
-  for(const m of FACM)m.emissiveIntensity=em*1.5;for(const m of NEON)if(m)m.emissiveIntensity=.35+em*3.6;if(POOL)POOL.color.setRGB(1,.7,.4).multiplyScalar(em*.55);if(BEAM)BEAM.color.setRGB(1,.93,.78).multiplyScalar(em*.45);
+  for(const m of FACM)m.emissiveIntensity=em*1.5;for(const m of NEON)if(m)m.emissiveIntensity=.35+em*3.6;if(POOL)POOL.color.setRGB(1,.7,.4).multiplyScalar(em*.4);if(BEAM)BEAM.color.setRGB(1,.93,.78).multiplyScalar(em*.45);
   MAT.lamp.emissiveIntensity=em*4.5;CARM.head.emissiveIntensity=.2+em*3;CARM.tail.emissiveIntensity=.3+em*1.6;
   MAT.ceil.emissiveIntensity=.5+em*.3;
   headSpot.intensity=player.car&&!player.car.dead?em*2.6:0;
