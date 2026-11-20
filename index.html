@@ -2915,6 +2915,7 @@ function loop(now){
     else if(c.health<35&&!c.dead){c.smokeT-=dt;if(c.smokeT<0){c.smokeT=.12;const fx=Math.sin(c.h),fz=Math.cos(c.h);emit(c.x+fx*1.6,c.y+1.1,c.z+fz*1.6,c.health<15?'#222':'#888',.8,1.4,rnd(-.3,.3),1.6,rnd(-.3,.3),2.5);}}
     if(c.type==='police'&&c.lR){const on=c.ai==='police';const f=(gameT*6|0)%2;c.lR.material=on&&f?CARM.red:CARM.off;c.lB.material=on&&!f?CARM.blue:CARM.off;}
     c.group.visible=d<330;
+    {const b=NG.carBeam(c);if(b)b.visible=nightF>.45&&!c.dead&&d<170&&(c.ai==='traffic'||c.ai==='police'||c===player.car||c.ai==='remote');}
   }
   // car vs car
   for(let i=0;i<cars.length;i++){const a=cars[i];if(!a.on||a.y>2.5)continue;for(let j=i+1;j<cars.length;j++){const b=cars[j];if(!b.on||b.y>2.5)continue;

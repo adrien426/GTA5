@@ -185,7 +185,7 @@ NG.updateSky=function(dt,P){
   // éclairages artificiels (HDR : les fenêtres, lampadaires et phares « brillent » réellement)
   const em=smooth(.25,.75,nightF);
   for(const m of SHOPM)m.emissiveIntensity=em*1.3;for(const m of adMats)m.emissiveIntensity=.2+em*1.4;
-  for(const m of FACM)m.emissiveIntensity=em*1.5;for(const m of NEON)if(m)m.emissiveIntensity=.35+em*3.6;if(POOL)POOL.color.setRGB(1,.7,.4).multiplyScalar(em*.55);
+  for(const m of FACM)m.emissiveIntensity=em*1.5;for(const m of NEON)if(m)m.emissiveIntensity=.35+em*3.6;if(POOL)POOL.color.setRGB(1,.7,.4).multiplyScalar(em*.55);if(BEAM)BEAM.color.setRGB(1,.93,.78).multiplyScalar(em*.45);
   MAT.lamp.emissiveIntensity=em*4.5;CARM.head.emissiveIntensity=.2+em*3;CARM.tail.emissiveIntensity=.3+em*1.6;
   MAT.ceil.emissiveIntensity=.5+em*.3;
   headSpot.intensity=player.car&&!player.car.dead?em*2.6:0;
@@ -210,6 +210,15 @@ let POOL=null;
 NG.poolMat=()=>{if(POOL)return POOL;const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d'),r=g.createRadialGradient(64,64,0,64,64,64);
   r.addColorStop(0,'rgba(255,255,255,1)');r.addColorStop(.35,'rgba(255,255,255,.55)');r.addColorStop(.7,'rgba(255,255,255,.14)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(0,0,128,128);
   const t=new THREE.CanvasTexture(c);POOL=new THREE.MeshBasicMaterial({map:t,color:0x000000,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false,polygonOffset:true,polygonOffsetFactor:-2});return POOL;};
+
+// faisceau des phares sur la route (voitures qui roulent, la nuit)
+let BEAM=null;
+NG.carBeam=function(c){if(c.beam!==undefined)return c.beam;const T=c.T;if(T.fly||T.boat||T.custom||T.tank){c.beam=null;return null;}
+  if(!BEAM){const cv=document.createElement('canvas');cv.width=64;cv.height=128;const g=cv.getContext('2d');g.translate(32,128);g.scale(1,2);
+    const r=g.createRadialGradient(0,0,0,0,0,64);r.addColorStop(0,'rgba(255,255,255,.9)');r.addColorStop(.45,'rgba(255,255,255,.4)');r.addColorStop(1,'rgba(255,255,255,0)');g.fillStyle=r;g.fillRect(-32,-64,64,64);
+    BEAM=new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(cv),color:0x000000,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false,fog:false,polygonOffset:true,polygonOffsetFactor:-2});}
+  const L=T.len||4.4,w=T.moto?2.6:4.4,g=new THREE.PlaneGeometry(w,10);g.rotateX(-Math.PI/2);g.translate(0,.08,L/2+4.4);
+  const m=new THREE.Mesh(g,BEAM);m.renderOrder=3;m.visible=false;c.group.add(m);c.beam=m;return m;};
 
 /* ---------- matériaux PBR ---------- */
 // peinture de carrosserie : métallisée avec vernis (clearcoat) qui reflète le ciel
@@ -394,11 +403,12 @@ NG.render=function(){
 /* ---------- activation / désactivation (G, qualité adaptative) ---------- */
 function retone(){const t=POST.on&&NG.pp?THREE.NoToneMapping:THREE.ACESFilmicToneMapping;if(renderer.toneMapping===t)return;renderer.toneMapping=t;
   scene.traverse(o=>{const m=o.material;if(!m)return;if(Array.isArray(m))m.forEach(x=>x.needsUpdate=true);else m.needsUpdate=true;});}
-NG.setPost=function(on){POST.on=!!on;retone();};
+// les cibles HDR ne sont allouées qu'à l'activation (téléphones : désactivé par défaut, économise la mémoire)
+function ensurePP(){if(NG.pp||NG.ppFail)return;try{NG.pp=ppCreate();}catch(e){console.warn('Post-traitement indisponible',e);NG.pp=null;}
+  if(NG.pp){ppSize();addEventListener('resize',ppSize);}else NG.ppFail=true;POST.comp=NG.pp?{}:null;}
+NG.setPost=function(on){POST.on=!!on;if(POST.on)ensurePP();retone();};
 NG.size=ppSize;
-NG.initPost=function(){try{NG.pp=ppCreate();}catch(e){console.warn('Post-traitement indisponible',e);NG.pp=null;}
-  if(NG.pp){ppSize();addEventListener('resize',ppSize);}
-  POST.comp=NG.pp?{}:null;retone();};
+NG.initPost=function(){if(POST.on)ensurePP();retone();};
 
 /* ---------- initialisation (après la génération du monde) ---------- */
 NG.init=function(){
