@@ -195,8 +195,8 @@ NG.updateSky=function(dt,P){
 /* ---------- carte d'environnement PMREM du ciel (reflets des matériaux PBR) ---------- */
 const ENV={gen:null,scene:null,rt:null,t:0,sun:new THREE.Vector3(),cl:-1};
 function updateEnv(dt){if(!NG.ready||!ENV.gen)return;ENV.t-=dt;
-  const moved=ENV.sun.distanceToSquared(U.uSunDir.value)>.0004||Math.abs(ENV.cl-W.cloud)>.04;
-  if(ENV.t>0&&!(moved&&ENV.t<4.2))return;ENV.t=5;ENV.sun.copy(U.uSunDir.value);ENV.cl=W.cloud;
+  const moved=ENV.sun.distanceToSquared(U.uSunDir.value)>.0027||Math.abs(ENV.cl-W.cloud)>.08;
+  if(ENV.t>0&&!(moved&&ENV.t<8))return;ENV.t=12;ENV.sun.copy(U.uSunDir.value);ENV.cl=W.cloud;
   try{const rt=ENV.gen.fromScene(ENV.scene,0,.1,100);if(ENV.rt)ENV.rt.dispose();ENV.rt=rt;scene.environment=rt.texture;}catch(e){ENV.gen=null;}}
 
 /* ---------- ambiance « Floride » : néons des toits (allumés la nuit) ---------- */

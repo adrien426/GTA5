@@ -493,7 +493,9 @@ window.addEventListener('error',e=>{if(!finished&&/THREE|three/.test(String(e.me
       <b>ZQSD / WASD / flèches</b><span>Marcher · conduire</span>
       <b>Souris</b><span>Caméra (clique pour la capturer)</span>
       <b>Maj</b><span>Sprint</span>
-      <b>Espace</b><span>Sauter · frein à main</span>
+      <b>Espace</b><span>Sauter · frein à main (drift)</span>
+      <b>A (Q en QWERTY)</b><span>Se mettre à couvert · tirer pour sortir la tête</span>
+      <b>K</b><span>Caméra cinématique (en véhicule)</span>
       <b>E</b><span>Monter / descendre d'un véhicule · acheter</span>
       <b>H</b><span>Klaxon</span>
       <b>F / clic gauche</b><span>Coup de pied · tirer</span>
@@ -1514,11 +1516,12 @@ function carPhysics(c,thr,steer,hb,dt){
   else vf-=Math.sign(vf)*Math.min(Math.abs(vf),2.2*dt);
   vf-=vf*.08*dt;
   if(hb)vf-=Math.sign(vf)*Math.min(Math.abs(vf),8*dt);
-  const wetK=typeof WX!=='undefined'&&WX.cur?WX.cur.rain:0;const grip=(hb?1.1:(Math.abs(vf)>28?5.5:9))*(U?1+.18*U.pneus:1)*(1-.42*wetK);vl*=Math.exp(-grip*dt);
+  const wetK=typeof WX!=='undefined'&&WX.cur?WX.cur.rain:0;let grip=(hb?1.1:(Math.abs(vf)>28?5.5:9))*(U?1+.18*U.pneus:1)*(1-.42*wetK);const pgp=c===player.car&&window.GP&&GP.grip&&!t.moto&&!t.fly&&!t.boat;if(pgp)grip=GP.grip(c,grip,vf,vl,thr,hb);vl*=Math.exp(-grip*dt);
   c.vx=fx*vf+rx*vl;c.vz=fz*vf+rz*vl;c.vf=vf;
   const sp=Math.abs(vf);let tr=2.15*Math.min(1,sp/4)/(1+sp/42);if(hb)tr*=1.55;
-  c.steer=lerp(c.steer,steer,1-Math.exp(-10*dt));
-  c.h+=c.steer*tr*dt*(vf>=0?1:-1);
+  if(pgp)GP.yaw(c,steer,tr,vf,dt);// player car : steering inertia, drift
+  else{c.steer=lerp(c.steer,steer,1-Math.exp(-10*dt));
+  c.h+=c.steer*tr*dt*(vf>=0?1:-1);}
   if(t.moto)c.roll=lerp(c.roll,clamp(-c.steer*Math.min(1,sp/10)*(t.stand?.3:.55),-.55,.55),1-Math.exp(-5*dt));
   else c.roll=lerp(c.roll,clamp(-vl*.014-c.steer*sp*.0022,-.06,.06),1-Math.exp(-6*dt));
   let slopeP=0;if(c===player.car&&!wetC&&!t.fly&&!t.boat){const hl=(t.len||4)*.4,sl=clamp((groundY(c.x+fx*hl,c.z+fz*hl)-groundY(c.x-fx*hl,c.z-fz*hl))/(hl*2),-.45,.45);if(Math.abs(sl)>.02){const g=9.8*.75*sl*dt;c.vx-=fx*g;c.vz-=fz*g;c.vf-=g;}slopeP=-Math.atan(sl);}
@@ -2850,7 +2853,7 @@ function updateCamera(dt){if(CINE.on){cineCam(dt);return;}
   const inside=zones.some(z=>z.kind==='inside'&&P.x>z.minx&&P.x<z.maxx&&P.z>z.minz&&P.z<z.maxz);
   const aimC=aiming();cam.aimK=lerp(cam.aimK||0,aimC?1:0,1-Math.exp(-10*dt));
   let dist=lerp((inCar?(player.car.T.fly?15:player.car.T.tank?11:player.car.T.boat?10:player.car.type==='van'?10:8.6):inside?4.2:6.2)*(cam.zoom||1),2.8,cam.aimK);
-  if(inCar&&gameT-cam.lastMouse>1.4&&Math.abs(player.car.vf)>2){const target=player.car.vf>=0?player.car.h:player.car.h;cam.yaw+=wrapA(target-cam.yaw)*Math.min(1,dt*2.6);cam.pitch=lerp(cam.pitch,.22,dt*1.5);}
+  if(inCar&&gameT-cam.lastMouse>1.4&&Math.abs(player.car.vf)>2){const target=window.GP&&GP.camYaw?GP.camYaw(player.car):player.car.h;cam.yaw+=wrapA(target-cam.yaw)*Math.min(1,dt*2.6);cam.pitch=lerp(cam.pitch,.22,dt*1.5);}
   const ty=P.y+(inCar?1.6:1.55);
   const cp=Math.cos(cam.pitch),sp=Math.sin(cam.pitch);
   const sh=cam.aimK*.75,srx=-Math.cos(cam.yaw)*sh,srz=Math.sin(cam.yaw)*sh;
@@ -2945,6 +2948,7 @@ function loop(now){
       toast(`Jeton ${tokens.filter(x=>x.taken).length}/${tokens.length}  +$100`);save();}}
   updateMission(dt,P);
   updateWanted(dt,P);
+  if(window.GP&&GP.update)GP.update(dt,P);// gp.js : cover, events, GPS, NéoGram, driving fx
   // prompts
   let pr=null;
   if(!player.dead){
@@ -5521,5 +5525,6 @@ await LD.done();
 }
 Promise.race([document.fonts?document.fonts.load('800 italic 64px "Barlow Condensed"').catch(()=>{}):Promise.resolve(),new Promise(r=>setTimeout(r,1500))]).then(boot).catch(e=>{console.error(e);LD.fail('Erreur au démarrage : '+(e&&e.message||e));});
 </script>
+<script src="gp.js"></script>
 </body>
 </html>
