@@ -3,6 +3,8 @@
 Jeu de ville ouverte en 3D dans le navigateur (Three.js, aucun build) : conduite, police et étoiles de recherche, armes, téléphone, base militaire, micro.
 
 - `index.html` : le jeu
+- `ng.js` : moteur de rendu « nouvelle génération » (ciel, brume, océan, reflets, post-traitement HDR)
+- `gp.js` : gameplay « nouvelle génération » (police, conduite, couverture, événements, GPS, NéoGram)
 - `assets/` : modèle humain animé et animations
 - `assets/models/` : modèles 3D issus du dossier Google Drive « 3D », convertis en GLB compressés (meshopt + textures WebP)
   - véhicules : Volvo V50 (berline, police), Kia Picanto (taxi, citadine), Honda NSX (sportive), Honda Sonic 150R (moto), Kawasaki Ninja H2R (superbike), hélicoptère de police
@@ -17,9 +19,49 @@ Jeu de ville ouverte en 3D dans le navigateur (Three.js, aucun build) : conduite
 ## Édition nouvelle génération
 
 - Bande-annonce d'ouverture en 5 plans (~30 s) : survol depuis la mer, travelling dans une avenue, carte du personnage joué, grue au-dessus du joueur, titre, puis descente derrière le joueur. Bandes noires, coupes franches, passable d'un appui. Rejouable avec le bouton « ▶ BANDE-ANNONCE » de l'écran titre.
-- Rendu nouvelle génération (ordinateur, WebGL2) : rendu multi-échantillonné, étalonnage cinéma permanent (ombres bleutées, hautes lumières orangées, lumière dorée au lever et au coucher du soleil, vignettage, grain). Touche **G** : nouvelle génération → classique → désactivé (mémorisé).
+- Rendu : voir « Rendu nouvelle génération » ci-dessous. Touche **G** : effets cinéma activés / désactivés (mémorisé).
 
 - Duo original **Maya Solis & Kenzo Ruiz** (personnages par défaut d'une nouvelle partie) : colocataires, ils démarrent devant leur appart (déjà acheté, lit pour dormir et sauvegarder). Celui que tu ne joues pas marche à tes côtés et monte avec toi dans les véhicules ; changer de l'un à l'autre te met à sa place, là où il se trouve. Appli **Duo ♥** du téléphone : jauge de relation (temps passé ensemble, sorties, cadeaux), proposition d'être en couple à partir de 60 (santé qui remonte quand ils sont ensemble), pause possible. Maya : tir précis ; Kenzo : conduite +12 %, dégâts +15 %.
+
+## Gameplay nouvelle génération
+
+Mécaniques des open worlds récents, avec du contenu original (aucun nom, personnage, carte ni musique de GTA repris) :
+- **Police qui doit te voir** : les voitures de patrouille voient devant elles (cône), les agents à pied et l'hélico aussi, mais pas à travers les murs ni à l'intérieur des bâtiments. Leurs **cônes de vision** s'affichent sur la mini-carte (rouges quand ils te voient).
+- **Zone de recherche** : dès qu'ils te perdent de vue, les étoiles clignotent et un **cercle rouge/bleu** apparaît sur la mini-carte autour de ta dernière position connue (plus grand avec les étoiles). Les patrouilles **fouillent la zone** au lieu de foncer sur toi. Sors du cercle sans être vu quelques secondes (ou reste longtemps caché) : **toutes les étoiles disparaissent d'un coup**. S'ils te revoient, la traque reprend.
+- **Barrages** à partir de 3 étoiles : deux voitures en travers de la route devant toi, souvent avec une **herse** qui crève les pneus. **Messages radio** de la centrale en sous-titres.
+- **Conduite** : direction avec inertie (la voiture a du poids), **drift** au frein à main (Espace) qu'on tient à l'accélérateur et qu'on rattrape en contre-braquant, **fumée et traces de pneus** sur la route, caméra qui suit la glisse. Les beaux drifts rapportent des points et un peu d'argent.
+- **Caméra cinématique** en véhicule (touche **K**) : plans en bord de route, travelling latéral, caméra basse au ras du bitume, vue aérienne, qui changent toutes les quelques secondes.
+- **Couverture** : touche **A** (Q en QWERTY, bouton COUV. sur téléphone) près d'un mur, d'un muret ou d'une voiture. Derrière un abri bas tu t'accroupis ; les balles ennemies sont presque toutes arrêtées (étincelles sur l'abri). Tirer te fait sortir la tête (plus exposé). On glisse le long de l'abri ; s'éloigner, sprinter ou ré-appuyer pour en sortir.
+- **Tir** : recul de l'arme, **marqueur d'impact** blanc (rouge quand la cible tombe), gangsters qui se déplacent latéralement en tirant.
+- **Événements aléatoires** dans la ville (toutes les 2 à 3 minutes quand tu n'es ni en mission ni recherché) :
+  - **Fourgon blindé** : immobilise-le (pneus, chocs), pose une charge sur les portes arrière, ramasse les sacs de billets puis sème la police (3 étoiles).
+  - **Course de rue** contre trois pilotes (en voiture) : départ arrêté, compte à rebours, points de passage, classement en direct ; jusqu'à 2 500 $.
+  - **Vol à l'arraché** : un passant crie au voleur, rattrape-le.
+  - **Course-poursuite** : la police poursuit une voiture rouge ; aide-la à l'arrêter pour une récompense.
+- **GPS** : l'itinéraire par les routes s'affiche sur la mini-carte et la grande carte vers ton point de passage, ta mission, l'étape de l'histoire ou l'événement en cours.
+- **NéoGram** (nouvelle appli du téléphone) : le réseau social de la ville. Les habitants publient sur la vie de Néo Cité… et sur toi : courses-poursuites, explosions, drifts, braquages, excès de vitesse. Une notification s'affiche quand quelqu'un poste une vidéo de toi.
+- **Passants qui filment** : pendant une poursuite, un drift ou après une explosion, des passants s'arrêtent et lèvent leur téléphone vers toi.
+
+## Passe de corrections et de réalisme
+
+- Les reflets du ciel (carrosseries, vitres, routes mouillées) se recalculent tout de suite après un saut d'heure (dormir, attendre, charger une partie) : plus de route blanche la nuit.
+- Autoroutes entre les villes : vrai asphalte, lignes de rive blanches, tirets jaunes peints au sol, traces de roues, brillantes sous la pluie.
+- Mer plus bleue vue de la plage (moins de reflet blanc à l'horizon), route mouillée moins « miroir », halos des lampadaires plus doux.
+- Messages à l'écran dans une carte discrète au lieu d'un gros texte au milieu ; bloc « EN LIGNE » compact quand tu es seul.
+- La souris est recapturée dès qu'on ferme le téléphone ou la carte (plus besoin de recliquer).
+- Faisceaux des armureries plus discrets.
+
+## Rendu nouvelle génération (ambiance Floride au coucher du soleil)
+
+Refonte complète de l'image, inspirée des open worlds récents (aucun code, logo ni ressource de jeu commercial repris) :
+- **Ciel atmosphérique** : dégradé de diffusion qui suit la hauteur du soleil, halo autour du soleil, **ceinture de Vénus** rose à l'opposé du couchant, heure bleue violette, **nuages procéduraux** qui dérivent avec le vent (liseré argenté à contre-jour, dessous orangés au couchant, éclairés par la ville la nuit), cirrus, **étoiles scintillantes**, **lune**, pollution lumineuse orangée à l'horizon la nuit. La météo couvre le ciel (orages, brouillard, pluie).
+- **Brume aérienne** : brouillard plus dense près du sol qu'en altitude, qui prend la couleur du ciel et s'illumine du côté du soleil ; les lointains bleuissent, les montagnes se détachent depuis l'hélico.
+- **Océan** : houle à six trains de vagues + vaguelettes, reflet du ciel et des nuages (Fresnel), **chemin de soleil** scintillant, eau **turquoise** près des côtes et bleu profond au large, écume sur le rivage. Les lacs utilisent la même eau.
+- **Reflets PBR** : carte d'environnement du ciel recalculée en continu ; **carrosseries métallisées avec vernis**, vitres teintées, **vitres des tours** qui reflètent le ciel et le soleil, routes mouillées qui brillent sous la pluie.
+- **Post-traitement HDR** (ordinateur) : rendu flottant antialiasé (MSAA ×4), **bloom** à mip-maps (néons, phares, soleil), **rayons crépusculaires** à travers les immeubles, reflets d'objectif discrets, tonemapping ACES, étalonnage chaud (ombres légèrement bleutées, hautes lumières dorées), vignette et grain. **Flou de vitesse** léger en voiture au-delà de ~90 km/h. Touche **G** pour couper ces effets si ça rame (la qualité adaptative le fait aussi toute seule) ; sur téléphone ils sont coupés par défaut et ne consomment pas de mémoire.
+- **Ville** : palmiers le long des rues de Néo Cité, **néons** roses / cyan / violets / orange sur les toits et les arêtes des tours, **halos de lumière** au sol sous les lampadaires et **faisceaux des phares** sur la route la nuit, fenêtres éclairées plus lumineuses, ombres plus fines (carte 3072²).
+- **Écran titre** refait : la ville 3D au coucher du soleil reste visible derrière un panneau à gauche, titre en dégradé coucher de soleil.
+
 ## Multijoueur
 
 Cocher « Jouer en ligne » sur l'écran titre : tous les joueurs du salon public se retrouvent dans la même ville (ou dans un salon privé en saisissant le même code).
