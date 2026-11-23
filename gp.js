@@ -80,7 +80,7 @@ function spawnCop(c,s){c.place(s.x,s.z,s.h);c.ai='police';c.graph=false;c.dead=f
   c.setDriver(true);c.on=true;c.group.visible=true;c.vx=Math.sin(s.h)*15;c.vz=Math.cos(s.h)*15;c.copsOut=false;c.skidT=0;c.parkT=0;c.gpBlock=false;c.gpChase=null;c.sp=null;}
 function escapeWanted(){player.stars=0;seenT=0;bustT=0;toast('Tu as semé la police');sfx.ding();radio(rpick(GIVEUP),true);
   for(const c of police)if(c.ai==='police'&&!c.gpChase){c.ai='traffic';c.cruise=12;c.gpBlock=false;snapToGraph(c);}
-  clearBlocks();WS.mode='none';if(gameT-WS.start>25)post(rpick(['La police a perdu la trace du fuyard 👀 #NéoCité','Ils l\'ont cherché partout… évaporé 💨','Grosse traque ce soir, le suspect court toujours 🚓']),false);}
+  clearBlocks();WS.mode='none';descNotice();if(gameT-WS.start>25)post(rpick(['La police a perdu la trace du fuyard 👀 #NéoCité','Ils l\'ont cherché partout… évaporé 💨','Grosse traque ce soir, le suspect court toujours 🚓']),false);}
 function endWanted(){WS.mode='none';clearBlocks();}
 // position et direction de la route la plus proche (grille de la ville ou routes entre les villes)
 function roadAt(x,z){
@@ -114,7 +114,7 @@ function tryRoadblock(P){if(player.stars<3||!player.car||WS.rbCD>0||policeETA>0|
   const px=-dz,pz=dx,b={cars:free,x:r.x,z:r.z,dx,dz,t:45,spike:null,hit:new Set()};
   free.forEach((c,i)=>{const o=i?3.4:-3.4;spawnCop(c,{x:r.x+px*o,z:r.z+pz*o,h:Math.atan2(px,pz)+(i?Math.PI:0)+rnd(-.2,.2)});c.vx=c.vz=0;c.gpBlock=true;c.copsOut=true;});
   if(player.stars>=4||Math.random()<.6){const m=spikeMesh();m.position.set(r.x-dx*16,groundY(r.x-dx*16,r.z-dz*16),r.z-dz*16);m.rotation.y=Math.atan2(px,pz)+Math.PI/2;b.spike=m;}
-  WS.blocks.push(b);WS.rbCD=32;radio(b.spike?'Barrage et herse en place sur sa route !':'Barrage en place, on le bloque !',true);}
+  WS.blocks.push(b);WS.rbCD=player.stars>=6?15:32;radio(b.spike?'Barrage et herse en place sur sa route !':'Barrage en place, on le bloque !',true);}
 function clearBlocks(){for(const b of WS.blocks){for(const c of b.cars)c.gpBlock=false;if(b.spike)scene.remove(b.spike);}WS.blocks.length=0;}
 function updateBlocks(dt,P){for(let i=WS.blocks.length-1;i>=0;i--){const b=WS.blocks[i];b.t-=dt;const along=(P.x-b.x)*b.dx+(P.z-b.z)*b.dz;
     if(b.spike){const c=player.car;if(c&&!b.hit.has(c)&&!c.T.fly){const sx=b.spike.position.x,sz=b.spike.position.z,a=(c.x-sx)*b.dx+(c.z-sz)*b.dz,l=(c.x-sx)*-b.dz+(c.z-sz)*b.dx;
@@ -129,12 +129,12 @@ window.updateWanted=function(dt,P){
     WS.mode='chase';WS.lkp.x=P.x;WS.lkp.z=P.z;WS.lostT=0;$('stars').classList.remove('blink');return;}
   $('policeEta').hidden=true;
   if(player.stars<=0){if(WS.mode!=='none')endWanted();$('stars').classList.remove('blink');bustT=0;return;}
-  const want=Math.min(6,player.stars+(player.stars>=3?1:0)),mil=player.stars>=5,C=WS.mode==='search'&&hyp(P.x-WS.lkp.x,P.z-WS.lkp.z)<250?WS.lkp:P;
+  const want=player.stars>=6?8:Math.min(6,player.stars+(player.stars>=3?1:0)),mil=player.stars>=5,C=WS.mode==='search'&&hyp(P.x-WS.lkp.x,P.z-WS.lkp.z)<250?WS.lkp:P;
   const free=c=>!c.gpBlock&&!c.gpChase&&(c.ai==='off'||(c.ai==='traffic'&&hyp(c.x-P.x,c.z-P.z)>60));
   if(active.length<want+(mil?2:0)&&policeCD<=0){const c=police.find(c=>free(c)&&(c.type==='jeep')===mil&&(mil||Math.random()<.9))||police.find(free);
-    if(c){const s=inBase(C.x,C.z)||Math.abs(C.x)>HALF+12||Math.abs(C.z)>HALF+12?offroadSpot(C):randomRoadSpot(C,70,150);if(s){spawnCop(c,s);policeCD=3.5-player.stars*.4;}}}
+    if(c){const s=inBase(C.x,C.z)||Math.abs(C.x)>HALF+12||Math.abs(C.z)>HALF+12?offroadSpot(C):randomRoadSpot(C,70,150);if(s){spawnCop(c,s);policeCD=Math.max(1,3.5-player.stars*.4);}}}
   const seen=player.dead?false:detect(P,dt);
-  if(seen){if(WS.mode==='search')radio(rpick(SPOT),true);WS.mode='chase';WS.lkp.x=P.x;WS.lkp.z=P.z;WS.lostT=0;WS.outT=0;WS.hideT=0;}
+  if(seen){descRecord();if(WS.mode==='search')radio(rpick(SPOT),true);WS.mode='chase';WS.lkp.x=P.x;WS.lkp.z=P.z;WS.lostT=0;WS.outT=0;WS.hideT=0;}
   else{WS.lostT+=dt;
     if(WS.mode==='chase'&&WS.lostT>1.5){WS.mode='search';for(const c of active)c.sp=null;radio(rpick(LOST));}
     if(WS.mode==='search'){const d=hyp(P.x-WS.lkp.x,P.z-WS.lkp.z);if(d>zoneR())WS.outT+=dt;else{WS.outT=Math.max(0,WS.outT-dt*.5);WS.hideT+=dt;}
@@ -147,7 +147,7 @@ window.updateWanted=function(dt,P){
   if(near<(player.car?6:6.5)&&ps<2.5&&!player.dead)bustT+=dt;else bustT=Math.max(0,bustT-dt*2);
   if(bustT>(player.car?3:1.8))busted();
 };
-{const _aw=window.addWanted;window.addWanted=function(n){const b=player.stars;_aw(n);if(player.stars>0&&!player.dead){const P=playerPos();WS.mode='chase';WS.lkp.x=P.x;WS.lkp.z=P.z;WS.lostT=0;WS.outT=0;WS.hideT=0;
+{const _aw=window.addWanted;window.addWanted=function(n){const b=player.stars;_aw(n);if(b>=5&&n>=1&&!player.dead&&player.stars<6){player.stars=6;policeETA=0;toast('★★★★★★ FORCES SPÉCIALES\nToute la ville te traque');sfx.fail();radio('Niveau d\'alerte maximal, forces spéciales engagées !',true);setTimeout(()=>post('Forces spéciales déployées dans Néo Cité 🚁🚁 restez chez vous !!',false,true),4000);}if(player.stars>0&&!player.dead){const P=playerPos();WS.mode='chase';WS.lkp.x=P.x;WS.lkp.z=P.z;WS.lostT=0;WS.outT=0;WS.hideT=0;
   if(b===0){WS.start=gameT;WS.posted=false;radio(rpick(CALL),true);}
   if(player.stars>=2&&!WS.posted){WS.posted=true;setTimeout(()=>{if(player.stars>0)post(rpick(['Course-poursuite de malade en plein centre !! 🚓🚓🚓','Les flics sont partout, quelqu\'un a vu ce qui s\'est passé ?? 😳','En direct de ma fenêtre : grosse intervention de police 🚨']),true,true);},7000);}}};}
 {const _ai=window.aiPolice;window.aiPolice=function(c,dt){
@@ -160,6 +160,51 @@ window.updateWanted=function(dt,P){
   if(p.cop&&!p.off&&p.mood&&player.stars>0&&WS.mode==='search'&&policeETA<=0){if(!p.sp||hyp(p.sp.x-p.x,p.sp.z-p.z)<2){const a=Math.random()*6.283,r=Math.random()*zoneR()*.4;p.sp={x:WS.lkp.x+Math.cos(a)*r,z:WS.lkp.z+Math.sin(a)*r};}
     const dx=p.sp.x-p.x,dz=p.sp.z-p.z,d=hyp(dx,dz)||1;p.h=Math.atan2(dx,dz);p.x+=dx/d*2.4*dt;p.z+=dz/d*2.4*dt;if(resolveCircle(p,.3,false))p.sp=null;p.y=groundY(p.x,p.z);p.aiming=false;return 2.4;}
   return _ga(p,dt,P);};}
+
+/* ================= SIGNALEMENT : la police retient ta voiture, ta tenue, ton arme, tes complices ================= */
+const DESC=GP.desc={on:false,t:0,car:null,carT:'',carC:'',carN:'',look:'',shirt:'',weap:'',group:false,stars:0,sus:0,chk:0,told:false};
+const DESC_T=240;
+function colName(hex){try{const c=new THREE.Color(hex),h={};c.getHSL(h);if(h.l<.14)return 'noir';if(h.l>.86)return 'blanc';if(h.s<.16)return h.l<.45?'gris foncé':'gris';const d=h.h*360;
+  return d<15||d>=345?'rouge':d<40?'orange':d<66?'jaune':d<160?'vert':d<200?'turquoise':d<255?'bleu':d<290?'violet':'rose';}catch(e){return '';}}
+function lookKey(){const l=player.m&&player.m.look||{};return (l.shirt||'')+'|'+(l.pants||'');}
+function visibleWeapon(){const w=W();if(!player.car&&isGun(w)&&!w.throw)return w.id;return GP.backWeapon?GP.backWeapon()||'':'';}
+function partnerNear(){return typeof DUO!=='undefined'&&!!DUO.h&&!DUO.away&&hyp(DUO.x-player.x,DUO.z-player.z)<10;}
+function descRecord(){DESC.on=true;DESC.t=DESC_T;DESC.stars=Math.max(DESC.stars,player.stars);DESC.sus=0;
+  const c=player.car;if(c&&!c.T.fly&&!c.T.boat){DESC.car=c;DESC.carT=c.type;DESC.carC=String(c.color);DESC.carN=c.T.name;}
+  DESC.look=lookKey();DESC.shirt=(player.m&&player.m.look&&player.m.look.shirt)||'';const wv=visibleWeapon();if(wv)DESC.weap=wv;if(partnerNear())DESC.group=true;}
+function descMatch(){const c=player.car,m={car:false,outfit:false,weap:false,group:false};
+  if(DESC.carT&&c&&c.type===DESC.carT&&String(c.color)===DESC.carC)m.car=true;
+  if(DESC.look&&lookKey()===DESC.look)m.outfit=true;
+  if(DESC.weap&&visibleWeapon()===DESC.weap)m.weap=true;
+  if(DESC.group&&partnerNear())m.group=true;
+  m.score=(m.car?2:0)+(m.outfit?(c?.9:1.6):0)+(m.weap?1:0)+(m.group?.6:0);return m;}
+function descText(){const a=[];if(DESC.carT)a.push(`${DESC.carN||'véhicule'} ${colName(DESC.carC)}`);if(DESC.shirt)a.push(`haut ${colName(DESC.shirt)}`);if(DESC.weap&&WBY[DESC.weap])a.push(WBY[DESC.weap].name.toLowerCase());if(DESC.group)a.push('accompagné');return a.join(', ');}
+function descNotice(){if(!DESC.on)return;DESC.t=DESC_T;DESC.told=false;const t=descText();if(t){toast('AVIS DE RECHERCHE\nLa police a ton signalement : '+t);setTimeout(()=>post(`🚨 La police recherche un individu : ${t}. Prudence. #NéoCité`,false),5000);}}
+GP.descClear=function(msg){if(DESC.on&&msg)toast(msg);Object.assign(DESC,{on:false,t:0,car:null,carT:'',carC:'',carN:'',look:'',shirt:'',weap:'',group:false,stars:0,sus:0});};
+// un policier qui te voit sans que tu sois recherché te compare au signalement
+function copSees(P){const py=(P.y||0)+1.3;if(indoors(P))return false;
+  for(const c of cars){if(c.type!=='police'||!c.on||c.dead||!c.hasDriver&&c.ai!=='police')continue;const d=hyp(c.x-P.x,c.z-P.z);if(d>48)continue;if(rayT(c.x,c.y+1.5,c.z,P.x,py,P.z)>=.97)return true;}
+  for(const p of peds){if(!p.cop||p.off||p.state==='down'||p.gdead)continue;const d=hyp(p.x-P.x,p.z-P.z);if(d>30)continue;if(rayT(p.x,p.y+1.6,p.z,P.x,py,P.z)>=.97)return true;}
+  return false;}
+function descUpdate(dt,P){if(player.dead||prison.on||GAV.on){if(DESC.on)GP.descClear();return;}
+  if(!DESC.on)return;
+  if(player.stars>0){DESC.t=DESC_T;descHud(null);return;}
+  DESC.t-=dt;if(DESC.t<=0){GP.descClear('Avis de recherche levé : la police ne te cherche plus');descHud(null);return;}
+  const m=descMatch();DESC.chk-=dt;if(DESC.chk<=0){DESC.chk=.4;DESC.seen=copSees(P);}
+  if(DESC.seen&&m.score>=2){DESC.sus+=dt*m.score/2.6;if(!DESC.told){DESC.told=true;radio('Un individu correspond au signalement, je vérifie…',true);}}
+  else DESC.sus=Math.max(0,DESC.sus-dt*.25);
+  if(DESC.sus>=1){DESC.sus=0;const st=Math.max(1,DESC.stars-1);addWanted(st);policeETA=0;radio(m.car?'Véhicule signalé repéré ! On l\'intercepte !':'C\'est lui ! Individu du signalement repéré !',true);toast('TU AS ÉTÉ RECONNU !');}
+  descHud(m);}
+let DH=null;
+function descHud(m){if(!DH){DH=document.createElement('div');DH.id='gpDesc';DH.className='hud';document.body.appendChild(DH);
+    const st=document.createElement('style');st.textContent=`#gpDesc{top:calc(118px + env(safe-area-inset-top,0px));right:calc(14px + env(safe-area-inset-right,0px));background:rgba(14,6,24,.8);border:1px solid rgba(255,80,80,.45);border-radius:10px;padding:6px 10px;font:700 13px var(--font);color:#fff;text-align:right;min-width:150px}
+#gpDesc b{color:#ff7b7b;letter-spacing:.06em}#gpDesc .ic{font-size:17px;letter-spacing:4px;margin-top:2px}#gpDesc .ic span{opacity:.28}#gpDesc .ic span.on{opacity:1;filter:drop-shadow(0 0 4px #ff4040)}
+#gpDesc .sus{height:4px;border-radius:2px;background:rgba(255,255,255,.15);margin-top:4px;overflow:hidden}#gpDesc .sus i{display:block;height:100%;background:#ff4040}
+#stars b.s6{color:#ff3b3b;text-shadow:0 0 10px #ff2020,0 2px 0 #000}body.touch #gpDesc{top:auto;bottom:calc(270px + env(safe-area-inset-bottom,0px));font-size:11px}`;document.head.appendChild(st);}
+  if(!m||!DESC.on||player.stars>0){DH.hidden=true;return;}
+  const ic=(on,has,e)=>has?`<span class="${on?'on':''}">${e}</span>`:'';const mm=Math.floor(DESC.t/60),ss=String(Math.floor(DESC.t%60)).padStart(2,'0');
+  const html=`<b>AVIS DE RECHERCHE</b> ${mm}:${ss}<div class="ic">${ic(m.car,!!DESC.carT,'🚗')}${ic(m.outfit,!!DESC.look,'👕')}${ic(m.weap,!!DESC.weap,'🔫')}${ic(m.group,DESC.group,'👥')}</div>${DESC.sus>0?`<div class="sus"><i style="width:${Math.round(DESC.sus*100)}%"></i></div>`:''}`;
+  if(DH.dataset.h!==html){DH.dataset.h=html;DH.innerHTML=html;}DH.hidden=false;}
 
 /* ================= CONDUITE v2 (voiture du joueur) ================= */
 // adhérence : après un coup de frein à main la voiture reste en glisse tant que l'angle de dérive est fort (drift)
@@ -437,6 +482,7 @@ APPS.push(['neogram','NéoGram','📸','#d6336c']);
 let ambT=25,lastM=-1,speedPost=-99;
 GP.update=function(dt,P){hud();
   try{coverUpdate(dt,P);}catch(e){console.warn(e);}
+  try{descUpdate(dt,P);}catch(e){console.warn(e);}
   try{driveFx(dt);}catch(e){}
   try{evCars(dt);evUpdate(dt,P);}catch(e){console.warn(e);if(EV.cur)evEnd(null);}
   try{gpsUpdate(dt,P);}catch(e){}

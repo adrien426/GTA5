@@ -2161,7 +2161,7 @@ const KEYE=IS_TOUCH?'<kbd>ENTRER</kbd>':'<kbd>E</kbd>';
 let hudMoney=-1,hudStars=-1;
 function updateHUD(){
   if(hudMoney!==player.money){hudMoney=player.money;$('money').textContent='$'+player.money.toLocaleString('fr-FR');}
-  if(hudStars!==player.stars){hudStars=player.stars;let s='';for(let i=0;i<5;i++)s+=i<player.stars?'<b>★</b>':'★';$('stars').innerHTML=s;}
+  if(hudStars!==player.stars){hudStars=player.stars;let s='';for(let i=0;i<(player.stars>5?6:5);i++)s+=i<player.stars?(i===5?'<b class="s6">★</b>':'<b>★</b>'):'★';$('stars').innerHTML=s;}
   const hh=Math.floor(dayT),mm=Math.floor((dayT-hh)*60);$('clock').textContent=String(hh).padStart(2,'0')+':'+String(mm).padStart(2,'0');
   $('hpbar').firstChild.style.width=player.hp+'%';$('stbar').firstChild.style.width=(player.stamina*100)+'%';
   const sp=$('speedo');
@@ -2489,7 +2489,7 @@ function shoot(){
     else{tracerFx(mz,r.end,(saveData.wmods&&saveData.wmods[w.id]&&saveData.wmods[w.id].trace)?0xff3030:0xfff0b0);for(let k=0;k<3;k++)emit(r.end.x,r.end.y,r.end.z,r.hit&&r.hit.kind==='ped'?'#b33':'#ffcf70',.22,.22,rnd(-2,2),rnd(0,3),rnd(-2,2),1,true);}
     applyHit(r,w);ammoEffects(w,r);}
   emit(mz.x,mz.y,mz.z,w.laser?'#7fd0ff':'#ffd27f',w.id==='pompe'?.9:.5,.06,0,0,0,1,true);
-  if(w.silent){sfx.swish();scarePeds(6);return;}
+  if(w.silent){const lv=w.silLv||3;sfx.swish();scarePeds([0,16,10,5][lv]);if(player.stars===0&&lv<3&&nearPolice(playerPos(),lv===1?20:12))addWanted(1);return;}
   sfx.shot(w.laser?'laser':w.id==='sniper'||w.id==='pompe'||w.id==='revolver'?'heavy':'light');scarePeds(45);
   if(player.stars===0&&nearPolice(playerPos(),80))addWanted(1);
 }
@@ -4983,25 +4983,27 @@ function crashPlayer(c,imp){if(c!==player.car||player.dead)return;
   if(!c.T.moto&&!c.T.fly&&!c.T.boat&&imp>22){const dmg=Math.round(Math.min(30,(imp-21)*.9));hurtPlayer(dmg,false);if(imp>42&&Math.random()<.25){const fx=Math.sin(c.h),fz=Math.cos(c.h);exitCar(true);player.vx=fx*imp*.6;player.vz=fz*imp*.6;player.vy=5;player.y=c.y+1.4;player.ground=false;player.knock=3.5;hurtPlayer(15,true);for(let i=0;i<14;i++)emit(c.x+fx*2+rnd(-1,1),c.y+1.2+rnd(0,.8),c.z+fz*2+rnd(-1,1),i%3?'#cfe8ff':'#666',.6,.12,fx*imp*.3+rnd(-3,3),rnd(2,6),fz*imp*.3+rnd(-3,3),1,false,9);hurtPlayer(8,false);addWound(player,'torse',fx,fz,false);addWound(player,'bras',fx,fz,false);addBleed(.9,false);toast('Éjecté à travers le pare-brise !\nCoupé par les éclats de verre');if(Math.random()<.4&&!player.dead)setTimeout(()=>{if(!player.dead)fracture(Math.random()<.5?'jambe':'bras');},2200);}
     else if(dmg>8)toast(`Choc violent : −${dmg} PV`);}}
 /* ================= weapon customisation : silencer, extended mag, scope, grip, laser, paint ================= */
-const WMODS_A=[{k:'sil',n:'Silencieux',p:800,d:'Tir discret : pas d\'alerte, −10 % dégâts'},{k:'mag',n:'Chargeur grande capacité',p:600,d:'+60 % de balles par chargeur'},{k:'scope',n:'Lunette',p:700,d:'Zoom en visant'},
+const WMODS_A=[{k:'sil1',n:'Silencieux compact',p:450,d:'Court et léger · bruit réduit (les passants proches et un policier à moins de 20 m l\'entendent) · −5 % dégâts'},{k:'sil2',n:'Silencieux standard',p:850,d:'Bon compromis · un policier ne t\'entend qu\'à moins de 12 m · −10 % dégâts · −5 % dispersion'},{k:'sil3',n:'Silencieux pro',p:1900,d:'Le meilleur : quasi inaudible, aucune perte de dégâts, −10 % dispersion'},{k:'mag',n:'Chargeur grande capacité',p:600,d:'+60 % de balles par chargeur'},{k:'scope',n:'Lunette',p:700,d:'Zoom en visant'},
   {k:'grip',n:'Poignée',p:400,d:'Recul réduit : −40 % de dispersion'},{k:'laser',n:'Viseur laser',p:300,d:'Rayon laser · −15 % de dispersion'},{k:'paint',n:'Peinture',p:250,d:'Or, camo, rose, bleu, noir…'}];
 const WPAINTS=['#d4af37','#5a6b3a','#e06aa6','#2b6cd6','#111111','#c0392b','#e8e8e8','#7a4a28','#2fbf71','#8e44ad','#f2c230','#c0c6cc'];
+function silLv(m){return m.sil===true?2:(m.sil|0);}
 function modable(w){return w&&!w.melee&&!w.throw&&!w.rocket&&!w.laser&&!w.flame&&!w.taser&&!w.gl&&w.id!=='minigun';}
 function wMods(id){return (saveData.wmods=saveData.wmods||{})[id]||(saveData.wmods[id]={});}
 function applyMods(id){const w=WBY[id];if(!w)return;if(!w.base)w.base={mag:w.mag,spread:w.spread||0,dmg:w.dmg,scope:!!w.scope,silent:!!w.silent};const m=wMods(id),b=w.base;
-  w.mag=Math.round(b.mag*(m.mag?1.6:1));w.spread=b.spread*(m.grip?.6:1)*(m.laser?.85:1);w.dmg=b.dmg*(m.sil?.9:1);w.scope=b.scope||!!m.scope;w.silent=b.silent||!!m.sil;extraModStats(w,m,b);
+  const lv=silLv(m);w.mag=Math.round(b.mag*(m.mag?1.6:1));w.spread=b.spread*(m.grip?.6:1)*(m.laser?.85:1)*[1,1,.95,.9][lv];w.dmg=b.dmg*[1,.95,.9,1][lv];w.scope=b.scope||!!m.scope;w.silent=b.silent||lv>0;w.silLv=lv||(b.silent?3:0);extraModStats(w,m,b);
   const g=wMeshes[id];if(g)decorateWeapon(w,g);}
 function decorateWeapon(w,g){const m=wMods(w.id),L=g.userData.len||w.len||.3;for(const c of g.children.slice())if(c.userData.mod)g.remove(c);
   const add=(geo,mat,x,y,z)=>{const o=new THREE.Mesh(geo,mat);o.position.set(x,y,z);o.userData.mod=true;g.add(o);return o;};
-  if(m.sil)add(new THREE.CylinderGeometry(.026,.026,.22,10).rotateX(Math.PI/2),MAT.dark,0,.01,L+.1);
+  {const lv=silLv(m);if(lv){const D=[0,[.021,.12],[.027,.22],[.031,.3]][lv];add(new THREE.CylinderGeometry(D[0],D[0],D[1],12).rotateX(Math.PI/2),MAT.dark,0,.01,L+D[1]/2-.01);
+    if(lv===3)for(let i=0;i<3;i++)add(new THREE.CylinderGeometry(D[0]+.004,D[0]+.004,.012,12).rotateX(Math.PI/2),MAT.metal,0,.01,L+.04+i*.09);}}
   if(m.scope)add(new THREE.CylinderGeometry(.03,.03,.22,10).rotateX(Math.PI/2),MAT.dark,0,.09,L*.4);
   if(m.grip)add(new THREE.BoxGeometry(.03,.09,.04),MAT.dark,0,-.08,L*.6);
   if(m.laser){add(new THREE.BoxGeometry(.03,.03,.08),MAT.dark,0,-.04,L*.75);const b=add(new THREE.CylinderGeometry(.004,.004,25,4).rotateX(Math.PI/2),new THREE.MeshBasicMaterial({color:0xff2020,transparent:true,opacity:.55}),0,-.04,L*.75+12.5);b.userData.beam=true;}
   extraModVisuals(w,g,m,L,add);
   if(m.paint!=null){const col=new THREE.Color(WPAINTS[m.paint%WPAINTS.length]);g.traverse(o=>{if(o.isMesh&&!o.userData.mod&&!o.userData.beam){if(!o.userData.baseMat)o.userData.baseMat=o.material;const mm=o.userData.baseMat.clone();mm.color=col.clone().lerp(new THREE.Color(.5,.5,.5),.15);o.material=mm;}});}}
 function renderModShop(id){const w=WBY[id],m=wMods(id);$('shopList').innerHTML=`<div class="srow"><div><b>${w.name} — personnalisation</b><small>Solde : $${player.money.toLocaleString('fr-FR')}</small></div><button data-modback="1">← Retour</button></div>`+
-  WMODS.map(o=>{const has=o.k==='paint'?m.paint!=null:!!m[o.k];return `<div class="srow"><div><b>${o.n}${has&&o.k!=='paint'?' ✓':''}</b><small>${o.d}</small></div><button data-mod="${o.k}" data-wid="${id}">${o.k==='paint'?(has?'Changer $'+o.p:'$'+o.p):has?'Retirer':'$'+o.p}</button></div>`;}).join('');}
-function buyMod(id,k){const m=wMods(id),o=WMODS.find(q=>q.k===k);if(k==='paint'){if(!payOr(o.p))return;m.paint=((m.paint==null?-1:m.paint)+1)%WPAINTS.length;}else if(m[k]){m[k]=false;}else{if(!payOr(o.p))return;m[k]=true;}
+  WMODS.map(o=>{const has=o.k==='paint'?m.paint!=null:/^sil\d$/.test(o.k)?silLv(m)===+o.k[3]:!!m[o.k];return `<div class="srow"><div><b>${o.n}${has&&o.k!=='paint'?' ✓':''}</b><small>${o.d}</small></div><button data-mod="${o.k}" data-wid="${id}">${o.k==='paint'?(has?'Changer $'+o.p:'$'+o.p):has?'Retirer':'$'+o.p}</button></div>`;}).join('');}
+function buyMod(id,k){const m=wMods(id),o=WMODS.find(q=>q.k===k);if(/^sil\d$/.test(k)){const lv=+k[3];if(silLv(m)===lv){m.sil=0;applyMods(id);save();toast(`${WBY[id].name} : silencieux retiré`);renderModShop(id);return;}if(!payOr(o.p))return;m.sil=lv;applyMods(id);save();toast(`${WBY[id].name} : ${o.n} installé`);renderModShop(id);return;}if(k==='paint'){if(!payOr(o.p))return;m.paint=((m.paint==null?-1:m.paint)+1)%WPAINTS.length;}else if(m[k]){m[k]=false;}else{if(!payOr(o.p))return;m[k]=true;}
   applyMods(id);save();toast(`${WBY[id].name} : ${o.n}${k==='paint'||m[k]?' installé':' retiré'}`);renderModShop(id);}
 /* ---- weapons dropped by armed people you take down : walk over them to pick them up ---- */
 const DROPS=[];
@@ -5214,7 +5216,7 @@ function zoneEffects(p,part){
 const WMODS2=[{k:'holo',n:'Viseur holographique',p:650,d:'Point rouge : −10 % de dispersion'},{k:'drum',n:'Chargeur tambour',p:1200,d:'Balles ×2,5 (remplace le grand chargeur)'},{k:'crosse',n:'Crosse tactique',p:450,d:'Stabilité : −15 % de dispersion'},
   {k:'frein',n:'Frein de bouche',p:500,d:'Moins de recul : −10 % de dispersion'},{k:'lampe',n:'Lampe torche',p:250,d:'Éclaire devant toi'},{k:'perfo',n:'Munitions perforantes',p:1500,d:'+30 % de dégâts sur les véhicules'},
   {k:'incend',n:'Munitions incendiaires',p:1800,d:'Peuvent mettre le feu à l\'impact'},{k:'explo',n:'Munitions explosives',p:3500,d:'Petites explosions à l\'impact'},{k:'trace',n:'Balles traçantes',p:200,d:'Trajectoires rouges bien visibles'}];
-const WMODS=[...WMODS_A.slice(0,5),...WMODS2,WMODS_A[5]];
+const WMODS=[...WMODS_A.slice(0,7),...WMODS2,WMODS_A[7]];
 function extraModStats(w,m,b){if(m.drum)w.mag=Math.round(b.mag*2.5);w.spread*=(m.holo?.9:1)*(m.crosse?.85:1)*(m.frein?.9:1);}
 function extraModVisuals(w,g,m,L,add){if(m.holo){add(new THREE.BoxGeometry(.05,.05,.07),MAT.dark,0,.085,L*.55);add(new THREE.BoxGeometry(.012,.012,.012),new THREE.MeshBasicMaterial({color:0xff2020}),0,.1,L*.55);}
   if(m.drum)add(new THREE.CylinderGeometry(.07,.07,.06,14).rotateZ(Math.PI/2),MAT.dark,0,-.1,L*.45);if(m.crosse)add(new THREE.BoxGeometry(.04,.08,.2),MAT.dark,0,-.02,-.12);
@@ -5534,5 +5536,7 @@ await LD.done();
 Promise.race([document.fonts?document.fonts.load('800 italic 64px "Barlow Condensed"').catch(()=>{}):Promise.resolve(),new Promise(r=>setTimeout(r,1500))]).then(boot).catch(e=>{console.error(e);LD.fail('Erreur au démarrage : '+(e&&e.message||e));});
 </script>
 <script src="gp.js"></script>
+<script src="gp2.js"></script>
+<script src="rd.js"></script>
 </body>
 </html>

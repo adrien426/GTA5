@@ -4,7 +4,9 @@ Jeu de ville ouverte en 3D dans le navigateur (Three.js, aucun build) : conduite
 
 - `index.html` : le jeu
 - `ng.js` : moteur de rendu « nouvelle génération » (ciel, brume, océan, reflets, post-traitement HDR)
-- `gp.js` : gameplay « nouvelle génération » (police, conduite, couverture, événements, GPS, NéoGram)
+- `gp.js` : gameplay « nouvelle génération » (police, conduite, couverture, événements, GPS, NéoGram, signalement, 6 étoiles)
+- `gp2.js` : armes portées sur le personnage, coffre des voitures, tenues de rechange
+- `rd.js` : physique des corps (ragdoll de Verlet, même principe que Ragdoll Arena)
 - `assets/` : modèle humain animé et animations
 - `assets/models/` : modèles 3D issus du dossier Google Drive « 3D », convertis en GLB compressés (meshopt + textures WebP)
   - véhicules : Volvo V50 (berline, police), Kia Picanto (taxi, citadine), Honda NSX (sportive), Honda Sonic 150R (moto), Kawasaki Ninja H2R (superbike), hélicoptère de police
@@ -41,6 +43,15 @@ Mécaniques des open worlds récents, avec du contenu original (aucun nom, perso
 - **GPS** : l'itinéraire par les routes s'affiche sur la mini-carte et la grande carte vers ton point de passage, ta mission, l'étape de l'histoire ou l'événement en cours.
 - **NéoGram** (nouvelle appli du téléphone) : le réseau social de la ville. Les habitants publient sur la vie de Néo Cité… et sur toi : courses-poursuites, explosions, drifts, braquages, excès de vitesse. Une notification s'affiche quand quelqu'un poste une vidéo de toi.
 - **Passants qui filment** : pendant une poursuite, un drift ou après une explosion, des passants s'arrêtent et lèvent leur téléphone vers toi.
+
+## Armes, coffre, tenues, signalement et physique des corps
+
+- **Silencieux en 3 tailles** (armurerie → ⚙ Modifier) : **compact** (450 $, −5 % dégâts, les passants proches et un policier à moins de 20 m t'entendent), **standard** (850 $, −10 % dégâts, entendu à moins de 12 m), **pro** (1 900 $, quasi inaudible, aucune perte de dégâts, plus précis). Leur taille est visible au bout du canon.
+- **Armes portées** : les armes longues que tu n'as pas en main sont **dans ton dos**, l'arme de poing **à la ceinture**. Tu portes au plus **2 armes longues et 2 armes de poing** : une arme en trop est livrée dans le coffre de ta voiture.
+- **Coffre** : derrière une voiture à l'arrêt, **E : Ouvrir le coffre**. Range ou reprends tes armes (avec leurs munitions), range une copie de ta tenue, enfile une tenue de rechange ou achètes-en une (180 $). Le coffre de **tes** voitures est sauvegardé.
+- **6 étoiles** : un nouveau crime à 5 étoiles déclenche les **forces spéciales** (6e étoile rouge) : plus d'unités, renforts toutes les secondes, barrages avec herses toutes les 15 s, zone de recherche immense.
+- **Signalement** : quand la police te voit, elle retient **ta voiture** (modèle et couleur), **ta tenue**, **l'arme visible** (en main ou dans le dos) et si tu étais **accompagné**. Après avoir semé la police, un **avis de recherche** reste actif 4 minutes (encadré rouge en haut à droite, icônes 🚗 👕 🔫 👥 allumées quand tu corresponds encore). Si une patrouille te croise et te reconnaît, une jauge se remplit… puis la traque reprend. Pour t'en débarrasser : changer de voiture ou la repeindre, enfiler une tenue de rechange, ranger ton arme au coffre, te séparer de ton complice.
+- **Physique des corps** : passants renversés, abattus ou soufflés par une explosion, joueur éjecté de sa moto ou K.O. deviennent de vrais corps physiques (points reliés par des os, genoux et coudes qui ne se plient pas à l'envers, collisions avec le sol, les murs et les voitures, impact des balles dans le sens du tir). Le squelette 3D suit le corps physique, puis le personnage se relève.
 
 ## Passe de corrections et de réalisme
 
